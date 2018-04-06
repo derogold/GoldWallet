@@ -1,0 +1,26 @@
+<template>
+    <section class="section" id="section-overview-show">
+        <div class="div-title">
+            <h2 class="title">Show private keys</h2>
+            
+        </div>
+        <div class="div-fields">
+            <h4 class="text-spaced">You can use these keys to restore a wallet file.</h4>
+            <h4 class="text-spaced">Your view key:</h4>
+            <h3 class="text-block" id="key-show-view" style="padding: 12px 8px;">Click Reveal to see</h3>
+            <h4 class="text-spaced">Your spend key:</h4>
+            <h3 class="text-block" id="key-show-spend" style="padding: 12px 8px;">Click Reveal to see</h3>
+            <span class="text-spaced-warning">
+                Warning: You must keep these keys secret to you. Anyone who knows them can access your wallet.
+            </span>
+        </div>
+        
+        <div class="div-buttons">
+            <button type="button" class="button-green" id="button-show-reveal">Reveal</button>
+            <button type="button" class="button-red" data-section="section-overview" id="button-show-back">Back</button>
+        </div>
+        
+        <script defer src="https://use.fontawesome.com/releases/v5.0.4/js/all.js"></script>
+        <script>require('../js/overview_show.js')</script>
+    </section>
+</template>

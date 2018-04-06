@@ -1,0 +1,50 @@
+.div-transactions-table {
+    position: relative;
+    top: 15px;
+    left: 5%;
+    width: 90%;
+}
+
+#transactions-table {
+    margin: 0;
+    padding: 0;
+    table-layout: fixed;
+    width: 100%;
+    border-spacing: 5px;
+}
+
+#transactions-table .td {
+    padding-bottom: 1em;
+    padding-top: 1em;
+}
+
+#transactions-table tr:nth-child(odd) {
+    background-color: rgba(0, 0, 0, 0.35);
+}
+
+#transactions-table tr:nth-child(even) {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+#transactions-table:hover {
+    cursor: pointer;
+}
+
+.text-transactions-amount {
+    text-align: right;
+}
+
+.text-transactions-address {
+    white-space: nowrap; 
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/*.text-transactions-address:hover {
+    overflow: visible;
+}*/
+
+.text-transactions-date {
+    text-align: left;
+}

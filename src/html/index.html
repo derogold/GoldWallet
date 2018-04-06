@@ -1,0 +1,72 @@
+<!doctype html>
+<html>
+    <head>
+        <!-- Imported assets -->
+        <script defer src="../js/fontawesome-all.js"></script>
+        <link rel="stylesheet" href="../css/font-Roboto.css">
+        <!-- CSS stylesheets -->
+        <link rel="stylesheet" href="../css/index.css">
+        <link rel="stylesheet" href="../css/common.css">
+        <link rel="stylesheet" href="../css/overview_create.css">
+        <link rel="stylesheet" href="../css/overview_import.css">
+        <link rel="stylesheet" href="../css/overview_load.css">
+        <link rel="stylesheet" href="../css/overview_show.css">
+        <link rel="stylesheet" href="../css/overview.css">
+        <link rel="stylesheet" href="../css/send.css">
+        <link rel="stylesheet" href="../css/settings.css">
+        <link rel="stylesheet" href="../css/transactions.css">
+        <link rel="stylesheet" href="../css/about.css">
+        <!-- HTML pages (each page contains a section) -->
+        <link rel="import" href="./about.html">
+        <link rel="import" href="./settings.html">
+        <link rel="import" href="./help.html">
+        <link rel="import" href="./transactions.html">
+        <link rel="import" href="./send.html">
+        <link rel="import" href="./overview.html">
+        <link rel="import" href="./overview_load.html">
+        <link rel="import" href="./overview_show.html">
+        <link rel="import" href="./overview_import.html">
+        <link rel="import" href="./overview_create.html">
+    </head>
+
+    <body>
+        <!-- Titlebar with minimize, maximize, restore and close buttons-->
+        <div class="titlebar">
+            <p class="titlebar-title">WalletShell</p>
+            <button type="button" class="titlebar-button" data-section="section-settings" id="titlebar-button-settings"><i class="fas fa-cog"></i></button>
+            <button type="button" class="titlebar-button" data-section="section-about" id="titlebar-button-about"><i class="fas fa-question"></i></button>
+            <button type="button" class="titlebar-button" data-section="section-help" id="titlebar-button-help"><i class="fas fa-info"></i></button>
+            <button type="button" class="titlebar-button" id="titlebar-button-minimize"><i class="far fa-window-minimize"></i></button>
+            <button type="button" class="titlebar-button" id="titlebar-button-maximize"><i class="far fa-window-maximize"></i></button>
+            <button type="button" class="titlebar-button" id="titlebar-button-restore"><i class="far fa-window-restore"></i></button>
+            <button type="button" class="titlebar-button" id="titlebar-button-close"><i class="fas fa-times"></i></button>
+        </div>
+    
+        <!-- Top navbar -->
+        <div class="navbar">
+            <!-- being honest im not sure if this is the best way to do this -->
+            <div class="text-spaced-bold" id="navbar-div-sync">
+                <i class="fas fa-times" id="navbar-icon-sync"></i>
+                <span id="navbar-text-sync">NOT SYNCED</span>
+                <span id="navbar-text-sync-count"></span>
+                <span id="navbar-text-sync-slash"></span>
+                <span id="navbar-text-sync-known"></span>
+            </div>
+            
+            <button class="navbar-button" data-section="section-transactions" id="button-section-transactions">Transactions</button>
+            <button class="navbar-button" data-section="section-send" id="button-section-send">Send</button>
+            <button class="navbar-button" data-section="section-overview" id="button-section-overview">Overview</button>
+        </div>
+        
+        <!-- Background Logo -->
+        <div class="image-container">
+            <img src="../../assets/logo_translucent.png">
+        </div>
+    
+        <!-- Main div, here the program will load the different .html files depending on the active tab -->
+        <div id="main-div"></div>
+    </body>
+</html>
+
+<!--<script defer src="https://use.fontawesome.com/releases/v5.0.4/js/all.js"></script>-->
+<script>require('../js/index.js')</script>

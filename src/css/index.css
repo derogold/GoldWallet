@@ -1,0 +1,174 @@
+/* Style page content */
+body {
+    transition: all 0.15s ease;
+    color: white;
+}
+
+.main {
+    margin-left: 200px;
+    padding: 0px 10px;
+}
+
+body {
+    min-width: 800px;
+    min-height: 400px;
+    background-image: url("../../assets/background.png");
+    background-size: cover;
+    font-family: 'Roboto', sans-serif;
+    margin: 0;
+}
+
+.image-container {
+    position: relative;
+    width: 75%;
+    height: 75%;
+    top: 200px;
+    left: 12.5%;
+    text-align: center;
+}
+
+.image-container img {
+    vertical-align: middle;
+    width: 75%;
+    height: 75%;
+}
+
+/* The titlebar */
+.titlebar {
+    z-index: 1;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 30px;
+    /* Make it draggable */
+    -webkit-user-select: none;
+    -webkit-app-region: drag;
+    cursor: default;
+    pointer-events: none;
+    background-color: #000000;
+    border-bottom: 1px solid white;
+}
+
+.titlebar-title {
+    bottom: 10px;
+    position: relative;
+    text-align: center;
+    font-weight: bold;
+    font-family: 'Roboto', sans-serif;
+    color: #ffffff;
+}
+
+/* Titlebar buttons */
+.titlebar-button {
+    top: 2px;
+    width: 25px;
+    height: 25px;
+    position: absolute;
+    cursor: default;
+    pointer-events: all;
+    -webkit-app-region: no-drag;
+    text-align: center;
+    color: white;
+    font-size: 115%;
+    transition: color 0.2s;
+    background: #000000;
+    border: #000000;
+}
+
+.titlebar-button:focus {
+   outline: none;
+}
+
+.titlebar-button:hover {
+    color: #b3b3b3;
+}
+
+.titlebar-button:active {
+    color: #fffb00;
+}
+
+#titlebar-button-minimize {
+    right: 75px;
+}
+
+#titlebar-button-maximize {
+    right: 40px;
+}
+
+#titlebar-button-restore {
+    right: 40px;
+}
+
+#titlebar-button-close {
+    right: 5px;
+}
+
+#titlebar-button-settings {
+    left: 5px;
+}
+
+#titlebar-button-about {
+    left: 40px;
+}
+
+#titlebar-button-help {
+    left: 75px;
+}
+
+/* Top navigation bar */
+.navbar {
+    z-index: 1;
+    position: fixed;
+    top: 31px;
+    height: 45px;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background-color: #212721;
+}
+
+#navbar-div-sync {
+    display: inline;
+    position: relative;
+    color: #ff0000;
+    top: 15px;
+    left: 10px;
+}
+
+.navbar-button {
+    height: 45px;
+    width: 140px;
+    float: right;
+    color: white;
+    display: block;
+    text-align: center;
+    font-size: 1em;
+    font-family: 'Roboto', sans-serif;
+    text-transform: uppercase;
+    padding: 10px 2px;
+    background-color: #212721;
+    transition: background-color 0.2s;
+    border: none;
+}
+
+.navbar-button:hover {
+    background-color: #4d524d;
+}
+
+.navbar-button:focus {
+    outline: none;
+}
+
+.navbar-button:active {
+    background-color: #00843d;
+}
+
+#main-div {
+    width: 100%;
+    height: 85%;
+    position: absolute;
+    top: 75px;
+}

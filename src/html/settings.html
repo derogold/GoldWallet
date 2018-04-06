@@ -1,0 +1,23 @@
+<template>
+    <section class="section" id="section-settings">
+        <div class="div-title">
+            <h2 class="title">Settings</h2>
+        </div>
+        <div class="div-settings-input">
+            <h4 class="text-spaced">Path to Walletd:</h4>
+            <input class="text-block" id="input-settings-path" style="padding: 12px 8px;"></input>
+            <button type="button" class="button-green" id="button-settings-browse"><i class="far fa-folder-open"></i></button>
+            <h4 class="text-spaced">RPC Server password (requires restart):</h4>
+            <input class="text-block" id="input-settings-rpcpass" style="padding: 12px 8px;"></input>
+            <span class="text-spaced-error" id="text-settings-error"></span>
+            <span class="text-spaced-success" id="text-settings-success"></span>
+        </div>
+        
+        <div class="div-buttons">
+            <button type="button" class="button-green" id="button-settings-save">Save</button>
+            <!--<button type="button" class="button-red" data-section="section-overview" id="button-load-cancel">Cancel</button>-->
+        </div>
+    
+        <script>require('../js/settings.js')</script>
+    </section>
+</template>

@@ -1,0 +1,23 @@
+#key-show-view {
+    font-family: 'Roboto', sans-serif;
+    color: white;
+    font-size: 1em;
+    width: 90%;
+}
+
+#key-show-spend {
+    font-family: 'Roboto', sans-serif;
+    color: white;
+    font-size: 1em;
+    width: 90%;
+}
+
+#button-show-reveal {
+    position: relative;
+    right: 10%;
+}
+
+#button-show-back {
+    position: relative;
+    left: 10%;
+}

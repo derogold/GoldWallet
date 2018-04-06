@@ -1,0 +1,35 @@
+<template>
+    <section class="section" id="section-overview">
+        <div class="div-overview-address">
+            <h2>Your wallet's address:</h2>
+            <h4 class="text-block" id="wallet-address" style="padding: 12px 8px;">No wallet loaded</h4>
+        </div>
+
+        <div class="div-overview-balance">
+            <h2>Balance:</h2>
+            <h4 class="text-block" id="balance-available">
+                <i class="fas fa-unlock-alt"></i>
+                <span style="float: right;">0.00</span>
+            </h4>
+            <h4 class="text-block" id="balance-locked">
+                <i class="fas fa-lock"></i>
+                <span style="float: right;">0.00</span>
+            </h4>
+        </div>
+
+        <div class="div-overview-text">
+            <span class="text-spaced-warning" id="text-overview-firstime" style="display: none;">
+                First time using WalletShell? Go to the Settings tab (the cog icon in the top left corner) 
+                and set your path to walletd. Then click on the 'Load Wallet' button to open a wallet file.</span>
+        </div>
+
+        <div class="div-buttons">
+            <button type="button" class="button-green" data-section="section-overview-load" id="button-overview-loadwallet">Load wallet</button>
+            <button type="button" class="button-green" data-section="section-overview-show" id="button-overview-showkeys">Show keys</button>
+            <button type="button" class="button-green" data-section="section-overview-create" id="button-overview-createwallet">Create Wallet</button>
+            <button type="button" class="button-green" data-section="section-overview-import" id="button-overview-importwallet">Import Wallet</button>
+        </div>
+    
+        <script>require('../js/overview.js')</script>
+    </section>
+</template>

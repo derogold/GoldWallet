@@ -1,0 +1,213 @@
+/* Title */
+/* used for the overview sub tabs */
+.div-title {
+    width: 90%;
+    height: 30px;
+}
+
+.title {
+    left: 2%;
+    position: relative;
+    text-align: left;
+    font-weight: bold;
+    font-family: 'Roboto', sans-serif;
+    color: white;
+}
+
+/* Text */
+.text-block {
+    position: relative;
+    padding: 12px 20px;
+    margin: 8px 0;
+    display: block;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+    background-color: rgba(255,255,255,0.25);
+}
+
+.text-spaced {
+    margin: 8px 0px;
+    letter-spacing: 1px;
+}
+
+.text-spaced-bold {
+    letter-spacing: 1px;
+    font-weight: bold; 
+    text-shadow: 1px 2px #000000;
+}
+
+.text-spaced-error {
+    letter-spacing: 1px;
+    color: #ff0000; 
+    font-weight: bold; 
+    text-shadow: 1px 2px #000000;
+}
+
+.text-spaced-warning {
+    letter-spacing: 1px;
+    color: #fffb00; 
+    font-weight: bold; 
+    text-shadow: 1px 2px #000000;
+}
+
+.text-spaced-success {
+    letter-spacing: 1px;
+    color: #79ff2c; 
+    font-weight: bold; 
+    text-shadow: 1px 2px #000000;
+}
+
+/* Buttons */
+.div-panel-buttons {
+    white-space: nowrap;
+    display: inline;
+    position: fixed;
+    top: 90%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.div-buttons {
+    white-space: nowrap;
+    display: inline;
+    position: fixed;
+    top: 95%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.button-green {
+    padding: 8px 12px;
+    border: 2px solid #ccc;
+    border-radius: 4px;
+    font-family: 'Roboto', sans-serif;
+    font-size: 1.15em;
+    color: white;
+    /*background-color: #00632e;*/
+    background: -webkit-linear-gradient(top,  #00632e 0%,#00843d 100%);
+    text-transform: uppercase;
+    text-shadow: 3px 3px 3px rgba(255,255,255, .2);
+    transition: all 0.15s ease;
+}
+
+.button-green:hover {
+    transition: all 0.15s ease;
+    box-shadow: 4px 4px 4px rgba(0,0,0,.29), inset 0px 0px 4px rgba(0,0,0, .5);
+}
+
+.button-green:active {
+    background: -webkit-linear-gradient(top,  #00843d 0%,#339d64 100%);
+}
+
+.button-green:focus {
+    outline: none;
+}
+
+.button-red {
+    padding: 8px 12px;
+    border: 2px solid #ccc;
+    border-radius: 4px;
+    font-family: 'Roboto', sans-serif;
+    font-size: 1.15em;
+    color: white;
+    /*background-color: #00632e;*/
+    background: -webkit-linear-gradient(top,  #911b1b 0%,#c93030 100%);
+    text-transform: uppercase;
+    text-shadow: 3px 3px 3px rgba(255,255,255, .2);
+    transition: all 0.15s ease;
+}
+
+.button-red:hover {
+    transition: all 0.15s ease;
+    box-shadow: 4px 4px 4px rgba(0,0,0,.29), inset 0px 0px 4px rgba(0,0,0, .5);
+}
+
+.button-red:active {
+    background: -webkit-linear-gradient(top,  #913535 0%,#cf4b4b 100%);
+}
+
+.button-red:focus {
+    outline: none;
+}
+
+/* Tooltips */
+/* Tooltip container */
+.tooltip {
+    position: relative;
+    /*display: inline-block;*/
+}
+
+/* Tooltip text */
+.tooltip .tooltip-text {
+    visibility: hidden;
+    width: 120px;
+    bottom: 100%;
+    left: 50%;
+    margin-left: -60px;
+    background-color: black;
+    color: #fff;
+    text-align: center;
+    padding: 5px 0;
+    border-radius: 6px;
+    
+    /* Position the tooltip text - see examples below! */
+    position: absolute;
+    z-index: 1;
+
+    opacity: 0;
+    transition: opacity 1s;
+}
+
+.tooltip .tooltip-text::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: black transparent transparent transparent;
+}
+
+/* Show the tooltip text when you mouse over the tooltip container */
+.tooltip:hover .tooltip-text {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Sections */
+.section {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
+    font-family: 'Roboto', sans-serif;
+    height: 95%;
+    min-width: 800px; /* maybe 800px is too much? */
+    min-height: 400px;
+  
+    /* Hidden by default */
+    pointer-events: none;
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(35px);
+    transition: visibility 0s .12s linear , opacity .12s ease-in, transform .12s ease-in;
+  }
+  
+.section.is-shown {
+    pointer-events: auto;
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(0);
+    transition: visibility 0s 0s linear , opacity .36s ease-out, transform .36s ease-out;
+}
+
+  /* Fields */
+.div-fields {
+    position: relative;
+    left: 5%;
+    width: 90%;
+}

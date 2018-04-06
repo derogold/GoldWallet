@@ -1,0 +1,25 @@
+<template>
+    <section class="section" id="section-overview-load">
+        <div class="div-title">
+            <h2 class="title">Load a wallet</h2>
+        </div>
+        <div class="div-input">
+            <h4 class="text-spaced">Type the path of your file or hit the search button:</h4>
+            <input class="text-block" id="input-load-path" style="padding: 12px 8px;"></input>
+            <button type="button" class="button-green" id="button-load-browse"><i class="far fa-folder-open"></i></button>
+            <h4 class="text-spaced">Type the password of your wallet:</h4>
+            <input class="text-block" id="input-load-password" style="padding: 12px 8px;"></input>
+            <span class="text-spaced-error" id="text-load-error"></span>
+            <span class="text-spaced-warning" id="text-load-warning"></span>
+            <span class="text-spaced-success" id="text-load-success"></span>
+        </div>
+        
+        <div class="div-buttons">
+            <button type="button" class="button-green" id="button-load-load">Load</button>
+            <button type="button" class="button-red" data-section="section-overview" id="button-load-cancel">Cancel</button>
+        </div>
+        
+        <script defer src="https://use.fontawesome.com/releases/v5.0.4/js/all.js"></script>
+        <script>require('../js/overview_load.js')</script>
+    </section>
+</template>

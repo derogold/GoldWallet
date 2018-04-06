@@ -1,0 +1,70 @@
+/* Fields */
+.div-create-fields {
+    position: relative;
+    left: 5%;
+    width: 90%;
+}
+
+#input-create-path {
+    display: inline;
+    font-family: 'Roboto', sans-serif;
+    color: white;
+    font-size: 1em;
+    bottom: 5px;
+    width: 90%;
+}
+
+#button-create-browse {
+    position: relative;
+    display: inline;
+    bottom: 5px;
+    left: 15px;
+}
+
+.div-create-name {
+    display: inline-block;
+    position: relative;
+    width: 44%;
+    height: 70px;
+}
+
+.div-create-password {
+    display: inline-block;
+    position: relative;
+    width: 44%;
+    height: 70px;
+    left: 12px;
+}
+
+#input-create-name {
+    font-family: 'Roboto', sans-serif;
+    color: white;
+    font-size: 1em;
+    width: 100%;
+}
+
+#input-create-password {
+    font-family: 'Roboto', sans-serif;
+    color: white;
+    font-size: 1em;
+    width: 100%;
+}
+
+/* Messages */
+.div-create-messages {
+    position: relative;
+    top: 25px;
+    left: 5%;
+    width: 90%;
+}
+
+/* Buttons */
+#button-create-import {
+    position: relative;
+    right: 10%;
+}
+
+#button-create-back {
+    position: relative;
+    left: 10%;
+}

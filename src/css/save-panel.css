@@ -1,0 +1,16 @@
+body {
+    white-space: nowrap;
+    background-color: #000000;
+    font-family: 'Roboto', sans-serif;
+    margin: 0;
+    color: white;
+    font-size: 1.5em;
+}
+
+.div-save-main {
+    display: inline;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}

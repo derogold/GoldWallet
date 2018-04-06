@@ -1,0 +1,12 @@
+.div-about-address {
+    position: relative;
+    top: 15px;
+    left: 2.5%;
+    width: 95%;
+}
+
+#text-about-address {
+    font-size: 0.88em;
+    bottom: 15px;
+    width: 100%;
+}

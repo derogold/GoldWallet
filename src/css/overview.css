@@ -1,0 +1,62 @@
+/* Address */
+.div-overview-address {
+    position: relative;
+    top: 15px;
+    left: 5%;
+    width: 90%;
+}
+
+#wallet-address {
+    font-size: 0.75em;
+    bottom: 15px;
+    width: 100%;
+}
+
+/* Balance */
+.div-overview-balance {
+    position: relative;
+    top: 25px;
+    left: 5%;
+    width: 35%;
+}
+
+#balance-available {
+    bottom: 15px;
+    width: 35%;
+    min-width: 240px;
+}
+
+#balance-locked {
+    bottom: 15px;
+    width: 35%;
+    min-width: 240px;
+}
+
+/* Text */
+.div-overview-text {
+    position: relative;
+    top: 25px;
+    left: 5%;
+    width: 90%;
+}
+
+/* Buttons */
+#button-overview-loadwallet {
+    position: relative;
+    left: -6%;
+}
+
+#button-overview-showkeys {
+    position: relative;
+    left: -2%;
+}
+
+#button-overview-createwallet {
+    position: relative;
+    right: -2%;
+}
+
+#button-overview-importwallet {
+    position: relative;
+    right: -6%;
+}
