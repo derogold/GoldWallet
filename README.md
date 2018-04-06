@@ -1,5 +1,7 @@
 # WalletShell
 
+![Overview Tab](https://image.ibb.co/d9ovhH/overview.png "Overview Tab")
+
 This is a GUI wallet for TurtleCoin made using Electron, this means it's written in JavaScript, HTML and CSS. 
 It is meant to be able to work on Windows, Linux and MacOS, however so far I've only been able to test it on Windows.
 
