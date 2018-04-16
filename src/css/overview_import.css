@@ -1,7 +1,5 @@
 #input-import-path {
     display: inline;
-    font-family: 'Roboto', sans-serif;
-    color: white;
     font-size: 1em;
     bottom: 5px;
     width: 90%;
@@ -29,30 +27,22 @@
     left: 12px;
 }
 
-#input-import-name {
-    font-family: 'Roboto', sans-serif;
-    color: white;
+#input-import-name {   
     font-size: 1em;
     width: 100%;
 }
 
 #input-import-password {
-    font-family: 'Roboto', sans-serif;
-    color: white;
     font-size: 1em;
     width: 100%;
 }
 
 #key-import-view {
-    font-family: 'Roboto', sans-serif;
-    color: white;
     font-size: 1em;
     width: 90%;
 }
 
 #key-import-spend {
-    font-family: 'Roboto', sans-serif;
-    color: white;
     font-size: 1em;
     width: 90%;
 }

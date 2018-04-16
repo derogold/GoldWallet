@@ -6,9 +6,7 @@
 }
 
 #input-send-address {
-    font-family: 'Roboto', sans-serif;
     padding: 12px 8px;
-    color: white;
     font-size: 0.8em;
     bottom: 5px;
     width: 100%;
@@ -22,8 +20,6 @@
 }
 
 #input-send-amount {
-    font-family: 'Roboto', sans-serif;
-    color: white;
     font-size: 1em;
     width: 100%;
 }
@@ -36,9 +32,7 @@
     left: 12px;
 }
 
-#input-send-payid {
-    font-family: 'Roboto', sans-serif;
-    color: white;
+#input-send-payid {    
     font-size: 1em;
     width: 100%;
 }
@@ -51,8 +45,6 @@
 }
 
 #input-send-fee {
-    font-family: 'Roboto', sans-serif;
-    color: white;
     font-size: 1em;
     width: 100%;
 }
@@ -74,8 +66,6 @@
 }
 
 #input-send-mixin {
-    font-family: 'Roboto', sans-serif;
-    color: white;
     font-size: 1em;
     width: 100%;
 }

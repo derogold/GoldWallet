@@ -8,8 +8,6 @@
 
 #input-load-path {
     display: inline;
-    font-family: 'Roboto', sans-serif;
-    color: white;
     font-size: 0.88em;
     bottom: 5px;
     width: 90%;
@@ -23,8 +21,6 @@
 }
 
 #input-load-password {
-    font-family: 'Roboto', sans-serif;
-    color: white;
     font-size: 1em;
     width: 90%;
 }

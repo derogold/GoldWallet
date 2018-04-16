@@ -158,6 +158,6 @@ const navbarButtons = document.querySelectorAll('.navbar-button')
 
 Array.prototype.forEach.call(sectionButtons, function (button) {
     button.addEventListener('click', function(event) {
-        changeSection(button.getAttribute("data-section"))
+        changeSection(button.getAttribute('data-section'))
     })
 })

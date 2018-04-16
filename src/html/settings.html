@@ -7,8 +7,26 @@
             <h4 class="text-spaced">Path to Walletd:</h4>
             <input class="text-block" id="input-settings-path" style="padding: 12px 8px;"></input>
             <button type="button" class="button-green" id="button-settings-browse"><i class="far fa-folder-open"></i></button>
+
             <h4 class="text-spaced">RPC Server password (requires restart):</h4>
             <input class="text-block" id="input-settings-rpcpass" style="padding: 12px 8px;"></input>
+
+            <label class="checkbox-container">
+                <h4 class="text-spaced checkbox-text">Use public node?</h4>
+                <input type="checkbox" id="checkbox-settings-node">
+                <span class="checkmark"></span>
+            </label>
+            
+            <div class="div-settings-daemon-address">
+                <h4 class="text-spaced">Node address:</h4>
+                <input class="text-block" id="input-settings-daemon-address" style="padding: 12px 8px;"></input>
+            </div>
+
+            <div class="div-settings-daemon-port">
+                <h4 class="text-spaced">Node port:</h4>
+                <input class="text-block" id="input-settings-daemon-port" style="padding: 12px 8px;"></input>
+            </div>
+            
             <span class="text-spaced-error" id="text-settings-error"></span>
             <span class="text-spaced-success" id="text-settings-success"></span>
         </div>

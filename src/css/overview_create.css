@@ -7,8 +7,6 @@
 
 #input-create-path {
     display: inline;
-    font-family: 'Roboto', sans-serif;
-    color: white;
     font-size: 1em;
     bottom: 5px;
     width: 90%;
@@ -37,15 +35,11 @@
 }
 
 #input-create-name {
-    font-family: 'Roboto', sans-serif;
-    color: white;
     font-size: 1em;
     width: 100%;
 }
 
 #input-create-password {
-    font-family: 'Roboto', sans-serif;
-    color: white;
     font-size: 1em;
     width: 100%;
 }

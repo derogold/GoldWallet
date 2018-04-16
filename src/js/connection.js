@@ -57,8 +57,15 @@ This function starts an instance of walletd to load a wallet */
 function spawnWallet(filePath, password, onError, onSuccess) {
     let file = path.basename(filePath)
     let directory = path.dirname(filePath)
-    walletdChild = spawn(getWalletdPath(), ['-w', file, '-p', password, '--local',
-     '--server-root', directory, '--rpc-password', rpcPassword])  
+
+    if (settings.get('usePublicNode')) {
+        walletdChild = spawn(getWalletdPath(), ['-w', file, '-p', password, '--local',
+     '--server-root', directory, '--rpc-password', rpcPassword, '--daemon-address', settings.get('nodeAddress'),
+     '--daemon-port', settings.get('nodePort')])
+    } else {
+        walletdChild = spawn(getWalletdPath(), ['-w', file, '-p', password, '--local',
+     '--server-root', directory, '--rpc-password', rpcPassword]) 
+    }
 
     // listen to the close event, so the var walletdChild goes null
     // when it happens

@@ -8,8 +8,6 @@
 
 #input-settings-path {
     display: inline;
-    font-family: 'Roboto', sans-serif;
-    color: white;
     font-size: 0.88em;
     bottom: 5px;
     width: 90%;
@@ -23,8 +21,31 @@
 }
 
 #input-settings-rpcpass {
-    font-family: 'Roboto', sans-serif;
-    color: white;
+    font-size: 1em;
+    width: 90%;
+}
+
+.div-settings-daemon-address {
+    display: inline-block;
+    position: relative;
+    left: 12px;
+    width: 45%;
+    height: 80px;
+}
+
+#input-settings-daemon-address {
+    font-size: 1em;
+    width: 90%;
+}
+
+.div-settings-daemon-port {
+    display: inline-block;
+    position: relative;
+    width: 25%;
+    height: 80px;
+}
+
+#input-settings-daemon-port {
     font-size: 1em;
     width: 90%;
 }
@@ -38,7 +59,3 @@
     left: 50%;
     transform: translate(-50%, -50%);
 }
-
-/*#button-settings-save {
-    position: relative;
-}*/
