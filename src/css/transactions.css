@@ -1,3 +1,38 @@
+.div-transactions-page {
+    position: relative;
+    display: inline-block;
+    width: 45%;
+    height: 30px;
+    left: 25px;
+}
+
+.div-transactions-sort {
+    position: relative;
+    display: inline-block;
+    width: 40%;
+    height: 30px;
+    left: 30px;
+}
+
+#button-transactions-sort {
+    position: relative;
+    float: right;
+    height: 30px;
+    width: 30px;
+    left: 42%;
+    bottom: 2px;
+    font-size: 1.35em;
+}
+
+#icon-transactions-sort {
+    position: relative;
+    margin: 0;
+    padding: 0;
+    right: 8px;
+    bottom: 8px;
+}
+
+/* Table */
 .div-transactions-table {
     position: relative;
     top: 15px;
@@ -30,21 +65,24 @@
     cursor: pointer;
 }
 
-.text-transactions-amount {
-    text-align: right;
+.div-transactions-row-txamount {
+    display: inline-block;
+    width: 20%;
 }
 
-.text-transactions-address {
-    white-space: nowrap; 
-    text-align: center;
-    overflow: hidden;
-    text-overflow: ellipsis;
+.div-transactions-row-txhash {
+    display: inline-block;
+    width: 78%;
+    font-size: 0.83em;
 }
 
-/*.text-transactions-address:hover {
-    overflow: visible;
-}*/
+.div-transactions-row-txdate {
+    display: inline-block;
+    width: 20%;
+}
 
-.text-transactions-date {
-    text-align: left;
+.div-transactions-row-txpayid {
+    display: inline-block;
+    width: 78%;
+    font-size: 0.83em;
 }

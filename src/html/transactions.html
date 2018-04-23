@@ -1,25 +1,33 @@
 <template>
     <section class="section" id="section-transactions">
-        <div class="div-title">
+        <div class="div-transactions-page">
             <h4 class="title" id="text-transactions-page">Page 0 of 0</h4>
+        </div>
+        <div class="div-transactions-sort">
+            <h4 class="title" style="display:inline; position:relative; left:50%;">Sort by: </h4>
+            <div class="combo" style="float:right;">
+                <select id="select-transactions-sort">
+                  <option value="date">Date</option>
+                  <option value="amount">Amount</option>
+                  <option value="hash">Hash</option>
+                  <option value="payid">Payment Id</option>
+                </select>
+            </div>
+            <button type="button" class="button-green" id="button-transactions-sort">
+                <i class="fas fa-chevron-up" id="icon-transactions-sort"></i>
+            </button>
         </div>
         <div class="div-transactions-table">
             <table id="transactions-table">
                 <colgroup>
-                    <col style="width:20%">
-                    <col style="width:60%">
-                    <col style="width:20%">
+                    <col style="width:100%">
                 </colgroup>
                 <tbody id="transactions-table-body">
                     <tr>
-                        <th style="cursor: pointer;" data-order="1" id="header-transactions-amount">Amount</th>
-                        <th style="cursor: pointer;" data-order="1" id="header-transactions-address">Address</th>
-                        <th style="cursor: pointer;" data-order="1" id="header-transactions-date">Date</th>
+                        <th id="header-transactions">Transactions</th>
                     </tr>
                     <tr>
-                        <td></td>
                         <td>Hit the "Refresh" button to fill this table with transactions</td>
-                        <td></td>
                     </tr>
                 </tbody>
             </table> 

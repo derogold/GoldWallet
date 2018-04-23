@@ -11,11 +11,22 @@ const nextButton = document.getElementById('button-transactions->')
 const lastButton = document.getElementById('button-transactions->>')
 const previousButton = document.getElementById('button-transactions-<')
 const firstButton = document.getElementById('button-transactions-<<')
+const sortDateOption = document.getElementById('option-transactions-sort-date')
+const sortHashOption = document.getElementById('option-transactions-sort-hash')
+const sortAmountOption = document.getElementById('option-transactions-sort-amount')
+const sortPayidOption = document.getElementById('option-transactions-sort-payid')
+const selectSort = document.getElementById('select-transactions-sort')
+const sortButton = document.getElementById('button-transactions-sort')
+const transactionsPerPage = 7
 
+let sortIcon
 let blockNumber = document.getElementById('navbar-text-sync-count')
-const transactionsPerPage = 12
 let currentPage = 1
 let transactionsList = []
+// by default, the transactions list is ordered by date due to how it's filled
+let currentSortBy = 'date'
+// sorting order is 1 for ascending, -1 for descending
+let currentSortOrder = 1
 
 function fillTransactionsList() {
     let currentBlockCount = parseInt(blockNumber.textContent)
@@ -52,34 +63,47 @@ function showPage(pageNumber) {
     while(table.childElementCount > 1) {
         table.removeChild(table.lastChild)
     }
+    // if the transactions list is empty, we display a message
+    if(transactionsList.length == 0) {
+        table.insertRow(-1).insertCell(0).innerHTML = 'You have no transactions! :('
+        return
+    }
     // set current page
     currentPage = pageNumber
     // fill table with the transactions of the page
     let i = transactionsPerPage * (currentPage - 1)
     // loop until there are transactionsPerPage transactions in the page or until there are no more
     while(i - transactionsPerPage * (currentPage - 1) < transactionsPerPage && i < transactionsList.length) {
-        //console.log(i)
         let transaction = transactionsList[i]
         let row = table.insertRow(-1)
-        let amount = row.insertCell(0)
-        let address = row.insertCell(1)
-        let date = row.insertCell(2)
+        let cell = row.insertCell(0)
 
-        amount.innerHTML = (transaction.amount / 100).toFixed(2)
-        amount.classList.add('text-transactions-amount')
+        // Amount
+        let divAmount = document.createElement('div')
+        divAmount.innerHTML = (transaction.amount / 100).toFixed(2) + ' TRTL'
+        divAmount.classList.add('div-transactions-row-txamount')
+        cell.appendChild(divAmount)
 
-        addressString = transaction.transfers[0].address
-        /*address.innerHTML = addressString.slice(0, 15) + ' ... '  + addressString.
-                            slice(addressString.length - 15, addressString.length)*/
-        address.innerHTML = addressString
-        address.classList.add('text-transactions-address')
+        // Hash
+        let divHash = document.createElement('div')
+        divHash.innerHTML = 'Hash: ' + transaction.transactionHash
+        divHash.classList.add('div-transactions-row-txhash')
+        cell.appendChild(divHash)
 
-        date.innerHTML = new Date(transaction.timestamp * 1000).toDateString()
-        date.classList.add('text-transactions-date')
+        // Date
+        let divDate = document.createElement('div')
+        divDate.innerHTML = new Date(transaction.timestamp * 1000).toDateString()
+        divDate.classList.add('div-transactions-row-txdate')
+        cell.appendChild(divDate)
+
+        // Payment Id
+        let divPayId = document.createElement('div')
+        divPayId.innerHTML = 'Payment Id: ' + transaction.paymentId
+        divPayId.classList.add('div-transactions-row-txpayid')
+        cell.appendChild(divPayId)
 
         // upon clicking on the row, a panel will pop up
         // showing the transaction's details
-        row.style
         row.addEventListener('click', function(event) {
             let panelUrl = url.format({
                 pathname: path.join(__dirname, '../html/transactions-panel.html'),
@@ -112,6 +136,14 @@ function showPage(pageNumber) {
 refreshButton.addEventListener('click', function(event) {
     fillTransactionsList().then((v) => {
         if(v) showPage(1) 
+        else {
+            // clear the table
+            while(table.childElementCount > 1) {
+                table.removeChild(table.lastChild)
+            }
+            // show some message
+            table.insertRow(-1).insertCell(0).innerHTML = 'Unable to show transactions!'
+        }
     })
 })
 
@@ -136,46 +168,62 @@ const amountHeader = document.getElementById('header-transactions-amount')
 const addressHeader = document.getElementById('header-transactions-address')
 const dateHeader = document.getElementById('header-transactions-date')
 
-// compare functions used for sorting
-function compareTxDate (a, b) {
-    if (a.timestamp > b.timestamp)  return 1
-    if (a.timestamp < b.timestamp)  return -1
-                                    return 0
-}
+// function that sorts the transactions list and refreshes the page
+function sortTransactionsList (sortBy) {
+    let sortFunction
+    switch (sortBy) {
+        case 'date':
+            sortFunction = function (a, b) {
+                if (a.timestamp > b.timestamp)  return 1
+                if (a.timestamp < b.timestamp)  return -1
+                                                return 0
+            }
+            break;
+        case 'hash':
+            sortFunction = function (a, b) {
+                let str1 = a.transactionHash
+                let str2 = b.transactionHash
+                return str1.localeCompare(str2)
+            }
+            break;
+        case 'amount':
+            sortFunction = function  (a, b) {
+                if (a.amount > b.amount)    return 1
+                if (a.amount < b.amount)    return -1
+                                            return 0
+            }
+            break;
+        case 'payid':
+            sortFunction = function (a, b) {
+                let str1 = a.paymentId
+                let str2 = b.paymentId
+                return str1.localeCompare(str2)
+            }
+    }
 
-function compareTxAmount (a, b) {
-    if (a.amount > b.amount)        return 1
-    if (a.amount < b.amount)        return -1
-                                    return 0
-}
-
-function compareTxAddress (a, b) {
-    // not sure whats the point of this but oh well
-    let str1 = a.transfers[0].address
-    let str2 = b.transfers[0].address
-    return str1.localeCompare(str2)
-}
-
-amountHeader.addEventListener('click', function(event) {
-    let order = amountHeader.getAttribute('data-order')
-    // the order attribute is either 1 or -1
-    // if its 1 it will sort the array in ascending order, 
-    // the opposite happens if its -1
-    transactionsList.sort((a, b) => order * compareTxAmount(a, b))
-    amountHeader.setAttribute('data-order', order * -1) 
+    transactionsList.sort((a, b) => currentSortOrder * sortFunction(a, b))
     showPage(currentPage)
+}
+
+// assing to each option the ability to call the sort function
+// passing a specific compare function
+selectSort.addEventListener('change', function(event) {
+    currentSortBy = event.target.value
+    sortTransactionsList(currentSortBy)
 })
 
-addressHeader.addEventListener('click', function(event) {
-    let order = addressHeader.getAttribute('data-order')
-    transactionsList.sort((a, b) => order * compareTxAddress(a, b))
-    addressHeader.setAttribute('data-order', order * -1)
-    showPage(currentPage)
-})
-
-dateHeader.addEventListener('click', function(event) {
-    let order = dateHeader.getAttribute('data-order')
-    transactionsList.sort((a, b) => order * compareTxDate(a, b))
-    dateHeader.setAttribute('data-order', order * -1)
-    showPage(currentPage)
+// sort button
+// allows the user to sort in descending or ascending order
+sortButton.addEventListener('click', function(event) {
+    sortIcon = document.getElementById('icon-transactions-sort')
+    // change the icon everytime the user clicks
+    if (currentSortOrder == 1) {
+        sortIcon.classList.toggle('fa-chevron-up')
+        sortIcon.classList.toggle('fa-chevron-down')
+    } else {
+        sortIcon.classList.toggle('fa-chevron-down')
+        sortIcon.classList.toggle('fa-chevron-up')
+    }
+    currentSortOrder *= -1
+    sortTransactionsList(currentSortBy)
 })
