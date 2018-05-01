@@ -8,21 +8,35 @@
     </head>
 
     <body>
-        <div class="div-title">
-            <h3 class="title" id="text-transactions-page">Transaction's details</h3>
-        </div>
-    
-        <div class="div-transactions-panel-text">
-            <div>Address: <span id="text-transactions-panel-address"></span></div>
-            <div>Amount: <span id="text-transactions-panel-amount"></span></div>
-            <div>Timestamp: <span id="text-transactions-panel-timestamp"></span></div>
-            <div>Hash: <span id="text-transactions-panel-hash"></span></div>
-            <div>Block Index: <span id="text-transactions-panel-blockindex"></span></div>
-            <div>Is base?: <span id="text-transactions-panel-isbase"></span></div>
-            <div>Unlock Time: <span id="text-transactions-panel-unlocktime"></span></div>
-            <div>Fee: <span id="text-transactions-panel-fee"></span></div>
-            <div>Extra: <span id="text-transactions-panel-extra"></span></div>
-            <div>Payment ID: <span id="text-transactions-panel-payid"></span></div>
+        <div class="div-transactions-panel">
+            <table class="custom-table" id="transactions-panel-table">
+                <colgroup>
+                    <col style="width:20%">
+                    <col style="width:80%">
+                </colgroup>
+                <tbody>
+                    <tr> <td>Address</td>
+                        <td id="text-transactions-panel-address"></td> </tr>
+                    <tr> <td>Amount</td>
+                        <td id="text-transactions-panel-amount"></td> </tr>
+                    <tr> <td>Timestamp</td>
+                        <td id="text-transactions-panel-timestamp"></td> </tr>
+                    <tr> <td>Hash</td>
+                        <td id="text-transactions-panel-hash"></td> </tr>
+                    <tr> <td>Block Index</td>
+                        <td id="text-transactions-panel-blockindex"></td> </tr>
+                    <tr> <td>Is Base?</td>
+                        <td id="text-transactions-panel-isbase"></td> </tr>
+                    <tr> <td>Unlock Time</td>
+                        <td id="text-transactions-panel-unlocktime"></td> </tr>
+                    <tr> <td>Fee</td>
+                        <td id="text-transactions-panel-fee"></td> </tr>
+                    <tr> <td>Extra</td>
+                        <td id="text-transactions-panel-extra"></td> </tr>
+                    <tr> <td>Payment Id</td>
+                        <td id="text-transactions-panel-payid"></td> </tr>
+                </tbody>
+            </table> 
         </div>
 
         <div class="div-panel-buttons">

@@ -80,7 +80,11 @@ function showPage(pageNumber) {
 
         // Amount
         let divAmount = document.createElement('div')
-        divAmount.innerHTML = (transaction.amount / 100).toFixed(2) + ' TRTL'
+        if (transaction.amount > 0)
+            divAmount.innerHTML = '+' + (transaction.amount / 100).toFixed(2) + ' TRTL'
+        else
+            divAmount.innerHTML = (transaction.amount / 100).toFixed(2) + ' TRTL'
+        
         divAmount.classList.add('div-transactions-row-txamount')
         cell.appendChild(divAmount)
 

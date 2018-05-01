@@ -220,6 +220,27 @@
     width: 90%;
 }
 
+/* Table */
+.custom-table {
+    margin: 0;
+    padding: 0px;
+    table-layout: fixed;
+    width: 100%;
+    border-spacing: 5px;
+}
+
+.custom-table td {
+    padding: 2px;
+}
+
+.custom-table tr:nth-child(odd) {
+    background-color: rgba(0, 0, 0, 0.35);
+}
+
+.custom-table tr:nth-child(even) {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
 /* Controllers */
 /* Checkbox */
 .checkbox-container {
