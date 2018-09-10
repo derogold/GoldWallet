@@ -1,47 +1,44 @@
 <template>
     <section class="section" id="section-send">
-        <div class="div-title">
-            <h2 class="title">Send TurtleCoin</h2>
-        </div>
-        <div class="div-send-fields">
-            <h4 class="text-spaced">Address</h4>
-            <input class="text-block" id="input-send-address"></input>
+        <div class="section-contents">
 
-            <div class="div-send-amount">
-                <h4 class="text-spaced">Amount</h4>
-                <input class="text-block" id="input-send-amount"></input>
+            <div class="div-title">
+                <h2 class="title">Send TurtleCoin</h2>
             </div>
-            <div class="div-send-payid">
-                <h4 class="text-spaced">Payment ID (optional)</h4>
-                <input class="text-block" id="input-send-payid"></input>
-            </div>
+            <div class="div-input">
+                <div class="input-wrap">
+                    <h4 class="text-spaced">Address</h4>
+                    <input placeholder="TRTLXXX..." class="text-block" id="input-send-address"></input>
+                    <span class="form-help">Type one or more character to search from address book, or type new address</span>
+                </div>
 
-            <div class="div-send-fee">
-                <h4 class="text-spaced">Fee</h4>
-                <input class="text-block" id="input-send-fee"></input>
-            </div>
-            <div class="div-send-fee-text">
-                <span class='text-spaced'>Default values of fee and mixin are the recommended based on sent transactions.</span>
-            </div>
-            
-            <div class="div-send-mixin">
-                <h4 class="text-spaced">Mixin</h4>
-                <input class="text-block" id="input-send-mixin"></input>
-            </div>
-            <div class="div-send-mixin-text">
-                <span class='text-spaced'>Charging a fee below 0.1 TRTL might get your transaction stuck!</span>
-            </div>
+                <div class="input-wrap">
+                    <h4 class="text-spaced">Payment ID (optional)</h4>
+                    <input class="text-block" id="input-send-payid"></input>
+                </div>
+                
+                <div class="input-wrap">
+                    <div class="div-send-amount  inline-block-div half-width">
+                        <h4 class="text-spaced">Amount</h4>
+                        <input type="number" step="0.01" min="1.00" class="text-block" id="input-send-amount"></input>
+                    </div>
+                    <div class="div-send-fee inline-block-div half-width half-width-end">
+                            <h4 class="text-spaced">Transaction Fee (min. TRTL 0.1)</h4>
+                            <input data-noclear="1" type="number" step="0.01" min="0.10" class="text-block" id="input-send-fee"></input>
+                    </div>
+                </div>
+                                
+                <div class="input-wrap">
+                    <span class="form-ew text-spaced-error" id="text-send-error"></span>
+                    <span class="form-ew text-spaced-warning" id="text-send-warning"></span>
+                    <span class="form-ew text-spaced-success" id="text-send-success"></span>
+                </div>
 
-            <span class="text-spaced-error" id="text-send-error"></span>
-            <span class="text-spaced-success" id="text-send-success"></span>
+                <div class="input-wrap button-wrap">
+                    <button type="button" class="form-bt button-green" id="button-send-send">Send</button>
+                    <button type="button" class="form-bt button-red" data-section="section-overview" id="button-send-back">Cancel</button>
+                </div>
+            </div>
         </div>
-        
-        <div class="div-buttons">
-            <button type="button" class="button-green" id="button-send-send">Send</button>
-            <button type="button" class="button-red" data-section="section-overview" id="button-send-back">Cancel</button>
-        </div>
-        
-        <script defer src="https://use.fontawesome.com/releases/v5.0.4/js/all.js"></script>
-        <script>require('../js/send.js')</script>
     </section>
 </template>

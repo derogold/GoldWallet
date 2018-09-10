@@ -1,35 +1,45 @@
 <template>
     <section class="section" id="section-overview">
-        <div class="div-overview-address">
-            <h2>Your wallet's address:</h2>
-            <h4 class="text-block" id="wallet-address" style="padding: 12px 8px;">No wallet loaded</h4>
-        </div>
+        <div class="section-contents">
+            <div class="div-overview-address">
+                <!-- <h4 class="text-block" id="wallet-address" style="padding: 12px 8px;">No wallet loaded</h4> -->
+                <div class="input-wrap">
+                    <h2>Your wallet's address:</h2>
+                    <input data-noclear="1" type="text" id="wallet-address" class="overview-input text-block" readonly="readonly">
+                    <span id="form-help-wallet-address" class="form-help">Click your address to copy.</span>
+                </div>
+            </div>
 
-        <div class="div-overview-balance">
-            <h2>Balance:</h2>
-            <h4 class="text-block" id="balance-available">
-                <i class="fas fa-unlock-alt"></i>
-                <span style="float: right;">0.00</span>
-            </h4>
-            <h4 class="text-block" id="balance-locked">
-                <i class="fas fa-lock"></i>
-                <span style="float: right;">0.00</span>
-            </h4>
-        </div>
+            <div class="float-wrap qr-wrap">
+                <div class="div-overview-balance float-col">
+                    <h2>Balance:</h2>
+                    <h4 class="text-block" id="balance-available" title="Unlocked Balance">
+                        <i class="fas fa-unlock-alt"></i>
+                        <span style="float: right;">0.00</span>
+                    </h4>
+                    <h4 class="text-block" id="balance-locked" title="Locked Balance">
+                        <i class="fas fa-lock"></i>
+                        <span style="float: right;">0.00</span>
+                    </h4>
+                </div>
+                <div class="div-float-col qr-col" id="div-w-qr">
+                <span class="form-help form-help-qr hidden" id="scan-qr-help">Scan to share your address</span>
+                </div>
 
-        <div class="div-overview-text">
-            <span class="text-spaced-warning" id="text-overview-firstime" style="display: none;">
-                First time using WalletShell? Go to the Settings tab (the cog icon in the top left corner) 
-                and set your path to walletd. Then click on the 'Load Wallet' button to open a wallet file.</span>
-        </div>
+                <div class="input-wrap button-wrap">
+                        <button type="button" class="form-bt  button-green" id="button-overview-closewallet">Close Wallet</button>
+                        <button type="button" class="form-bt button-green" data-section="section-overview-show" id="button-overview-showkeys">Show keys</button>
+                </div>
 
-        <div class="div-buttons">
-            <button type="button" class="button-green" data-section="section-overview-load" id="button-overview-loadwallet">Load wallet</button>
-            <button type="button" class="button-green" data-section="section-overview-show" id="button-overview-showkeys">Show keys</button>
-            <button type="button" class="button-green" data-section="section-overview-create" id="button-overview-createwallet">Create Wallet</button>
-            <button type="button" class="button-green" data-section="section-overview-import" id="button-overview-importwallet">Import Wallet</button>
+
+            </div>
+
+            <!-- <div class="div-overview-text">
+                <span class="text-spaced-warning" id="text-overview-firstime" style="display: none;">
+                    First time using WalletShell? Go to the Settings tab (the cog icon in the top left corner) 
+                    and set your path to walletd. Then click on the 'Load Wallet' button to open a wallet file.</span>
+            </div> -->
         </div>
-    
-        <script>require('../js/overview.js')</script>
+        <!-- <script>require('../js/overview.js')</script> -->
     </section>
 </template>

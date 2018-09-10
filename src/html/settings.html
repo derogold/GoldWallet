@@ -1,41 +1,56 @@
 <template>
     <section class="section" id="section-settings">
-        <div class="div-title">
-            <h2 class="title">Settings</h2>
-        </div>
-        <div class="div-settings-input">
-            <h4 class="text-spaced">Path to Walletd:</h4>
-            <input class="text-block" id="input-settings-path" style="padding: 12px 8px;"></input>
-            <button type="button" class="button-green" id="button-settings-browse"><i class="far fa-folder-open"></i></button>
-
-            <h4 class="text-spaced">RPC Server password (requires restart):</h4>
-            <input class="text-block" id="input-settings-rpcpass" style="padding: 12px 8px;"></input>
-
-            <label class="checkbox-container">
-                <h4 class="text-spaced checkbox-text">Use public node?</h4>
-                <input type="checkbox" id="checkbox-settings-node">
-                <span class="checkmark"></span>
-            </label>
-            
-            <div class="div-settings-daemon-address">
-                <h4 class="text-spaced">Node address:</h4>
-                <input class="text-block" id="input-settings-daemon-address" style="padding: 12px 8px;"></input>
+        <div class="section-contents">
+            <div class="div-title">
+                <h2 class="title">Settings</h2>
             </div>
+            <div class="div-settings-input default-inputs">
+                <div class="input-wrap">
+                    <h4 class="text-spaced">Select path to turtle-service executable file:</h4>
+                    <input data-initial="service_bin" class="text-block path-input" id="input-settings-path" style="padding: 12px 8px;"></input>
+                    <button data-targetinput="input-settings-path" type="button" class="button-green path-input-button" id="button-settings-browse"><i class="fas fa-folder-open"></i></button>
+                </div>
 
-            <div class="div-settings-daemon-port">
-                <h4 class="text-spaced">Node port:</h4>
-                <input class="text-block" id="input-settings-daemon-port" style="padding: 12px 8px;"></input>
+                <div class="input-wrap">
+                    <h4 class="text-spaced">Node address (IP or domain name):</h4>
+                    <input data-initial="daemon_host" placeholder="127.0.0.1" name="nodeAddress" class="text-block" id="input-settings-daemon-address" style="padding: 12px 8px;"></input>
+                    <span class="form-help">Type first few character(s) and select from public node list, or type to your own node address.</span>
+                </div>
+
+                <div class="input-wrap">
+                    <h4 class="text-spaced">Daemon or public node port:</h4>
+                    <input data-initial="daemon_port" placeholder="11898" class="text-block" id="input-settings-daemon-port" style="padding: 12px 8px;"></input>
+                </div>
+
+                <div class="input-wrap">
+                        <label class="checkbox-container">
+                            <h4 type="checkbox" data-initial="tray_minimize" class="text-spaced checkbox-text">Minimize to system tray?</h4>
+                            <input data-initial="tray_minimize" type="checkbox" id="checkbox-tray-minimize">
+                            <span class="checkmark"></span>
+                        </label>
+                </div>
+                <div class="input-wrap">
+                        <label class="checkbox-container">
+                            <h4 type="checkbox" data-initial="tray_close" class="text-spaced checkbox-text">Close to system tray instead of quit?</h4>
+                            <input data-initial="tray_close" type="checkbox" id="checkbox-tray-close">
+                            <span class="checkmark"></span>
+                        </label>
+                </div>
+                
+                <div class="input-wrap">
+                    <span class="form-ew text-spaced-error" id="text-settings-error"></span>
+                    <span class="form-ew text-spaced-success" id="text-settings-success"></span>
+                </div>
+
+
+                <div class="input-wrap button-wrap">
+                    <button type="button" class="form-bt button-green" id="button-settings-save">Save</button>
+                    <button type="button" class="form-bt button-red" data-section="section-welcome" id="button-settings-back">Back</button>
+                    <!--<button type="button" class="button-red" data-section="section-overview" id="button-load-cancel">Cancel</button>-->
+                </div>
             </div>
-            
-            <span class="text-spaced-error" id="text-settings-error"></span>
-            <span class="text-spaced-success" id="text-settings-success"></span>
         </div>
-        
-        <div class="div-buttons">
-            <button type="button" class="button-green" id="button-settings-save">Save</button>
-            <!--<button type="button" class="button-red" data-section="section-overview" id="button-load-cancel">Cancel</button>-->
-        </div>
-    
-        <script>require('../js/settings.js')</script>
+        <!-- <script>require('../js/settings.js')</script> -->
     </section>
 </template>
+

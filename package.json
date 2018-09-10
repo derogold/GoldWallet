@@ -1,19 +1,25 @@
 {
   "name": "walletshell",
-  "version": "0.1.0",
+  "productName": "trtlwalletshell",
+  "version": "0.3.0",
   "description": "",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "debug": "electron . debug"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "electron": "^1.8.4"
+    "devtron": "^1.4.0",
+    "electron": "^3.0.0-beta.8",
+    "electron-packager": "^12.1.1"
   },
   "dependencies": {
-    "electron-settings": "^3.1.4",
-    "jayson": "^2.0.5"
+    "electron-store": "^2.0.0",
+    "qr-image": "^3.2.0",
+    "request": "^2.88.0",
+    "request-promise-native": "^1.0.5"
   }
 }
