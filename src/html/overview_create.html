@@ -1,35 +1,42 @@
 <template>
     <section class="section" id="section-overview-create">
-        <div class="div-title">
-            <h2 class="title">Create a wallet</h2>
-        </div>
-        <div class="div-fields">
-            <h4 class="text-spaced">Select the folder where the wallet file will be generated:</h4>
-            <input class="text-block" id="input-create-path" style="padding: 12px 8px;"></input>
-            <button type="button" class="button-green" id="button-create-browse"><i class="far fa-folder-open"></i></button>
+        <div class="section-contents">
+            <div class="div-title">
+                <h2 class="title">Create a wallet</h2>
+            </div>
+            <div class="div-input">
+                <div class="input-wrap">
+                    <h4 class="text-spaced">Select the folder where the wallet file will be stored::</h4>
+                    <input data-initial="recentWalletDir" class="text-block path-input" id="input-create-path" style="padding: 12px 8px;"></input>
+                    <button data-selection="openDirectory" data-targetinput="input-create-path" type="button" class="button-green path-input-button" id="button-create-browse"><i class="fas fa-folder-open"></i></button>
+                </div>
+                <div class="input-wrap">
+                    <div class="div-create-name inline-block-div half-width">
+                        <h4 class="text-spaced">Filename for this wallet file:</h4>
+                        <input class="text-block" id="input-create-name"></input>
+                    </div>
 
-            <div class="div-create-name">
-                <h4 class="text-spaced">Type the name of the wallet file:</h4>
-                <input class="text-block" id="input-create-name"></input>
+                    <div class="div-create-password  inline-block-div half-width half-width-end">
+                        <h4 class="text-spaced">Set password to open this wallet:</h4>
+                        <input type="password" class="text-block" id="input-create-password"></input>
+                    </div>
+                </div>
+
+
+                <div class="div-create-messages input-wrap">
+                    <span class="form-ew text-spaced-error" id="text-create-error"></span>
+                    <span class="form-ew text-spaced-success" id="text-create-success"></span>
+                </div>
+                    
+                <div class="input-wrap button-wrap">
+                    <button type="button" class="form-bt button-green" id="button-create-create">Create</button>
+                    <button type="button" class="form-bt button-red" data-section="section-welcome" id="button-create-back">Cancel</button>
+                </div>
+
             </div>
 
-            <div class="div-create-password">
-                <h4 class="text-spaced">Type a password of your choice:</h4>
-                <input class="text-block" id="input-create-password"></input>
-            </div>
+            
         </div>
-
-        <div class="div-create-messages">
-            <span class="text-spaced-error" id="text-create-error"></span>
-            <span class="text-spaced-success" id="text-create-success"></span>
-        </div>
-        
-        <div class="div-buttons">
-            <button type="button" class="button-green" id="button-create-create">Create</button>
-            <button type="button" class="button-red" data-section="section-overview" id="button-create-back">Back</button>
-        </div>
-        
-        <script defer src="https://use.fontawesome.com/releases/v5.0.4/js/all.js"></script>
-        <script>require('../js/overview_create.js')</script>
+<!--         <script>require('../js/overview_create.js')</script> -->
     </section>
 </template>

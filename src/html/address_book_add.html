@@ -1,0 +1,40 @@
+<template>
+        <section class="section" id="section-addressbook-add">
+            <div class="section-contents">
+                <div class="div-title">
+                    <h2 class="title">Address Book</h2>
+                </div>
+                <div class="div-addressbook-input default-inputs">
+                    <div class="input-wrap">
+                        <h4 class="text-spaced">Name:</h4>
+                        <input placeholder="My Contact" class="text-block" id="input-addressbook-name" style="padding: 12px 8px;" />
+                        <span class="form-help">Give a unique name to make it easy to identify</span>
+                    </div>
+    
+                    <div class="input-wrap">
+                        <h4 class="text-spaced">Wallet Address</h4>
+                        <input placeholder="TRTLXX..." class="text-block" id="input-addressbook-wallet" style="padding: 12px 8px;" />
+                    </div>
+    
+                    <div class="input-wrap">
+                        <h4 class="text-spaced">Payment ID (optional):</h4>
+                        <input class="text-block" id="input-addressbook-paymentid" style="padding: 12px 8px;" />
+                    </div>
+                    
+                    <div class="input-wrap">
+                        <span class="form-ew text-spaced-error" id="text-addressbook-error"></span>
+                        <span class="form-ew text-spaced-success" id="text-addressbook-success"></span>
+                    </div>
+    
+    
+                    <div class="input-wrap button-wrap">
+                        <button type="button" class="form-bt button-green" id="button-addressbook-save">Save</button>
+                        <button type="button" class="form-bt button-red" data-section="section-addressbook" id="button-addressbook-back">Back</button>
+                        <!--<button type="button" class="button-red" data-section="section-overview" id="button-load-cancel">Cancel</button>-->
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+    
+    

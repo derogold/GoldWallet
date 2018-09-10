@@ -1,47 +1,63 @@
 <template>
     <section class="section" id="section-transactions">
-        <div class="div-transactions-page">
-            <h4 class="title" id="text-transactions-page">Page 0 of 0</h4>
-        </div>
-        <div class="div-transactions-sort">
-            <h4 class="title" style="display:inline; position:relative; left:50%;">Sort by: </h4>
-            <div class="combo" style="float:right;">
-                <select id="select-transactions-sort">
-                  <option value="date">Date</option>
-                  <option value="amount">Amount</option>
-                  <option value="hash">Hash</option>
-                  <option value="payid">Payment Id</option>
-                </select>
+        <div class="section-contents">
+            <div class="div-title">
+                <h2 class="title">Transactions</h2>
             </div>
-            <button type="button" class="button-green" id="button-transactions-sort">
-                <i class="fas fa-chevron-up" id="icon-transactions-sort"></i>
-            </button>
-        </div>
-        <div class="div-transactions-table">
-            <table class="custom-table" id="transactions-table">
-                <colgroup>
-                    <col style="width:100%">
-                </colgroup>
-                <tbody id="transactions-table-body">
-                    <tr>
-                        <th id="header-transactions">Transactions</th>
-                    </tr>
-                    <tr>
-                        <td>Hit the "Refresh" button to fill this table with transactions</td>
-                    </tr>
-                </tbody>
-            </table> 
-        </div>
+            <div class="transaction-header-wrap float-wrapx">
+                <div class="div-transactions-page">
+                    <h4 class="trx-page-header" id="text-transactions-page">Page 0 of 0</h4>
+                </div>
+                <div class="div-transactions-sort">
+                    <div class="float-wrapx" style="text-align: right;">
+                        <h4 class="trx-page-header trx-sort-label">Sort by: </h4>
 
-        <div class="div-buttons">
-            <button type="button" class="button-green" id="button-transactions-<<"><<</button>
-            <button type="button" class="button-green" id="button-transactions-<"><</button>
-            <button type="button" class="button-green" id="button-transactions-refresh">Refresh</button>
-            <button type="button" class="button-green" id="button-transactions->">></button>
-            <button type="button" class="button-green" id="button-transactions->>">>></button>
-        </div>
+                        <div class="combo trx-sort-select">
+                            <select id="select-transactions-sort">
+                            <option value="date">Date</option>
+                            <option value="amount">Amount</option>
+                            <option value="hash">Hash</option>
+                            <option value="payid">Payment Id</option>
+                            </select>
+                            <button type="button" class="button-green trx-sort-button noborder" id="button-transactions-sort">
+                                <i class="fas fa-chevron-up" id="icon-transactions-sort"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-        <script defer src="https://use.fontawesome.com/releases/v5.0.4/js/all.js"></script>
-        <script>require('../js/transactions.js')</script>
+            <div class="div-transactions-table">
+                <table class="custom-table" id="transactions-table">
+                    <!-- <colgroup>
+                        <col style="width:100%">
+                    </colgroup> -->
+                    <tbody id="transactions-table-body">
+                        <tr>
+                            <th id="header-transactions">Transactions</th>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="progfiller">
+                                    <span>Collecting transaction data...</span>
+                                    <progress></progress>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table> 
+            </div>
+
+            <div class="input-wrap button-wrap" style="padding: 0;margin-top: 1rem;">
+                <button type="button" class="button-green" id="button-transactions-first"><<</button>
+                <button type="button" class="button-green" id="button-transactions-prev"><</button>
+                <button type="button" class="button-green" id="button-transactions-refresh">Refresh</button>
+                <button type="button" class="button-green" id="button-transactions-next">></button>
+                <button type="button" class="button-green" id="button-transactions-last">>></button>
+            </div>
+        </div>
     </section>
+
+
+
 </template>

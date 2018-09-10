@@ -1,0 +1,59 @@
+<template>
+    <section class="section" id="section-overview-import-key">
+        <div class="section-contents">
+            <div class="div-title">
+                <h2 class="title">Import Key</h2>
+            </div>
+            <div class="div-input">
+                <!--<h4 class="text-spaced">You can generate a wallet file with the private keys you were given.</h4>-->
+                <div class="input-wrap">
+                    <h4 class="text-spaced">Select the folder where the wallet file will be stored:</h4>
+                    <input data-initial="recentWalletDir" class="text-block path-input" id="input-import-path" style="padding: 12px 8px;"></input>
+                    <button data-selection="openDirectory" data-targetinput="input-import-path" type="button" class="button-green path-input-button" id="button-import-browse"><i class="fas fa-folder-open"></i></button>
+                </div>
+
+                <div class="input-wrap">
+                    <div class="div-import-name  inline-block-div half-width">
+                        <h4 class="text-spaced" style="display: inline;">Filename for this wallet file:</h4>
+                        <input class="text-block" id="input-import-name"></input>
+                    </div>
+                    
+
+                    <div class="div-import-password  inline-block-div half-width half-width-end">
+                        <h4 class="text-spaced" style="display: inline;">Set password to open this wallet:</h4>
+                        <input type="password" class="text-block" id="input-import-password"></input>
+                    </div>
+                </div>
+                <div class="input-wrap">
+                    <h4 class="text-spaced">View key to be imported:</h4>
+                    <input class="text-block" id="key-import-view" style="padding: 12px 8px;"></input>
+                </div>
+                <div class="input-wrap">
+                    <div class="inline-block-div half-width" style="width:64%;">
+                        <h4 class="text-spaced">Spend key to be imported:</h4>
+                        <input class="text-block" id="key-import-spend" style="padding: 12px 8px;"></input>
+                    </div>
+
+                    <div class="inline-block-div half-width half-width-end" style="width:30%;float:right;margin-right:1rem;">
+                        <h4 class="text-spaced">Scan Height (optional):</h4>
+                        <input type="number" min="0" step="1" class="text-block short-number" id="key-import-height" />
+                    </div>
+                </div>
+                
+                <div class="input-wrap">
+                    <span class="form-ew text-spaced-error" id="text-import-error"></span>
+                    <span class="form-ew text-spaced-success" id="text-import-success"></span>
+                </div>
+
+                <div class="input-wrap button-wrap">
+                        <button type="button" class="form-bt button-green" id="button-import-import">Import</button>
+                        <button type="button" class="form-bt button-red" data-section="section-welcome" id="button-import-back">Cancel</button>
+                </div>
+                
+            </div>
+            
+            
+        </div>
+        <!-- <script>require('../js/overview_import_key.js')</script> -->
+    </section>
+</template>
