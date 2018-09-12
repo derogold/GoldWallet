@@ -139,13 +139,13 @@ function createWindow () {
         }else if(app.prompExit){
             e.preventDefault();
 
-            let msg = 'Are you sure?';
-            if(wsession.loadedWalletAddress !== '') msg = 'Close your wallet and exit?';
+            let msg = 'Are you sure want to exit?';
+            if(wsession.loadedWalletAddress !== '') msg = 'Are you sure want to close your wallet and exit?';
 
             dialog.showMessageBox({
                 type: 'question',
                 buttons: ['Yes', 'No'],
-                title: 'Confirm',
+                title: 'Exit Confirmation',
                 message: msg
             }, function (response) {
                 if (response === 0) {
@@ -180,7 +180,6 @@ function createWindow () {
 function storeNodeList(pnodes){
     pnodes = pnodes || settings.get('pubnodes_data');
     if( pnodes.hasOwnProperty('nodes')){
-        global.wsession.nodeChoices = ['127.0.0.1:11898'];
         pnodes.nodes.forEach(element => {
             let item = `${element.url}:${element.port}`;
             global.wsession.nodeChoices.push(item);

@@ -314,7 +314,6 @@ function displayAddressBookEntry(event){
 
     let editBtn = document.getElementById('button-addressbook-panel-edit');
     editBtn.addEventListener('click', (event)=>{
-        console.log(this.dataset.hash);
         let entry = abook.get(this.dataset.hash);
         if(!entry){
             iqwerty.toast.Toast("Invalid address book entry.", {settings: {duration:1800}});

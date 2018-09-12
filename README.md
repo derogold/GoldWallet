@@ -8,7 +8,7 @@ It is meant to be able to work on Windows, Linux and MacOS, however so far we've
 
 ### Features:
 This wallet contains the basic functions required to manage your TurtleCoin wallet:
-  * Basic tasks: Open an existing wallet file, create new wallet file Import an existing wallet using keys or mnemonic seed
+  * Basic tasks: Open an existing wallet file, create new wallet file, import an existing wallet using keys or mnemonic seed
   * Wallet operations: display wallet balance, list transactions, send new transaction, display/export private keys &amp; mnemonic seed
   * Address book: store and label your contact's wallet address, searchable and can be looked up during sending new transaction
   * UI/Misc: Provides up-to-date public node address or specify your own local node, able to specify start scan height when importing wallet for faster sync, incoming transaction notification, minimize/close to system tray.

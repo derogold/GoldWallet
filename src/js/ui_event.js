@@ -6,6 +6,7 @@ const gutils = require('./gutils');
 const svcmain = require('./svc_main.js');
 const settings = new Store({name: 'Settings'});
 const abook = new Store({ name: 'AddressBook', encryptionKey: ['79009fb00ca1b7130832a42d','e45142cf6c4b7f33','3fe6fba5'].join('')});
+const Menu = remote.Menu;
 
 let win = remote.getCurrentWindow();
 ipcRenderer.on('cleanup', (event, message) => {
@@ -34,6 +35,8 @@ ipcRenderer.on('cleanup', (event, message) => {
     });
 });
 
+
+
 document.addEventListener('DOMContentLoaded', () => {
     var enterableInputs = document.querySelectorAll('.section input');
     Array.from(enterableInputs).forEach( (el) => {
@@ -45,6 +48,18 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     });
+
+    const pasteMenu = Menu.buildFromTemplate([
+        { label: 'Paste', role: 'paste'}
+    ]);
+    
+    let editableInputs = document.querySelectorAll('textarea:not([readonly]), input:not([readonly]');
+    Array.from(editableInputs).forEach( (el) => {
+        el.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            pasteMenu.popup(remote.getCurrentWindow());
+        }, false);
+    });
 }, false);
 
 /* section switcher */
@@ -54,9 +69,9 @@ function changeSection (sectionId) {
     let section = document.getElementById(sectionId);
     Array.prototype.forEach.call(sections, function (section) {
         section.classList.remove('is-shown');
-    });    
-    section.classList.add('is-shown');
+    });
 
+    section.classList.add('is-shown');
     const btn = document.querySelector(`.btn-active`);
     if(btn) btn.classList.remove('btn-active');
     if(sectionId.trim() === 'section-welcome') sectionId = 'section-overview';
@@ -441,7 +456,7 @@ function initBaseEvent(){
 
         function onError(err){
             formStatusClear();
-            console.log(err);
+            //console.log(err);
             formStatusMsg('load','error', err);
             return false;
         }
@@ -477,8 +492,10 @@ function initBaseEvent(){
         });
     });
 
-    document.getElementById('button-overview-closewallet').addEventListener('click', () => {
-        if(!confirm('Are you sure you want to close your wallet?')) return;
+    document.getElementById('button-overview-closewallet').addEventListener('click', (event) => {
+        event.preventDefault();
+        if(!confirm('Are you sure want to close your wallet?')) return;
+
         let dialog = document.getElementById('main-dialog');
         let htmlStr = '<div class="div-save-main" style="text-align: center;padding:1rem;"><i class="fas fa-spinner fa-pulse"></i><span style="padding:0px 10px;">Saving &amp; closing your wallet...</span></div>';
         gutils.innerHTML(dialog, htmlStr);

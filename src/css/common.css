@@ -219,7 +219,7 @@ body {
 /* Text */
 .text-block {
     font-family: 'Roboto', sans-serif;
-    padding: 12px 20px;
+    padding: 12px 10px;
     margin: 8px 0;
     display: block;
     border: 1px solid #ccc;
@@ -440,6 +440,7 @@ input.short-number{
 .button-green,
 .button-red{
     padding: 4px 8px;
+    margin-right: 0.25rem;
 }
 
 .button-gray.small,
@@ -527,6 +528,7 @@ input.short-number{
     width: 87.7%;
     margin: 0 auto;
     height: 92.9%;
+    user-select: none;
 }
 .section-contents{
     padding: 1rem 3rem 0 3rem;
@@ -555,7 +557,7 @@ text-shadow: 0px -1px 0px #333;
 
 .dev-welcome-bottom{
 position: absolute;
-bottom: 18%;
+bottom: 12%;
 left: 0;
 width: 100%;
 text-align: center;
@@ -1132,6 +1134,23 @@ div#header-transactions{
 
 .addressbook-table th{
     cursor: pointer;
+}
+
+.addressbook-table th.sort.asc:after{
+    content:'\2191';
+    padding:  0 0 0 4px;
+    font-size:smaller;
+    bottom: 3px;
+    position:relative;
+
+}
+
+.addressbook-table th.sort.desc:after{
+    content:'\2193';
+    padding:  0 0 0 4px;
+    font-size:smaller;
+    bottom: 3px;
+    position:relative;
 }
 
 

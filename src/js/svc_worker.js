@@ -81,7 +81,6 @@ function saveWallet(){
 }
 
 function workOnTasks(){
-
     taskWorker = setInterval(() => {
         checkBlockUpdate();
         if(TASK_COUNTER > 3){
