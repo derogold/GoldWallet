@@ -4,21 +4,20 @@
             <div class="div-title">
                 <h2 class="title">Show private keys</h2>
             </div>
-
             <div class="div-input">
-                <div class="input-wrap">
+                <div class="input-wrap" title="click to copy">
                     <h4 class="text-spaced">Your view key:</h4>        
                     <input type="text" class="text-block ctcl" id="key-show-view" readonly="readonly" />
                 </div>
 
-                <div class="input-wrap">
+                <div class="input-wrap" title="click to copy">
                     <h4 class="text-spaced">Your spend key:</h4>
                     <input type="text" class="text-block  ctcl" id="key-show-spend" readonly="readonly" />
                 </div>
 
-                <div class="input-wrap">
+                <div class="input-wrap" title="click to copy">
                     <h4>Mnemonic Seed</h4>
-                    <textarea class="default-textarea  ctcl" id="seed-show" readonly="readonly" rows="3"></textarea>
+                    <textarea  class="default-textarea  ctcl" id="seed-show" readonly="readonly" rows="3"></textarea>
                 </div>
                 <div class="input-wrap">
                     <span class="text-spaced-warning">
@@ -28,17 +27,14 @@
                 </div>
                 <div class="input-wrap">
                     <span class="form-ew text-spaced-error" id="text-secret-error"></span>
+                    <span class="form-ew text-spaced-success" id="text-secret-success"></span>
                 </div>
                 <div class="input-wrap button-wrap">
                     <button type="button" class="form-bt button-green" id="button-show-reveal">Reveal</button>
+                    <button type="button" class="form-bt button-green" id="button-show-export">Export to file</button>
                     <button type="button" class="form-bt button-red" data-section="section-overview" id="button-show-back">Back</button>
-                </div>
-                
+                </div>  
             </div>
-            
-            
         </div>
-        
-        <!-- <script>require('../js/overview_show.js')</script> -->
     </section>
 </template>

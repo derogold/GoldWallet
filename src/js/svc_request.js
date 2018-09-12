@@ -1,6 +1,5 @@
 const request = require('request-promise-native');
 
-
 var svcRequest = function(args){
     args = args || {};
     if (!(this instanceof svcRequest)) return new svcRequest(args);
@@ -10,10 +9,11 @@ var svcRequest = function(args){
     this.tx_fee = (args.tx_fee !== undefined) ? args.tx_fee : 0.1;
 };
 
-svcRequest.prototype._sendRequest = function (method, params) {
+svcRequest.prototype._sendRequest = function (method, params, timeout) {
     return new Promise((resolve, reject) => {
       if (method.length === 0) return reject(new Error('Invalid Method'));
       params = params || {};
+      timeout = timeout || 3000;
   
       let data = {
         jsonrpc: '2.0',
@@ -31,7 +31,7 @@ svcRequest.prototype._sendRequest = function (method, params) {
         method: 'POST',
         body: data,
         json: true,
-        timeout: 3000,
+        timeout: timeout
       }).then((res) => {
         if(!res) return resolve(true);
 
@@ -233,8 +233,8 @@ svcRequest.prototype.sendTransaction = function (params) {
 
         if(params.paymentId) req_params.paymentId = params.paymentId;
 
-        
-        this._sendRequest('sendTransaction', req_params).then((result) => {
+        // give extra long timeout
+        this._sendRequest('sendTransaction', req_params, 6000).then((result) => {
             return resolve(result);
         }).catch((err) => {
             return reject(err);

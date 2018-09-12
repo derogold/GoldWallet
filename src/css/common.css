@@ -183,8 +183,10 @@ body {
 
 .navbar-button:active,
 .navbar-button.btn-active{
-    background-color: #4d524d;
+    background-color: #4d634d;
 }
+
+
 
 .navbar-button .navbar-label{
     display: none;
@@ -303,7 +305,8 @@ input.short-number{
     letter-spacing: 1px;
     background:rgba(203, 0, 0, 1); 
     font-weight: bold; 
-    padding: 2px 3px;
+    padding: 2px 4px;
+    display: inline-block;
     opacity: 1;
 }
 
@@ -311,7 +314,8 @@ input.short-number{
     letter-spacing: 1px;
     background:#d14500; 
     font-weight: bold;
-    display: inline-grid;
+    padding: 2px 4px;
+    display: inline-block;
     opacity: 1;
 }
 
@@ -319,6 +323,8 @@ input.short-number{
     letter-spacing: 1px;
     background: #00662f; 
     font-weight: bold; 
+    padding: 2px 4px;
+    display: inline-block;
     opacity: 1;
 }
 
@@ -344,8 +350,38 @@ input.short-number{
 .div-buttons button{
     margin-right: 0.35rem;
 }
+.button-gray {
+    /* padding: 8px 12px; */
+    border: 2px solid #ccc;
+    border-radius: 4px;
+    font-family: 'Roboto', sans-serif;
+    font-size: 1.15em;
+    color: white;
+    /*background-color: #00632e;*/
+    /* background: -webkit-linear-gradient(top,  #00632e 0%,#00843d 100%); */
+    background: linear-gradient(45deg,  #676767 0%,#888888 100%);
+    text-transform: uppercase;
+    text-shadow: 3px 3px 3px rgba(255,255,255, .2);
+    transition: all 0.15s ease;
+}
+
+.button-gray:hover {
+    transition: all 0.15s ease;
+    box-shadow: 4px 4px 4px rgba(0,0,0,.29), inset 0px 0px 4px rgba(0,0,0, .5);
+}
+
+.button-gray:active {
+    background: -webkit-linear-gradient(top,  #00843d 0%,#339d64 100%);
+}
+
+.button-gray:focus {
+    outline: none;
+    transition: all 0.15s ease;
+    box-shadow: 4px 4px 4px rgba(0,0,0,.29), inset 0px 0px 4px rgba(0,0,0, .5);
+}
+
 .button-green {
-    padding: 8px 12px;
+    /* padding: 8px 12px; */
     border: 2px solid #ccc;
     border-radius: 4px;
     font-family: 'Roboto', sans-serif;
@@ -374,7 +410,7 @@ input.short-number{
 }
 
 .button-red {
-    padding: 8px 12px;
+    /* padding: 8px 12px; */
     border: 2px solid #ccc;
     border-radius: 4px;
     font-family: 'Roboto', sans-serif;
@@ -400,11 +436,23 @@ input.short-number{
     outline: none;
 }
 
+.button-gray,
+.button-green,
+.button-red{
+    padding: 4px 8px;
+}
+
+.button-gray.small,
+.button-green.small,
+.button-red.small{
+    padding: 2px 8px;
+    font-size: 1rem;
+}
+
 /* Tooltips */
 /* Tooltip container */
 .tooltip {
     position: relative;
-    /*display: inline-block;*/
 }
 
 /* Tooltip text */
@@ -688,6 +736,7 @@ display: block;
     text-align: right;
     padding: 1rem 1rem 0 0;
     float: right;
+    margin-bottom: 2.5rem;
 }
 
 .qr-col img{
@@ -701,6 +750,17 @@ span.form-help-qr{
     margin-top: 0;
 }
 
+
+dialog {
+    visibility: hidden;
+    transform: scale(0.1);
+    transition: transform 200ms visibility 200ms ease-in-out;
+}
+
+dialog[open]{
+    visibility: visible;
+    transform: scale(1);
+}
 
 .default-dialog{
     width: 500px;
@@ -761,6 +821,10 @@ span.form-help-qr{
     text-shadow: 0px -1px 1px #333;
 }
 
+.transfer-dialog{
+    width: 99px;
+}
+
 dialog::backdrop{
     background: rgba(0,25,15,0.70);
 }
@@ -775,7 +839,7 @@ span.form-help-qr.hidden{
 
 .status-node-info{
     width: 100%;
-    padding: 0.25rem 2rem;
+    padding: 0.25rem 0.5rem;
     font-size: 0.85rem;
     color: #fefefe;
     background: rgba(0,25,15,0.70);
@@ -917,6 +981,18 @@ span.form-help-qr.hidden{
 .trx-sort-button{
     padding: 0px 4px;
 }
+
+div#header-transactions{
+    clear: both;
+    position: relative;
+    top: 2rem;
+    border: 3px solid rgba(255, 255, 255, 0.06);
+    background: rgba(31, 31, 31, 0.5);
+    padding: 0.15rem 0;
+    text-align: center;
+    font-weight: 600;
+}
+
 /*
 #button-transactions-sort {
     position: relative;
@@ -939,9 +1015,11 @@ span.form-help-qr.hidden{
 
 .div-transactions-table {
     width: 100%;
-    margin-top: 5rem;
+    margin-top: 34px;
     padding: 0;
     clear: both;
+    overflow-y: auto;
+    max-height: 62%;
 }
 
 #transactions-table:hover {
@@ -1055,20 +1133,18 @@ span.form-help-qr.hidden{
 .addressbook-table th{
     cursor: pointer;
 }
+
+
 .addressbook-table tr td{
     /* word-wrap: break-word; */
+    cursor: pointer;
 }
 
 .addressbook-table tr[data-hash="null"]{
     display: none;   
 }
 
-.addressbook-table td.addressName{
-    font-weight: 600;
-    cursor: pointer;
-    width: 15%;
-    word-wrap:break-word;
-}
+.addressbook-table td.addressName,
 .addressbook-table td.addressWallet,
 .addressbook-table td.addressPaymentId{
     text-overflow:ellipsis;
@@ -1113,32 +1189,62 @@ span.form-help-qr.hidden{
     word-wrap: break-word;
 }
 
-.addressBookDetail-data dl{
+.addressBookDetail-data dl,
+.transferDetail dl
+{
     margin: 0;
     padding: 0;
     font-size:0.85rem
 
 }
 
-.addressBookDetail-data dt{
+.addressBookDetail-data dt,
+.transferDetail dt{
     font-weight: normal;
     margin:0;
     padding:0;
 
 }
 
-.addressBookDetail-data dd{
+.addressBookDetail-data dd,
+.transferDetail dd
+{
     margin: 0 0 1rem 0;
     overflow:hidden;
     text-overflow: ellipsis;
     font-weight:600
 }
 
-.autocomplete-wallet-addr{
-    font-size:0.7rem;
-    display:inline-block;
-    padding-bottom:0.2rem;
+.transferDetail{
+    color:#fff;
 }
+
+.transferDetail dt{
+    font-size: 1rem;
+}
+.transferDetail dd{
+    font-size: 0.75rem;
+    overflow: visible;
+    word-wrap: break-word;
+    color: #fffb00;
+}
+
+dt.dt-ib{
+    display: inline-block;
+    padding-right: 0.25rem;
+}
+
+dd.dd-ib{
+    display: inline-block;
+    width:80%;
+}
+
+/* autocomplete **/
+.autocomplete-suggestions {text-align: left; cursor: default; border: 1px solid #ccc; border-top: 0; background: #fff; box-shadow: -1px 1px 3px rgba(0,0,0,.1);position: absolute; display: none; z-index: 9999; max-height: 254px; overflow: hidden; overflow-y: auto; box-sizing: border-box;}
+.autocomplete-suggestion { position: relative; padding: 0 .6em; line-height: 23px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 1.02em; color: #333; }
+.autocomplete-suggestion b { font-weight: normal; color: #1f8dd6; }
+.autocomplete-suggestion.selected { background: #f0f0f0; }
+.autocomplete-wallet-addr{font-size:0.7rem; display:inline-block; padding-bottom:0.2rem;}
 
 div.about-links{
     margin-top: 2rem;

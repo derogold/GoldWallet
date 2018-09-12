@@ -1,54 +1,63 @@
 # WalletShell
 
-![Overview Tab](https://image.ibb.co/d9ovhH/overview.png "Overview Tab")
-
 This is a GUI wallet for TurtleCoin made using Electron, this means it's written in JavaScript, HTML and CSS. 
-It is meant to be able to work on Windows, Linux and MacOS, however so far I've only been able to test it on Windows.
 
-As of now, this wallet contains the basic functions required to operate with TurtleCoin, this includes:
-  * Load a wallet file
-  * Generate a new wallet container file
-  * Import an existing wallet using keys
-  * Show private keys
-  * See balance and transactions
-  * Send TurtleCoin
+It is meant to be able to work on Windows, Linux and MacOS, however so far we've only been able to test it on Linux &amp; Windows.
 
-There is still plenty of room for improvements and features, so I will gladly accept help from anyone who is capable of lending a hand. Right now the code is still in beta phase with some rough edges and should be polished in order to make a proper release.
+![WalletShell Screens](https://raw.githubusercontent.com/rixombea/turtle-wallet-electron/wssx/sc/wssc.gif "WalletShell Screens")
 
-### How to Use
+### Features:
+This wallet contains the basic functions required to manage your TurtleCoin wallet:
+  * Basic tasks: Open an existing wallet file, create new wallet file Import an existing wallet using keys or mnemonic seed
+  * Wallet operations: display wallet balance, list transactions, send new transaction, display/export private keys &amp; mnemonic seed
+  * Address book: store and label your contact's wallet address, searchable and can be looked up during sending new transaction
+  * UI/Misc: Provides up-to-date public node address or specify your own local node, able to specify start scan height when importing wallet for faster sync, incoming transaction notification, minimize/close to system tray.
 
-Once you got WalletShell running (see the sections below), you will need to specify the path to walletd.exe in the Settings tab (the cog icon in the top left). Walletd comes with the turtlecoin .zip, and will not work with a versions below 0.3.1.
+There is still plenty of room for improvements and features, so we will gladly accept help from anyone who is capable of lending a hand.
 
-Now you can switch back to the Overview and click the 'Load Wallet' button to start using WalletShell. If you don't have a wallet file you can generate a new one with the 'Create Wallet' button or import one using your private keys with the 'Import Wallet' button.
+### Notes
 
-### How to Launch
+WalletShell relies on `turtle-service` to manage wallet container &amp; rpc communication.
 
-You need to have `Node.js` and `npm` installed to launch WalletShell. You can download the Node installer from https://nodejs.org/ and it comes bundled with `npm`. The versions I used are `v9.4.0` for Node and `5.8.0` for npm however it might work with older versions.
+WalletShell release packaged includes ready to use `turtle-service` binary, which is unmodified copy TurtleCoin release archive.
 
-Once you have Node installed and this repository downloaded to some folder, `cd` into that folder and use the command `npm install`. This will install the dependencies of WalletShell to a `node_modules` folder that you need in order to run the wallet. The dependencies are:
+On first launch, WalletShell will try to detect location/path of bundled `turtle-service` binary, but if it's failed, can set path to the `turtle-service` binary on the Settings tab.
 
+If you don't trust the bundled `turtle-service` file, you can compare the sha256 sum against one from the official release, or just download and use binary from official TurtleCoin release, which you can download here: https://github.com/turtlecoin/turtlecoin/releases. Then,  make sure to update your `turtle-service` path setting.
+
+### Download &amp; Run WalletShell
+
+* Download latest packaged release for your platform here: https://github.com/rixombea/turtle-wallet-electron/releases
+
+* Extract downloaded file
+* Open/Run the wallet executable, located in the extracted directory:  
+  * GNU/Linux: `walletshell-<version>-linux/walletshell`
+  * Windows: `walletshell-<version>-windows/walletshell.exe`
+  * macOS: ?? `walletshell-<version>-osx/walletshell.app/Contents/MacOs/walletshell` ??
+
+
+### Build
+You need to have `Node.js` and `npm` installed, go to https://nodejs.org and find out how to get it installed on your platform.
+
+Once you have Node installed:
 ```
-  "devDependencies": {
-    "electron": "^1.8.4"
-  },
-  "dependencies": {
-    "electron-settings": "^3.1.4",
-    "jayson": "^2.0.5"
-  }
+# clone the repo
+git clone https://github.com/turtlecoin/turtle-wallet-electron
+cd turtle-wallet-electron
+
+# install dependencies
+npm install
+
+# build GNU/Linux package
+npm run linpack
+
+# build Windows package
+npm run winpack
+
+# build OSX package
+npm run osxpack
 ```
 
-Now all you need to do is type `npm start` and the wallet should launch.
+Find the binary in a ready to package folder for each platform inside `build` subdirectory.
 
-### How to Build
 
-You can build it manually following the [Application Distribution](https://electronjs.org/docs/tutorial/application-distribution) guide in the Electron documentation. 
-
-However the easiest way I have tried so far is using a npm package called `electron-packager`. In order to do so you need to install it globally by typing `npm install electron-packager -g`. 
-
-Now you can build WalletShell by typing:
-
-`electron-packager <path_source> --out <path_out> --asar`
-
-Where `<path_source>` is the path to your folder and `<path_out>` is the path to the folder where the app is going to be generated.
-
-Using that command will generate a build for the platform and architecture you are currently using. You can use the `--platform=<platform>` and `--arch=<arch>` optional flags if you want to build it for something else. You can check https://github.com/electron-userland/electron-packager for extra info regarding this tool.

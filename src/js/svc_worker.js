@@ -1,9 +1,7 @@
 const svcRequest = require('./svc_request.js');
-const util = require('util');
-
-const CHECK_INTERVAL = 5 * 1000; 
 
 //var LAST_KNOW_BALANCE = 0.00;
+const CHECK_INTERVAL = 5 * 1000; 
 var BLOCK_COUNT_LOCAL = 1;
 var BLOCK_COUNT_NETWORK = 1;
 var SERVICE_CFG = null; // { service_host: '127.0.0.1', service_port: '8070', service_password: 'xxx'};
@@ -127,7 +125,7 @@ process.on('message', (msg) => {
             
             break;
         case 'stop':
-            if(!util.isNullOrUndefined(taskWorker)){
+            if(taskWorker === undefined || taskWorker === null){
                 try{
                     console.log(`${LOGPREFIX} stopping request, clearing tasks`);
                     clearInterval(taskWorker);
