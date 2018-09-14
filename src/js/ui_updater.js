@@ -20,6 +20,18 @@ const connAddrText = document.getElementById('status-node-addr');
 const connFeeText = document.getElementById('status-node-fee');
 const connWarnText = document.getElementById('status-node-warning');
 
+function toggleProgressExtra(show){
+    const progressExtra = document.querySelectorAll('.block-progress-extra');
+    show = show || false;
+    Array.from(progressExtra).forEach( (el) => {
+        if(show){
+            el.classList.remove('hidden');
+        }else{
+            el.classList.add('hidden');
+        }
+    });
+}
+
 function setWinTitle(title){
     let defaultTitle = remote.getGlobal('wsession').defaultTitle;
     let newTitle = defaultTitle;
@@ -36,15 +48,12 @@ function updateSyncProgres(data){
 
     // restore/reset
     if(knownBlockCount === -100){
+        //toggleProgressExtra(false);
         syncDiv.className = '';
         syncText.innerHTML = 'IDLE';
-        //syncCountText.innerHTML = '';
         gutils.clearChild(syncCountText);
-        //syncKnownText.innerHTML = '';
         gutils.clearChild(syncKnownText);
-        //syncSlash.innerHTML = '';
         gutils.clearChild(syncSlash);
-        //syncPercent.innerHTML = '';
         gutils.clearChild(syncPercent);
         
         iconSync.setAttribute('data-icon', 'pause-circle');
@@ -58,6 +67,7 @@ function updateSyncProgres(data){
         setWinTitle();
     }else if(knownBlockCount <=1){
         // not connected
+        //toggleProgressExtra(false);
         syncDiv.className = 'failed';
         syncText.innerHTML = 'NOT CONNECTED';
         gutils.clearChild(syncCountText);
@@ -86,13 +96,12 @@ function updateSyncProgres(data){
         if(blockCount+1 >= knownBlockCount && knownBlockCount != 0) {
             syncDiv.classList = 'synced';
             syncText.innerHTML = 'SYNCED ';
-            //syncPercent.innerHTML = '';
             gutils.clearChild(syncPercent);
             iconSync.setAttribute('data-icon', 'check');
             iconSync.classList.remove('fa-spin');
             remote.getGlobal('wsession').synchronized = true;
             remote.getGlobal('wsession').syncStarted = true;
-            
+            //toggleProgressExtra(false);
         } else {
             syncDiv.className = 'syncing';
             syncText.innerHTML = 'SYNCING ';
@@ -102,6 +111,7 @@ function updateSyncProgres(data){
             iconSync.classList.add('fa-spin');
             remote.getGlobal('wsession').syncStarted = true;
             remote.getGlobal('wsession').synchronized = false;
+            //toggleProgressExtra(true);
         }
 
         let nFee = remote.getGlobal('wsession').nodeFee;

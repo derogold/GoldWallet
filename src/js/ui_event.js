@@ -80,6 +80,13 @@ function changeSection (sectionId) {
     if(activeBtn) activeBtn.classList.add('btn-active');
 }
 
+function showToast(msg, duration){
+    duration = duration || 1800;
+    if(!document.getElementById('datoaste')){
+        iqwerty.toast.Toast(msg, {settings: {duration:duration}});
+    }
+}
+
 var NODES_COMPLETION;
 var ADDR_COMPLETION;
 /* basic listeners */
@@ -111,16 +118,12 @@ function initBaseEvent(){
                   && !remote.getGlobal('wsession').serviceReady
             ){
                 changeSection('section-welcome');
-                if(!document.getElementById('datoaste')){
-                    iqwerty.toast.Toast("Please create/open your wallet!", {settings: {duration:1800}});
-                }
+                showToast("Please create/open your wallet!");
             }else if(targetSection === 'section-welcome' && remote.getGlobal('wsession').serviceReady){
                 // the opposite
                 changeSection('section-overview');
             }else if(targetSection === 'section-send' && syncText !== 'SYNCED'){
-                if(!document.getElementById('datoaste')){
-                    iqwerty.toast.Toast("Please wait until syncing process completed!", {settings: {duration:1800}});
-                }
+                showToast("Please wait until syncing process completed!");
                 return;
             }else{
                 if(button.getAttribute('id')) svcmain.onSectionChanged(button.getAttribute('id'));
@@ -136,7 +139,7 @@ function initBaseEvent(){
         el.select();
         if(!wv.length) return;
         clipboard.writeText(wv);
-        iqwerty.toast.Toast('Copied to clipboard!', {settings: {duration:1800}});
+        showToast('Copied to clipboard!');
     });
 
     gutils.liveEvent('.tctcl', 'click', (event) => {
@@ -145,7 +148,7 @@ function initBaseEvent(){
         gutils.selectText(el);
         if(!wv.length) return;
         clipboard.writeText(wv);
-        iqwerty.toast.Toast('Copied to clipboard!', {settings: {duration:1800}});
+        showToast('Copied to clipboard!');
     });
 
     let walletAddressInput = document.getElementById('wallet-address');
@@ -736,7 +739,7 @@ ${keys.mnemonicSeed}`;
             settings.set('recentWalletDir', createPathField.value);
             document.getElementById('input-load-path').value = walletFile;
             document.getElementById('button-welcome-openwallet').click();
-            iqwerty.toast.Toast('Wallet has been created, you can now open your wallet!', {settings: {duration:8000}});
+            showToast('Wallet has been created, you can now open your wallet!',8000);
         }).catch((err) => {
             formStatusMsg('create', 'error', err);
             return;
@@ -768,7 +771,7 @@ ${keys.mnemonicSeed}`;
             settings.set('recentWalletDir', importKeyPathField.value);
             document.getElementById('input-load-path').value = walletFile;
             document.getElementById('button-welcome-openwallet').click();
-            iqwerty.toast.Toast('Wallet has been imported, you can now open your wallet!', {settings: {duration:8000}});
+            showToast('Wallet has been imported, you can now open your wallet!', 8000);
         }).catch((err) => {
             formStatusMsg('import', 'error',err);
             return;
@@ -799,7 +802,7 @@ ${keys.mnemonicSeed}`;
             settings.set('recentWalletDir', importSeedPathField.value);
             document.getElementById('input-load-path').value = walletFile;
             document.getElementById('button-welcome-openwallet').click();
-            iqwerty.toast.Toast('Wallet has been imported, you can now open your wallet!', {settings: {duration:8000}});
+            showToast('Wallet has been imported, you can now open your wallet!', 8000);
         }).catch((err) => {
             formStatusMsg('import-seed', 'error',err);
             return;
@@ -878,6 +881,22 @@ ${keys.mnemonicSeed}`;
         dialog.showModal();
     }
 
+    function sortAmount(a, b){
+        var aVal = parseFloat(a._values.amount.replace(/[^0-9.-]/g, ""));
+        var bVal = parseFloat(b._values.amount.replace(/[^0-9.-]/g, ""));
+        if (aVal > bVal) return 1;
+        if (aVal < bVal) return -1;
+        return 0;
+    }
+
+    function resetTxSortMark(){
+        let sortedEl = document.querySelectorAll('#transaction-lists .asc, #transaction-lists .desc');
+        Array.from(sortedEl).forEach((el)=>{
+            el.classList.remove('asc');
+            el.classList.remove('desc');
+        });
+    }
+
     function listTransactions(){
         if(remote.getGlobal('wsession').txLen <=0) return;
         let txs = remote.getGlobal('wsession').txNew;
@@ -893,19 +912,16 @@ ${keys.mnemonicSeed}`;
                 }]; 
             }
             TXLIST = new List('transaction-lists', txListOpts, txs);
-            txSortTimeButton.click();
+            TXLIST.sort('timestamp', {order: 'desc'});
+            resetTxSortMark();
+            txSortTimeButton.classList.add('desc');
         }else{
             TXLIST.add(txs);
-            txSortTimeButton.click();
+            TXLIST.sort('timestamp', {order: 'desc'});
+            resetTxSortMark();
+            txSortTimeButton.classList.add('desc');
+            //showToast(`Transaction list updated`);
         }
-    }
-
-    function sortAmount(a, b){
-        var aVal = parseFloat(a._values.amount.replace(/[^0-9.-]/g, ""));
-        var bVal = parseFloat(b._values.amount.replace(/[^0-9.-]/g, ""));
-        if (aVal > bVal) return 1;
-        if (aVal < bVal) return -1;
-        return 0;
     }
  
     txSortAmountButton.addEventListener('click',(event)=>{
@@ -913,13 +929,7 @@ ${keys.mnemonicSeed}`;
         let currentDir = event.target.dataset.dir;
         let targetDir = (currentDir === 'desc' ? 'asc' : 'desc');
         event.target.dataset.dir = targetDir;
-        
-        let sortedEl = document.querySelectorAll('.asc, .desc');
-        Array.from(sortedEl).forEach((el)=>{
-            el.classList.remove('asc');
-            el.classList.remove('desc');
-        });
-
+        resetTxSortMark();
         event.target.classList.add(targetDir);
         TXLIST.sort('amount', {
             order: targetDir,
@@ -932,21 +942,14 @@ ${keys.mnemonicSeed}`;
         let currentDir = event.target.dataset.dir;
         let targetDir = (currentDir === 'desc' ? 'asc' : 'desc');
         event.target.dataset.dir = targetDir;
-        let sortedEl = document.querySelectorAll('.asc, .desc');
-        Array.from(sortedEl).forEach((el)=>{
-            el.classList.remove('asc');
-            el.classList.remove('desc');
-        });
-
+        resetTxSortMark();
         event.target.classList.add(targetDir);
         TXLIST.sort('timestamp', {
             order: targetDir
         });
     });
 
-    refreshButton.addEventListener('click', (event) => {
-        listTransactions();
-    });
+    refreshButton.addEventListener('click', listTransactions);
     /** ------------------ END Transaction --------------------- */
 }
 initBaseEvent();

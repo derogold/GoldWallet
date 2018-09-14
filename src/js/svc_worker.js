@@ -1,7 +1,7 @@
 const svcRequest = require('./svc_request.js');
 
 //var LAST_KNOW_BALANCE = 0.00;
-const CHECK_INTERVAL = 3 * 1000;
+const CHECK_INTERVAL = 5 * 1000;
 var BLOCK_COUNT_LOCAL = 1;
 var BLOCK_COUNT_NETWORK = 1;
 var LAST_BLOCK_COUNT_LOCAL = 0;
@@ -34,7 +34,7 @@ function checkBlockUpdate(){
 
             if(LAST_BLOCK_COUNT_LOCAL !== BLOCK_COUNT_LOCAL || !TX_CHECK_STARTED){
                 let newBlocks = (BLOCK_COUNT_LOCAL - LAST_BLOCK_COUNT_LOCAL);
-                if( newBlocks >= 2 ){
+                if( newBlocks >= 4 ){
                     //console.log(`${newBlocks} block detected (${BLOCK_COUNT_LOCAL}), check for new transaction...`);
                     checkTransactionsUpdate();
                     LAST_BLOCK_COUNT_LOCAL = BLOCK_COUNT_LOCAL;
