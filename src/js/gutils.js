@@ -3,7 +3,6 @@ const crypto = require('crypto');
 const {nativeImage} = require('electron');
 const qr = require('qr-image');
 
-
 /***** * DOM util *****/
 exports.triggerEvent = (el, type) => {
     var e = document.createEvent('HTMLEvents');
@@ -16,11 +15,6 @@ function addEvent(el, type, handler) {
 }
 
 exports.liveEvent = (selector, event, callback, context) => {
-    // addEvent(context || document, event, function(e) {
-    //     var found, el = e.target || e.srcElement;
-    //     while (el && el.matches && el !== context && !(found = el.matches(selector))) el = el.parentElement;
-    //     if (found) callback.call(el, e);
-    // });
     addEvent(context || document, event, function(e) {
         var qs = (context || document).querySelectorAll(selector);
         if (qs) {
@@ -64,14 +58,29 @@ exports.arrShuffle = (arr) => {
     return arr.map((a) => ({sort: Math.random(), value: a}))
         .sort((a, b) => a.sort - b.sort)
         .map((a) => a.value)
-        // shuffle(a,b,c,d){//array,placeholder,placeholder,placeholder
-        //     c=a.length;while(c)b=Math.random()*c--|0,d=a[c],a[c]=a[b],a[b]=d
-        //    }
 };
 
 exports.mergeObj = (obj, src) => {
     Object.keys(src).forEach(function(key) { obj[key] = src[key]; });
     return obj;
+};
+
+exports.uniqueObjArr = (objArr, key) => {
+    key = key || 'id';
+    return [...new Set( objArr.map(item => item[key]) )];
+};
+
+exports.diffObjArr = (objArr1, ObjArr2, key) => {
+    let objArrKeys = objArr1.map((item) => { return item[key] });
+    let diff = objArr2.filter((item) => {
+        return objArrKeys.indexOf(item[key]) === -1;
+    });
+    return diff;
+};
+
+exports.objInArray = (targetObjArr, objToSearch, objKey) => {
+    let pos = targetObjArr.map((e) => {return e[objKey]; }).indexOf(objToSearch[objKey]);
+    return pos !== -1;
 };
 
 exports.b2sSum = (inputStr) =>  {

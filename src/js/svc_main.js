@@ -37,6 +37,7 @@ function resetGlobals(){
     remote.getGlobal('wsession').txLen = 0;
     remote.getGlobal('wsession').txLastHash = '';
     remote.getGlobal('wsession').txLastTimestamp = '';
+    remote.getGlobal('wsession').txNew = [];
     onSectionChanged('reset-oy');
 }
 

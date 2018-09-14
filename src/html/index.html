@@ -1,20 +1,17 @@
 <!doctype html>
 <html>
     <head>
-        <!-- Imported assets -->
         <meta http-equiv="Content-Security-Policy" 
             content="default-src 'none'; script-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self' https://atom.io https://gh-contractor-zcbenz.s3.amazonaws.com; img-src 'self' file: data:; style-src 'self' 'unsafe-inline'; media-src 'self'">
         <script defer src="../js/extras/fontawesome-solid.min.js"></script>
         <script defer src="../js/extras/toast.js"></script>
         <script defer src="../js/extras/list.min.js"></script>
-        <link rel="stylesheet" href="../css/font-Roboto.css">
         <!-- CSS stylesheets -->
+        <link rel="stylesheet" href="../css/font-Roboto.css">
         <link rel="stylesheet" href="../css/common.css">
-        <link rel="stylesheet" href="../css/auto-complete.css">         
         <!-- HTML pages (each page contains a section) -->
         <link rel="import" href="./about.html">
         <link rel="import" href="./settings.html">
-        <!-- <link rel="import" href="./help.html"> -->
         <link rel="import" href="./transactions.html">
         <link rel="import" href="./send.html">
         <link rel="import" href="./welcome.html">
@@ -28,23 +25,7 @@
         <link rel="import" href="./address_book_add.html">
     </head>
 
-    <body>
-        <!-- Titlebar with minimize, maximize, restore and close buttons-->
-        <!-- <div class="titlebar">
-            <p class="titlebar-title" id="wallet-main-title">
-                <span id="tt-brand">TurtleCoin</span>
-                <span id="tt-wallet"></span>
-                <span id="tt-balance"></span>
-            </p>
-            <button title="Settings" type="button" class="titlebar-button" data-section="section-settings" id="titlebar-button-settings"><i class="fas fa-cog"></i></button>
-            <button title="About" type="button" class="titlebar-button" data-section="section-about" id="titlebar-button-about"><i class="fas fa-info"></i></button>
-            
-            <button type="button" class="titlebar-button" id="titlebar-button-minimize"><i class="fas fa-window-minimize"></i></button>
-            <button type="button" class="titlebar-button" id="titlebar-button-maximize"><i class="fas fa-window-maximize"></i></button>
-            <button type="button" class="titlebar-button" id="titlebar-button-restore"><i class="fas fa-window-restore"></i></button>
-            <button type="button" class="titlebar-button" id="titlebar-button-close"><i class="fas fa-times"></i></button>
-        </div> -->
-    
+    <body>    
         <!-- Top navbar -->
         <div class="navbar">
             <!-- being honest im not sure if this is the best way to do this -->
@@ -94,8 +75,7 @@
         <dialog id="main-dialog" class="default-dialog"></dialog>
         <dialog id="tx-dialog" class="tx-dialog"></dialog>
         <dialog id="ab-dialog" class="default-dialog address-book-dialog"></dialog>
-        <dialog id="tf-dialog" class="default-dialog transfer-dialog"></dialog>
+        <dialog id="tf-dialog" class="tx-dialog"></dialog>
         <script>require('../js/ui_event.js')</script>
     </body>
 </html>
-

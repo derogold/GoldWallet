@@ -2,17 +2,10 @@ const electron = require('electron');
 const remote = electron.remote;
 const Store = require('electron-store');
 const settings = new Store({name: 'Settings'});
-const abook = new Store({
-    name: 'AddressBook', 
-    encryptionKey: ['79009fb00ca1b7130832a42d','e45142cf6c4b7f33','3fe6fba5'].join('')
-});
+const abook = new Store({name: 'AddressBook',  encryptionKey: ['79009fb00ca1b7130832a42d','e45142cf6c4b7f33','3fe6fba5'].join('')});
 
 const gutils = require('./gutils');
 const brwin = remote.getCurrentWindow();
-
-//const genQrcode = require('./svc_main').getQrDataUrl;
-
-
 
 /* sync progress ui */
 const syncDiv = document.getElementById('navbar-div-sync');
@@ -27,8 +20,17 @@ const connAddrText = document.getElementById('status-node-addr');
 const connFeeText = document.getElementById('status-node-fee');
 const connWarnText = document.getElementById('status-node-warning');
 
-// const titleWalletFileDiv = document.getElementById('tt-wallet');
-// const titleBalanceDiv = document.getElementById('tt-balance');
+function toggleProgressExtra(show){
+    const progressExtra = document.querySelectorAll('.block-progress-extra');
+    show = show || false;
+    Array.from(progressExtra).forEach( (el) => {
+        if(show){
+            el.classList.remove('hidden');
+        }else{
+            el.classList.add('hidden');
+        }
+    });
+}
 
 function setWinTitle(title){
     let defaultTitle = remote.getGlobal('wsession').defaultTitle;
@@ -46,15 +48,12 @@ function updateSyncProgres(data){
 
     // restore/reset
     if(knownBlockCount === -100){
+        //toggleProgressExtra(false);
         syncDiv.className = '';
         syncText.innerHTML = 'IDLE';
-        //syncCountText.innerHTML = '';
         gutils.clearChild(syncCountText);
-        //syncKnownText.innerHTML = '';
         gutils.clearChild(syncKnownText);
-        //syncSlash.innerHTML = '';
         gutils.clearChild(syncSlash);
-        //syncPercent.innerHTML = '';
         gutils.clearChild(syncPercent);
         
         iconSync.setAttribute('data-icon', 'pause-circle');
@@ -64,22 +63,16 @@ function updateSyncProgres(data){
         connInfoDiv.classList.add('hidden');
         connAddrText.innerHTML = 'N/A';
         connFeeText.innerHTML = 'N/A';
-        //connWarnText.innerHTML = '';
         gutils.clearChild(connWarnText);
-        //gutils.clearChild(titleWalletFileDiv);
-        //gutils.clearChild(titleBalanceDiv);
         setWinTitle();
     }else if(knownBlockCount <=1){
         // not connected
+        //toggleProgressExtra(false);
         syncDiv.className = 'failed';
         syncText.innerHTML = 'NOT CONNECTED';
-        //syncCountText.innerHTML = '';
         gutils.clearChild(syncCountText);
-        //syncKnownText.innerHTML = '';
         gutils.clearChild(syncKnownText);
-        //syncSlash.innerHTML = '';
         gutils.clearChild(syncSlash);
-        //syncPercent.innerHTML = '';
         gutils.clearChild(syncPercent);
 
         iconSync.setAttribute('data-icon', 'times');
@@ -90,7 +83,6 @@ function updateSyncProgres(data){
         connFeeText.innerHTML = '<span style="color:yellow;">N/A</span>';
         connWarnText.innerHTML = '- Connection failed, try switching to another Node in settings page, close and reopen your wallet';
     }else{
-        //document.getElementById('status-node-warning').innerHTML = '';
         gutils.clearChild(connWarnText);
         let dispKnownBlockCount = (knownBlockCount-1);
         let dispBlockCount = (blockCount > dispKnownBlockCount ? dispKnownBlockCount : blockCount);
@@ -104,13 +96,12 @@ function updateSyncProgres(data){
         if(blockCount+1 >= knownBlockCount && knownBlockCount != 0) {
             syncDiv.classList = 'synced';
             syncText.innerHTML = 'SYNCED ';
-            //syncPercent.innerHTML = '';
             gutils.clearChild(syncPercent);
             iconSync.setAttribute('data-icon', 'check');
             iconSync.classList.remove('fa-spin');
             remote.getGlobal('wsession').synchronized = true;
             remote.getGlobal('wsession').syncStarted = true;
-            
+            //toggleProgressExtra(false);
         } else {
             syncDiv.className = 'syncing';
             syncText.innerHTML = 'SYNCING ';
@@ -120,6 +111,7 @@ function updateSyncProgres(data){
             iconSync.classList.add('fa-spin');
             remote.getGlobal('wsession').syncStarted = true;
             remote.getGlobal('wsession').synchronized = false;
+            //toggleProgressExtra(true);
         }
 
         let nFee = remote.getGlobal('wsession').nodeFee;
@@ -128,7 +120,6 @@ function updateSyncProgres(data){
         document.getElementById('status-node-fee').innerHTML = (nFee ? "TRTL " + nFee : '-');
     }
 }
-
 
 function updateBalance(data){
     const balanceAvailableField = document.querySelector('#balance-available > span');
@@ -143,32 +134,33 @@ function updateBalance(data){
     let walletFile = require('path').basename(settings.get('recentWallet'));
     let wintitle = `(${walletFile}) - ${bUnlocked} TRTL`;
     setWinTitle(wintitle);
-    //document.getElementById('tt-balance').innerHTML = "- TRTL " + bUnlocked;
 }
 
-var FIRST_TX_CHECK = true;
-function updateTransactions(data){
-    //const result = data.result;
-    const blocks = data.items;
-    const newTxLen = blocks.length;
-    const currentTxLen = remote.getGlobal('wsession').txLen;
+function updateTransactions(result){
+    const blockItems = result.items;
+    if(!blockItems.length) return;
+    let txlistExisting = remote.getGlobal('wsession').txList;
+    let txListNew = [];
 
-    if(!newTxLen || newTxLen <= currentTxLen) return;
-
-    let txlist = [];
-    Array.prototype.forEach.call(blocks, block => {
-        Array.prototype.forEach.call(block.transactions, transaction => {
-            if(transaction.amount !== 0){
-                txlist.unshift(transaction);
+    Array.from(blockItems).forEach((block) => {
+        block.transactions.map((tx, index) => {
+            if(tx.amount !== 0 && !gutils.objInArray(txlistExisting, tx, 'transactionHash')){
+                tx.amount = (tx.amount/100).toFixed(2);
+                tx.timeStr = tx.timeStr = new Date(tx.timestamp * 1000).toDateString();
+                tx.fee = (tx.fee/100).toFixed(2);
+                tx.paymentId = tx.paymentId.length ? tx.paymentId : '-';
+                tx.txType = (tx.amount > 0 ? 'in' : 'out');
+                tx.rawAmount = tx.amount;
+                tx.rawFee = tx.fee;
+                tx.rawPaymentId = tx.paymentId;
+                tx.rawHash = tx.transactionHash;
+                txListNew.unshift(tx);
             }
         });
     });
 
-    if(!txlist.length) return;
-    
-    let oldLastHash = remote.getGlobal('wsession').txLastHash;
-    let oldLastTimestamp = remote.getGlobal('wsession').txLastTimestamp;
-    let latestTx = txlist[0];
+    if(!txListNew.length) return;
+    let latestTx = txListNew[0];
     let newLastHash = latestTx.transactionHash;
     let newLastTimestamp = latestTx.timestamp;
     let newTxAmount = latestTx.amount;
@@ -176,33 +168,46 @@ function updateTransactions(data){
     // store it
     remote.getGlobal('wsession').txLastHash = newLastHash;
     remote.getGlobal('wsession').txLastTimestamp = newLastTimestamp;
-    remote.getGlobal('wsession').txList = txlist;
-    remote.getGlobal('wsession').txLen = newTxLen;
+    remote.getGlobal('wsession').txList = txListNew.concat(remote.getGlobal('wsession').txList);
+    remote.getGlobal('wsession').txLen = remote.getGlobal('wsession').txList.length;
+    remote.getGlobal('wsession').txNew = txListNew;
+
     // date to compare
     let currentDate = new Date();
     currentDate = `${currentDate.getUTCFullYear()}-${currentDate.getUTCMonth()+1}-${currentDate.getUTCDate()}`
     let lastTxDate = new Date(newLastTimestamp*1000);
     lastTxDate = `${lastTxDate.getUTCFullYear()}-${lastTxDate.getUTCMonth()+1}-${lastTxDate.getUTCDate()}`
+    
     // amount to check
     let theAmount = (newTxAmount/100);
-
+    let rememberedLastHash = settings.get('last_notification', '');
     let notify = true;
+
     if(lastTxDate !== currentDate){
         notify = false;
     }else if(theAmount < 0){
         notify = false;
-    }else if(oldLastHash === newLastHash){
+    }else if(rememberedLastHash === newLastHash){
         notify = false;
     }
 
+    document.getElementById('button-transactions-refresh').click();
+
     if(notify){
+        settings.set('last_notification', newLastHash);
         let notiOptions = {
             'body': `Amount: ${(theAmount).toFixed(2)} TRTL<br>Hash: ${newLastHash.substring(24,-0)}...`,
             'icon': '../assets/walletshell_icon.png'
         };
-        new Notification('Incoming Transfer', notiOptions);
+        let itNotification = new Notification('Incoming Transfer', notiOptions);
+        itNotification.onclick = (event) => {
+            event.preventDefault();
+            document.getElementById('button-section-transactions').click();
+            if(!brwin.isVisible()) brwin.show();
+            if(brwin.isMinimized()) brwin.restore();
+            if(!brwin.isFocused()) brwin.focus();
+        }
     }
-    document.getElementById('button-transactions-refresh').click();
 }
 
 function showFeeWarning(fee){
@@ -222,7 +227,6 @@ function showFeeWarning(fee){
         <p style="text-align:center;margin-top: 1.25rem;"><button  type="button" class="form-bt button-green" id="dialog-end">OK, I Understand</button></p>
     `;
     
-    //dialog.innerHTML = htmlStr;
     gutils.innerHTML(dialog, htmlStr);
     let dialogEnd = document.getElementById('dialog-end');
     dialogEnd.addEventListener('click', (event) => {
@@ -234,7 +238,6 @@ function showFeeWarning(fee){
     dialog = document.getElementById('main-dialog');
     dialog.showModal();
     dialog.addEventListener('close', function(){
-        //dialog.innerHTML = '';
         gutils.clearChild(dialog);
         const overviewBtn = document.getElementById('button-section-overview');
         const connectedNodeAddr = settings.get('daemon_host');
@@ -242,7 +245,6 @@ function showFeeWarning(fee){
         document.getElementById('status-node-addr').innerHTML = `${connectedNodeAddr}:${connectedNodePort}`;
         document.getElementById('status-node-fee').innerHTML = `TRTL ${fee}`;
         overviewBtn.click();
-        //dialog.removeEventListener('close');
     });
 }
 
@@ -284,21 +286,22 @@ function displayAddressBookEntry(event){
                 <div class="addressBookDetail-data">
                     <dl>
                         <dt>Name:</dt>
-                        <dd class="ctcl" title="click to copy">${this.dataset.nameval}</dd>
+                        <dd class="tctcl" title="click to copy">${this.dataset.nameval}</dd>
                         <dt>Wallet Address:</dt>
-                        <dd class="ctcl" title="click to copy">${this.dataset.walletval}</dd>
+                        <dd class="tctcl" title="click to copy">${this.dataset.walletval}</dd>
                         <dt>Payment Id:</dt>
-                        <dd class="ctcl" title="click to copy">${this.dataset.paymentidval ? this.dataset.paymentidval : '-'}</dd>
+                        <dd class="tctcl" title="click to copy">${this.dataset.paymentidval ? this.dataset.paymentidval : '-'}</dd>
                     </dl>
                 </div>
             </div>
         </div>
         <div class="div-panel-buttons">
+                <button data-addressid="${this.dataset.hash}" type="button" class="form-bt button-green" id="button-addressbook-panel-edit">Edit</button>
                 <button type="button" class="form-bt button-red" id="button-addressbook-panel-delete">Delete</button>
-                <button data-addressid="${this.dataset.hash}" type="button" class="form-bt button-green" id="button-addressbook-panel-close">Close</button>
+                <button data-addressid="${this.dataset.hash}" type="button" class="form-bt button-gray" id="button-addressbook-panel-close">Close</button>
         </div>
    `;
-   //dialog.innerHTML = tpl;
+
    gutils.innerHTML(dialog, tpl);
    // get new dialog
    dialog = document.getElementById('ab-dialog');
@@ -306,7 +309,6 @@ function displayAddressBookEntry(event){
    document.getElementById('button-addressbook-panel-close').addEventListener('click', (event) => {
         let abdialog = document.getElementById('ab-dialog');
         abdialog.close();
-        //abdialog.innerHTML = '';
         gutils.clearChild(abdialog);
     });
 
@@ -327,12 +329,33 @@ function displayAddressBookEntry(event){
             }
         }
     });
+
+    let editBtn = document.getElementById('button-addressbook-panel-edit');
+    editBtn.addEventListener('click', (event)=>{
+        let entry = abook.get(this.dataset.hash);
+        if(!entry){
+            iqwerty.toast.Toast("Invalid address book entry.", {settings: {duration:1800}});
+        }else{
+            const nameField = document.getElementById('input-addressbook-name');
+            const walletField = document.getElementById('input-addressbook-wallet');
+            const payidField = document.getElementById('input-addressbook-paymentid');
+            const updateField = document.getElementById('input-addressbook-update');
+            nameField.value = entry.name;
+            walletField.value = entry.address;
+            payidField.value = entry.paymentId;
+            updateField.value = 1;
+        }
+        document.querySelector('[data-section="section-addressbook-add"]').click();
+        let axdialog = document.getElementById('ab-dialog');
+        axdialog.close();
+        gutils.clearChild(axdialog);
+        
+    });
 }
 
 gutils.liveEvent('.addressbook-item','click',displayAddressBookEntry);
 function listAddressBook(force){
     force = force || false;
-    //let currentLength = document.querySelectorAll('.addressbook-item').length;
     let currentLength = document.querySelectorAll('.addressbook-item:not([data-hash="fake-hash"])').length
     let abookLength =abook.size;
     let perPage = 9;
@@ -402,8 +425,6 @@ function resetFormState(initiator){
     }
 }
 
-
-
 // update ui state, push from svc_main
 function updateUiState(msg){
     // do something with msg
@@ -431,5 +452,4 @@ function updateUiState(msg){
             break;
     }
 }
-
 module.exports = {updateUiState};

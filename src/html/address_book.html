@@ -5,14 +5,14 @@
                     <h2 class="title">Address Book</h2>
                 </div>
                 <div class="div-addressbook-input default-inputs">
-                    <div class="scroll-list-wrap addressbook-list">
+                    <div class="scroll-list-wrap addressbook-list list-tables">
                         <div id="addressbooks">
                             <input class="text-block search" placeholder="Search" />
                             <div class="address-table-wrapper">
                             <table class="custom-table addressbook-table" id="addressbook-table">
                             <thead>
                                 <tr>
-                                    <th class="sort" data-sort="addressName">Name</th>
+                                    <th style="width:35%;" class="sort" data-sort="addressName">Name</th>
                                     <th class="sort" data-sort="addressWallet">Wallet Address</th>
                                     <th class="sort" data-sort="addressPaymentId">Payment ID</th>
                                 </tr>
@@ -35,16 +35,11 @@
                           </div>
                     </div>
                     
-    
-    
                     <div class="input-wrap button-wrap" style="margin-top: 0;">
                         <button type="button" class="form-bt button-green" data-section="section-addressbook-add">Add New Entry</button>
                         <button type="button" class="form-bt button-red" data-section="section-overview">Back</button>
-                        <!--<button type="button" class="button-red" data-section="section-overview" id="button-load-cancel">Cancel</button>-->
                     </div>
                 </div>
-            </div>
-        </section>
-    </template>
-    
-    
+        </div>
+    </section>
+</template>

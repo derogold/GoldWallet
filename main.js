@@ -1,39 +1,31 @@
-const {app, BrowserWindow, dialog, Tray, Menu} = require('electron');
+const {app, BrowserWindow, dialog, Tray, Menu, NativeImage} = require('electron');
 const path = require('path');
 const url = require('url');
-//const ipc = require('electron').ipcMain;
 const https = require('https');
-const os = require('os');
+const platform = require('os').platform();
 const crypto = require('crypto');
-const fs = require('fs');
 const Store = require('electron-store');
 const settings = new Store({name: 'Settings'});
 
-const platform = os.platform;
-const defaultFallbackNodes = [
-    '127.0.0.1:11898',
+const IS_DEBUG = (process.argv[1] === 'debug' || process.argv[2] === 'debug');
+const SERVICE_FILENAME =  (platform === 'win32' ? 'turtle-service.exe' : 'turtle-service' );
+const DEFAULT_SERVICE_BIN = path.join(process.resourcesPath, SERVICE_FILENAME);
+const DEFAULT_TITLE = 'TurtleCoin Wallet';
+const PUBLIC_NODES_URL = 'https://raw.githubusercontent.com/turtlecoin/turtlecoin-nodes-json/master/turtlecoin-nodes.json';
+const FALLBACK_NODES = [
     'public.turtlenode.io:11898',
     'public.turtlenode.net:11898',
 ];
-const defaultTitle = 'TurtleCoin Wallet';
-const isDebug = (process.argv[1] === 'debug' || process.argv[2] === 'debug');
-const publicNodesUrl = 'https://raw.githubusercontent.com/turtlecoin/turtlecoin-nodes-json/master/turtlecoin-nodes.json';
-
-const binFilename =  (platform === 'win32' ? 'turtle-service.exe' : 'turtle-service' );
-const defaultServiceBin = path.join(process.resourcesPath, binFilename);
-console.log(`default turtle-service bin: ${defaultServiceBin}`);
-
-// default settings
-var DEFAULT_SETTINGS = {
-    service_bin: defaultServiceBin,
+const DEFAULT_SETTINGS = {
+    service_bin: DEFAULT_SERVICE_BIN,
     service_host: '127.0.0.1',
     service_port: 8070,
     service_password: crypto.randomBytes(32).toString('hex'),
     daemon_host: '127.0.0.1',
     daemon_port: 11898,
     pubnodes_date: null,
-    pubnodes_data: defaultFallbackNodes,
-    pubnodes_custom: [],
+    pubnodes_data: FALLBACK_NODES,
+    pubnodes_custom: ['127.0.0.1:11898'],
     tray_minimize: false,
     tray_close: false
 }
@@ -42,10 +34,24 @@ let win;
 app.prompExit = true;
 app.needToExit = false;
 
+let trayIcon = path.join(__dirname,'src/assets/tray_24x24.png');
+if(platform === 'darwin'){
+    trayIcon = path.join(__dirname,'src/assets/tray.icns');
+}else if(platform === 'win32'){
+    trayIcon = path.join(__dirname,'src/assets/tray.ico');
+}
+
+let trayIconHide = path.join(__dirname,'src/assets/trayon_24x24.png');
+if(platform === 'darwin'){
+    trayIconHide = path.join(__dirname,'src/assets/trayon.icns');
+}else if(platform === 'win32'){
+    trayIconHide = path.join(__dirname,'src/assets/trayon.ico');
+}
+
 function createWindow () {
     // Create the browser window.
     win = new BrowserWindow({
-        title: defaultTitle,
+        title: DEFAULT_TITLE,
         icon: path.join(__dirname,'src/assets/walletshell_icon.png'),
         frame: true,//frame: false,
         width: 800,
@@ -56,34 +62,30 @@ function createWindow () {
         backgroundColor: '#02853e',
     });
 
-    const tray = new Tray(path.join(__dirname,'src/assets/trtl_tray.png'));
-    tray.setTitle(defaultTitle);
-    tray.setToolTip('Slow and steady wins the race!');
     let contextMenu = Menu.buildFromTemplate([
         { label: 'Minimize to tray', click: () => { win.hide(); }},
         { label: 'Quit', click: ()=> {
-                // if(!win.isVisible()) win.show();
-                // if(win.isMinimized()) win.restore();
-                // win.focus();
                 app.needToExit = true;
                 win.close();
             }
         }
     ]);
+    // linux default;
+    const tray = new Tray(trayIcon);
+    tray.setPressedImage(trayIconHide);
+    tray.setTitle(DEFAULT_TITLE);
+    tray.setToolTip('Slow and steady wins the race!');
     tray.setContextMenu(contextMenu);
-    
     tray.on('click', () => {
         win.isVisible() ? win.hide() : win.show();
     });
 
     win.on('show', () => {
         tray.setHighlightMode('always');
+        tray.setImage(trayIcon);
         contextMenu = Menu.buildFromTemplate([
             { label: 'Minimize to tray', click: () => { win.hide();} },
             { label: 'Quit', click: ()=> {
-                    // if(!win.isVisible()) win.show();
-                    // if(win.isMinimized()) win.restore();
-                    // win.focus();
                     app.needToExit = true;
                     win.close();
                 }
@@ -94,12 +96,11 @@ function createWindow () {
 
     win.on('hide', () => {
         tray.setHighlightMode('never');
+        tray.setImage(trayIconHide);
+
         contextMenu = Menu.buildFromTemplate([
                 { label: 'Restore', click: () => { win.show();} },
                 { label: 'Quit', click: ()=> {
-                    // if(!win.isVisible()) win.show();
-                    // if(win.isMinimized()) win.restore();
-                    // win.focus();
                     app.needToExit = true;
                     win.close();
                 }
@@ -123,12 +124,12 @@ function createWindow () {
     }));
 
     // open devtools
-    if(isDebug ) win.webContents.openDevTools();
+    if(IS_DEBUG ) win.webContents.openDevTools();
 
     // show windosw
     win.once('ready-to-show', () => {
         win.show();
-        win.setTitle(defaultTitle);
+        win.setTitle(DEFAULT_TITLE);
     })
 
     win.on('close', (e) => {
@@ -137,14 +138,14 @@ function createWindow () {
             win.hide();
         }else if(app.prompExit){
             e.preventDefault();
-            let msg = 'Are you sure?';
-            if(wsession.loadedWalletAddress !== ''){
-                msg = 'Close your wallet and exit?';
-            }
+
+            let msg = 'Are you sure want to exit?';
+            if(wsession.loadedWalletAddress !== '') msg = 'Are you sure want to close your wallet and exit?';
+
             dialog.showMessageBox({
                 type: 'question',
                 buttons: ['Yes', 'No'],
-                title: 'Confirm',
+                title: 'Exit Confirmation',
                 message: msg
             }, function (response) {
                 if (response === 0) {
@@ -161,22 +162,24 @@ function createWindow () {
     win.on('closed', () => {
         win = null;
     });
+
     win.setMenu(null);
 
     // misc handler
     win.webContents.on('crashed', (event, killed) => { 
-        if(isDebug) console.log('webcontent was crashed', event, killed);
+        // todo: prompt to restart
+        if(IS_DEBUG) console.log('webcontent was crashed', event, killed);
     });
 
     win.on('unresponsive', (even) => {
-        if(isDebug) console.log('unresponsive!');
+        // todo: prompt to restart
+        if(IS_DEBUG) console.log('unresponsive!');
     });
 }
 
 function storeNodeList(pnodes){
     pnodes = pnodes || settings.get('pubnodes_data');
     if( pnodes.hasOwnProperty('nodes')){
-        global.wsession.nodeChoices = ['127.0.0.1:11898'];
         pnodes.nodes.forEach(element => {
             let item = `${element.url}:${element.port}`;
             global.wsession.nodeChoices.push(item);
@@ -186,7 +189,7 @@ function storeNodeList(pnodes){
 }
 
 function doNodeListUpdate(){
-    https.get(publicNodesUrl, (res) => {
+    https.get(PUBLIC_NODES_URL, (res) => {
         var result = '';
         res.setEncoding('utf8');
 
@@ -199,13 +202,13 @@ function doNodeListUpdate(){
                 var pnodes = JSON.parse(result);
                 let today = new Date();
                 storeNodeList(pnodes);
-                if(isDebug) console.log('nodelist has been updated');
+                if(IS_DEBUG) console.log('nodelist has been updated');
                 let mo = (today.getMonth()+1);
                 settings.set('pubnodes_date', `${today.getFullYear()}-${mo}-${today.getDate()}`);
             }catch(e){
-                if(isDebug) console.log('failed to parse json data', e);
-                if(isDebug) console.log('type of input', typeof d);
-                if(isDebug) console.log(JSON.stringify(d));
+                if(IS_DEBUG) console.log('failed to parse json data', e);
+                if(IS_DEBUG) console.log('type of input', typeof d);
+                if(IS_DEBUG) console.log(JSON.stringify(d));
                 storeNodeList();
             }
         });
@@ -226,6 +229,7 @@ function initSettings(){
 const silock = app.requestSingleInstanceLock()
 app.on('second-instance', (commandLine, workingDirectory) => {
     if (win) {
+        if (!win.isVisible()) win.show();
         if (win.isMinimized()) win.restore();
         win.focus();
     }
@@ -245,6 +249,7 @@ app.on('ready', () => {
         txLen: 0,
         txLastHash: '',
         txLastTimestamp: '',
+        txNew: [],
         tmpPath: app.getPath('temp'),
         dataPath: app.getPath('userData'),
         nodeFee: null,
@@ -252,11 +257,11 @@ app.on('ready', () => {
         servicePath: settings.get('service_bin'),
         configUpdated: false,
         uiStateChanged: false,
-        defaultTitle: defaultTitle,
-        debug: isDebug
+        defaultTitle: DEFAULT_TITLE,
+        debug: IS_DEBUG
     };
 
-    if(isDebug) console.log('Running in debug mode');
+    if(IS_DEBUG) console.log('Running in debug mode');
 
     let today = new Date();
     let last_checked = new Date(settings.get('pubnodes_date'));
@@ -272,10 +277,6 @@ app.on('ready', () => {
     createWindow();
 });
 
-// app.on('before-quit', () => {
-//   connection.terminateWallet();
-// })
-
 // Quit when all windows are closed.
 app.on('window-all-closed', () => {
     // On macOS it is common for applications and their menu bar
@@ -290,20 +291,20 @@ app.on('activate', () => {
 });
 
 process.on('uncaughtException', function (err) { 
-    if(isDebug) console.log(err);
+    if(IS_DEBUG) console.log(err);
     process.exit(1);
 });
 
 process.on('beforeExit', (code) => {
-    if(isDebug) console.log(`beforeExit code: ${code}`);
+    if(IS_DEBUG) console.log(`beforeExit code: ${code}`);
 });
 
 process.on('exit', (code) => {
-    if(isDebug) console.log(`exit with code: ${code}`);
+    if(IS_DEBUG) console.log(`exit with code: ${code}`);
 });
 
 process.on('warning', (warning) => {
-    if(isDebug){
+    if(IS_DEBUG){
         console.warn(warning.name);
         console.warn(warning.message);
         console.warn(warning.code);

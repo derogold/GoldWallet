@@ -6,7 +6,10 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "debug": "electron . debug"
+    "debug": "electron . debug",
+    "linpack": "./node_modules/.bin/electron-packager . walletshell  --overwrite --asar --platform=linux --arch=x64 --icon=build/icon.png --prune=true --out=build --extra-resource=tbin/lin/turtle-service",
+    "winpack": "./node_modules/.bin/electron-packager . walletshell  --overwrite --asar --platform=win32 --arch=x64 --icon=build/icon.ico --prune=true --out=build --version-string.CompanyName=TRTL --version-string.FileDescription=TRTL --version-string.ProductName=\"TurtleCoin Electron Wallet\" --extra-resource=tbin/win/turtle-service.exe",
+    "osxpack": "./node_modules/.bin/electron-packager . walletshell  --overwrite --asar --platform=darwin --arch=x64 --icon=build/icon.icns --prune=true --out=build --extra-resource=tbin/osx/turtle-service"
   },
   "keywords": [],
   "author": "",
