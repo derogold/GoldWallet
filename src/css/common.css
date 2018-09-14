@@ -945,128 +945,6 @@ span.form-help-qr.hidden{
 
 
 /** TRX **/
-.transaction-header-wrap h4{
-    text-shadow: 0px -1px 1px #333;
-}
-.div-transactions-page {
-    float:left;
-    width: 45%;
-    height: 30px;
-}
-
-.div-transactions-sort {
-    float: right;
-    width: 40%;
-    height: 30px;
-}
-
-.trx-sort-label{
-    display: inline-block;
-}
-
-.trx-sort-select{
-    display: inline-block;
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    border-radius: 3px;
-    background-color: rgba(84, 255, 84, 0.1);
-    padding: 0px 0px 1px 6px;
-}
-
-.trx-sort-select select{
-    font-family: 'Roboto', sans-serif;
-    background: transparent;
-    border: none;
-    font-size: 1rem;
-    font-weight: 500;
-    color: #194725;
-}
-.trx-sort-button{
-    padding: 0px 4px;
-}
-
-div#header-transactions{
-    clear: both;
-    position: relative;
-    top: 2rem;
-    border: 3px solid rgba(255, 255, 255, 0.06);
-    background: rgba(31, 31, 31, 0.5);
-    padding: 0.15rem 0;
-    text-align: center;
-    font-weight: 600;
-}
-
-/*
-#button-transactions-sort {
-    position: relative;
-    float: right;
-    height: 25px;
-    width: 25px;
-    left: 41%;
-    bottom: 1px;
-    font-size: 1.35em;
-}
-
-#icon-transactions-sort {
-    position: relative;
-    margin: 0;
-    padding: 0;
-    right: 9px;
-    bottom: 10px;
-}
-*/
-
-.div-transactions-table {
-    width: 100%;
-    margin-top: 34px;
-    padding: 0;
-    clear: both;
-    overflow-y: auto;
-    max-height: 62%;
-}
-
-#transactions-table:hover {
-    cursor: pointer;
-}
-
-.div-transactions-row-txamount,
-.div-transactions-row-txdate{
-    display: inline-block;
-    width: 25%;
-}
-.div-transactions-row-txdate {
-    font-size: 0.83em;
-}
-
-.div-transactions-row-txhash,
-.div-transactions-row-txpayid{
-    display: inline-block;
-    width: 73%;
-    font-size: 0.83em;
-    display: inline-block;
-    width: 73%;
-    font-size: 0.83em;
-    text-overflow:ellipsis;
-    overflow:hidden;
-    white-space: nowrap
-}
-
-.div-transactions-row-txamount{
-    font-size: 0.9rem;
-}
-
-
-.tx-in .div-transactions-row-txamount{
-    color: #88e000;
-    font-weight: bold;
-    
-}
-
-
-.tx-out .div-transactions-row-txamount{
-    color: #FF9800;
-    font-weight: bold;
-}
-
 .noborder{
     border: none !important;
 }
@@ -1087,22 +965,19 @@ div#header-transactions{
 
 }
 
-.address-table-wrapper{
-    
-}
-
-.addressbook-list .search{
+.list-tables .search,
+.list-tables .csearch{
     width: 100%;
     font-size: 1rem;
     padding: 0.3rem 0.5em;
 }
 
-.addressbook-list .pagination{
+.list-tables .pagination{
     margin: 0.25rem 0 0 0;
     text-align:right;
 }
 
-.addressbook-list .pagination li{
+.list-tables .pagination li{
     display: inline-block;
     background-color: #00632e;    
     color: #fff;
@@ -1114,12 +989,12 @@ div#header-transactions{
     border: 1px solid rgba(255,255,255,0.5);
 }
 
-.addressbook-list .pagination li.active{
+.list-tables .pagination li.active{
     background-color: #212721;
 }
 
 
-.addressbook-list .pagination li a{
+.list-tables .pagination li a{
     color: #fff;
     font-size: 1.2rem;
     font-weight: 600;
@@ -1127,16 +1002,16 @@ div#header-transactions{
 
 }
 
-
 .pagination.single-page{
     display: none !important;
 }
 
-.addressbook-table th{
+.list-tables th{
     cursor: pointer;
 }
 
-.addressbook-table th.sort.asc:after{
+.list-tables th.sort.asc:after,
+.list-tables th.csort.asc:after{
     content:'\2191';
     padding:  0 0 0 4px;
     font-size:smaller;
@@ -1145,7 +1020,8 @@ div#header-transactions{
 
 }
 
-.addressbook-table th.sort.desc:after{
+.list-tables th.sort.desc:after,
+.list-tables th.csort.desc:after{
     content:'\2193';
     padding:  0 0 0 4px;
     font-size:smaller;
@@ -1154,7 +1030,7 @@ div#header-transactions{
 }
 
 
-.addressbook-table tr td{
+.list-tables tr td{
     /* word-wrap: break-word; */
     cursor: pointer;
 }
@@ -1281,6 +1157,118 @@ div.about-links a{
     line-height:normal;
 }
 
+/* NEW TX */
+.transaction-table-wrapper{
+    max-height: 420px;
+    height:80%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    margin-bottom: 0.5rem;
+}
+.tx-tools{
+    overflow:hidden;
+    padding: 0;
+    margin: -20px 0 0 00;
+    height:100%;
+}
+.tx-tools .tx-search{
+display: relative;
+float: left;
+width: 50%;
+}
+.tx-tools .tx-search input{
+    min-width: 300px;
+}
+.tx-tools .tx-sort{
+float: right;
+width:40%;
+text-align:right;
+padding: 10px 0 0 0;
+}
+
+.tx-tools .tx-sort .csort{
+    display:inline-block;
+    background: -webkit-linear-gradient(top,  #00632e 0%,#00843d 100%);
+    padding: 2px 10px;
+    border: 2px solid #ccc;
+    border-radius: 4px;
+    margin-left: 2px;
+}
+
+.csort.asc:after,
+.csort.asc:after{
+    content:'\2191';
+    padding:  0 0 0 4px;
+    font-size:smaller;
+    bottom: 3px;
+    position:relative;
+
+}
+
+.csort.desc:after,
+.csort.desc:after{
+    content:'\2193';
+    padding:  0 0 0 4px;
+    font-size:smaller;
+    bottom: 3px;
+    position:relative;
+}
+
+
+.transaction-list-table{
+    table-layout:unset;
+    width:99.8%;
+    border-spacing: 0px;
+    margin-bottom: 1rem;
+}
+
+
+.transaction-list-table td{
+    vertical-align: top;
+    font-size: 0.85rem;
+    border-bottom: 1px dashed rgba(0,0,0,.29);
+}
+
+.transaction-list-table td.txamount{
+    text-align:right;
+    padding-right: 0.75rem;
+    width: 20%;
+    min-width:120px !important;
+    max-width: 260px !important;
+    font-size: 1.25rem;
+    font-weight:600;
+    color: #9aef18;
+    vertical-align:middle;
+}
+
+
+.transaction-list-table tr[data-txType="in"] td.txamount:before{
+    content: "+";
+}
+.transaction-list-table tr[data-txType="out"] td.txamount{
+    color: #FF9800;
+}
+
+.transaction-list-table .txinfo{
+    min-width: 50%;
+}
+
+.transaction-list-table .txinfo p{
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 98%;
+}
+
+.transaction-list-table .tx-ov-info{
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.5);
+}
+
+.transaction-list-table .tx-date{
+    font-size: 0.90rem;
+    font-weight:bold;
+}
 
 @media only screen and (max-width : 780px) {
     .section > div, .section-contents{

@@ -1,15 +1,21 @@
 const svcRequest = require('./svc_request.js');
 
 //var LAST_KNOW_BALANCE = 0.00;
-const CHECK_INTERVAL = 5 * 1000; 
+const CHECK_INTERVAL = 3 * 1000;
 var BLOCK_COUNT_LOCAL = 1;
 var BLOCK_COUNT_NETWORK = 1;
+var LAST_BLOCK_COUNT_LOCAL = 0;
 var SERVICE_CFG = null; // { service_host: '127.0.0.1', service_port: '8070', service_password: 'xxx'};
-var TASK_COUNTER = 0;
 var SAVE_COUNTER = 0;
 var LOGPREFIX = '[SVCWORKER]:';
+var TX_LAST_INDEX = 1;
+var TX_LAST_COUNT = 0;
+var TX_CHECK_STARTED = false;
 
 var taskWorker = null;
+
+
+
 
 // every 5 secs
 function checkBlockUpdate(){
@@ -25,6 +31,15 @@ function checkBlockUpdate(){
                 type: 'blockUpdated',
                 data: blockStatus
             });
+
+            if(LAST_BLOCK_COUNT_LOCAL !== BLOCK_COUNT_LOCAL || !TX_CHECK_STARTED){
+                let newBlocks = (BLOCK_COUNT_LOCAL - LAST_BLOCK_COUNT_LOCAL);
+                if( newBlocks >= 2 ){
+                    //console.log(`${newBlocks} block detected (${BLOCK_COUNT_LOCAL}), check for new transaction...`);
+                    checkTransactionsUpdate();
+                    LAST_BLOCK_COUNT_LOCAL = BLOCK_COUNT_LOCAL;
+                }
+            }
         }
     }).catch((err) => {
         //console.log(`${LOGPREFIX} failed: checkBlockUpdate`, err);
@@ -46,21 +61,45 @@ function checkTransactionsUpdate(){
                 data: balance
             });
             // also update transaction
-            let trx_args = {blockCount: BLOCK_COUNT_LOCAL, firstBlockIndex: 1};
-            svc.getTransactions( trx_args ).then((trx) => {
-                process.send({
-                    type: 'transactionUpdated',
-                    data: trx
-                });
-                return true;
-            }).catch((err)=>{
-                console.log(`${LOGPREFIX} failed to get transaction`,err);
-                return false;
-            });
+            // let fbfi = BLOCK_FIRST_INDEX;
+            // let fbtc = 
             
-        // }else{
-        //     return true;
-        // }
+            
+            // test incremental check
+            if(BLOCK_COUNT_LOCAL > 1){
+                let currentBLockCount = BLOCK_COUNT_LOCAL-1;
+                let startIndex = (!TX_CHECK_STARTED ? 1 : TX_LAST_INDEX);
+                let searchCount = currentBLockCount;
+                let needCountMargin = false;
+                let blockMargin = 10;
+                if(TX_CHECK_STARTED){
+                    searchCount = (currentBLockCount - TX_LAST_COUNT);
+                    needCountMargin = true;
+                }
+
+                let startIndexWithMargin = (startIndex == 1 ? 1 : (startIndex-blockMargin));
+                let searchCountWithMargin = needCountMargin ?  searchCount+blockMargin : searchCount;
+                //console.log(`Checking for new tx, scan range: ${startIndexWithMargin}-${(startIndexWithMargin+searchCountWithMargin)}`);
+                
+                let trx_args = {
+                    firstBlockIndex: startIndexWithMargin,
+                    blockCount: searchCountWithMargin
+                };
+                svc.getTransactions( trx_args ).then((trx) => {
+                    process.send({
+                        type: 'transactionUpdated',
+                        data: trx
+                    });
+                    return true;
+                }).catch((err)=>{
+                    console.log(`${LOGPREFIX} failed to get transaction`,err);
+                    return false;
+                });
+                
+                TX_CHECK_STARTED = true;
+                TX_LAST_INDEX = currentBLockCount;
+                TX_LAST_COUNT = currentBLockCount;
+            }
     }).catch((err)=>{
         console.log(`${LOGPREFIX} Failed to checkTransactionsUpdate`, err);
         return false;
@@ -83,11 +122,11 @@ function saveWallet(){
 function workOnTasks(){
     taskWorker = setInterval(() => {
         checkBlockUpdate();
-        if(TASK_COUNTER > 3){
-            checkTransactionsUpdate();
-            TASK_COUNTER = 0;
-        }
-        TASK_COUNTER++;
+        //if(TASK_COUNTER > 3){
+         //   checkTransactionsUpdate();
+         //   TASK_COUNTER = 0;
+        //}
+        //TASK_COUNTER++;
 
         if(SAVE_COUNTER > 60){
             saveWallet();

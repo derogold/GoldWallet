@@ -63,6 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
 }, false);
 
 /* section switcher */
+var TXLIST = null;
 function changeSection (sectionId) {
     // hide the current section that is being shown
     const sections = document.querySelectorAll('.is-shown');
@@ -603,19 +604,24 @@ ${keys.mnemonicSeed}`;
         let fee = parseFloat(sendFee.value);
 
         if(!recAddress.length || !gutils.validateTRTLAddress(recAddress)){
-            formStatusMsg('send','error','Invalid TRTL address');
+            formStatusMsg('send','error','Sorry, invalid TRTL address');
+            return;
+        }
+
+        if(recAddress === remote.getGlobal('wsession').loadedWalletAddress){
+            formStatusMsg('send','error',"Sorry, can't send to your own address");
             return;
         }
 
         if(recPayId.length){
             if(!gutils.validatePaymentId(recPayId)){
-                formStatusMsg('send','error','Invalid Payment ID');
+                formStatusMsg('send','error','Sorry, invalid Payment ID');
                 return;
             }
         }
         
         if (isNaN(amount) || amount <= 0) {
-            formStatusMsg('send','error','Invalid amount value!');
+            formStatusMsg('send','error','Sorry, invalid amount');
             return;
         }
 
@@ -802,239 +808,144 @@ ${keys.mnemonicSeed}`;
     /** ------------------ END IMPORT SEED --------------------- */
 
     /** ------------------ BEGIN Transaction ------------------- */
-    // TODO: rethink this one to use List class
-    const pageText = document.getElementById('text-transactions-page');
-    const table = document.getElementById('transactions-table-body');
     const refreshButton = document.getElementById('button-transactions-refresh');
-    const nextButton = document.getElementById('button-transactions-next');
-    const lastButton = document.getElementById('button-transactions-last');
-    const previousButton = document.getElementById('button-transactions-prev');
-    const firstButton = document.getElementById('button-transactions-first');
+    let txSortAmountButton = document.getElementById('txSortAmount');
+    let txSortTimeButton = document.getElementById('txSortTime');  
+    let txListOpts = {
+        valueNames: [
+            { data: [
+                'rawPaymentId', 'rawHash', 'txType', 'rawAmount', 'rawFee',
+                'fee', 'timestamp', 'blockIndex', 'extra', 'isBase', 'unlockTime'
+            ]},
+            'amount','timeStr','paymentId','transactionHash','fee'
+        ],
+        item: `<tr title="click for detail..." class="txlist-item">
+                <td class="txinfo">
+                    <p class="timeStr tx-date"></p>
+                    <p class="tx-ov-info">Tx. Hash: <span class="transactionHash"></span></p>
+                    <p class="tx-ov-info">Payment ID: <span class="paymentId"></span></p>
+                </td><td class="amount txamount"></td>
+        </tr>`,
+        searchColumns: ['transactionHash','paymentId','timeStr','amount'],
+        indexAsync: true
+    };
 
-    const selectSort = document.getElementById('select-transactions-sort');
-    const sortButton = document.getElementById('button-transactions-sort');
-    const transactionsPerPage = 12;
+    gutils.liveEvent('.txlist-item', 'click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        return showTransaction(event.target);
+    },document.getElementById('transaction-lists'));
 
-    let sortIcon;
-    //let blockNumber = document.getElementById('navbar-text-sync-count');
-    let currentPage = 1;
-        // by default, the transactions list is ordered by date due to how it's filled
-    let currentSortBy = 'date';
-    // sorting order is 1 for ascending, -1 for descending
-    let currentSortOrder = 1;
-
-    function showPage(pageNumber) {
-        let transactionsList = remote.getGlobal('wsession').txList;
-        let totalPages = Math.ceil(transactionsList.length / transactionsPerPage);
-        // check if page number is valid
-        if (pageNumber < 1 || pageNumber > totalPages){
-            return;
-        }
-        // clear the table
-        while(table.childElementCount > 1) {
-            table.removeChild(table.lastChild);
-        }
-        // if the transactions list is empty, we display a message
-        if(transactionsList.length == 0) {
-            table.insertRow(-1).insertCell(0).innerHTML = 'No transactions found, yet :(';
-            return;
-        }
-        // set current page
-        currentPage = pageNumber;
-        // fill table with the transactions of the page
-        let i = transactionsPerPage * (currentPage - 1);
-        // loop until there are transactionsPerPage transactions in the page or until there are no more
-        while(i - transactionsPerPage * (currentPage - 1) < transactionsPerPage && i < transactionsList.length) {
-            let transaction = transactionsList[i];
-            let row = table.insertRow(-1);
-            let cell = row.insertCell(0);
-            let txType = (transaction.amount > 0 ? 'tx-in' : 'tx-out');
-            row.className = txType;
-
-            // Amount
-            let divAmount = document.createElement('div');
-            if (transaction.amount > 0){
-                divAmount.innerHTML = '+' + (transaction.amount / 100).toFixed(2) + ' TRTL';
-            }else{
-                divAmount.innerHTML = (transaction.amount / 100).toFixed(2) + ' TRTL';
-            }
-            
-            divAmount.classList.add('div-transactions-row-txamount');
-            cell.appendChild(divAmount);
-
-            // Hash
-            let divHash = document.createElement('div');
-            divHash.innerHTML = 'Tx. Hash: ' + transaction.transactionHash;
-            divHash.classList.add('div-transactions-row-txhash');
-            cell.appendChild(divHash);
-
-            // Date
-            let divDate = document.createElement('div');
-            divDate.innerHTML = new Date(transaction.timestamp * 1000).toDateString();
-            divDate.classList.add('div-transactions-row-txdate');
-            cell.appendChild(divDate);
-
-            // Payment Id
-            let divPayId = document.createElement('div');
-            divPayId.innerHTML = `Payment ID: ${(transaction.paymentId ? transaction.paymentId : '-')}`;
-            divPayId.classList.add('div-transactions-row-txpayid');
-            cell.appendChild(divPayId);
-            
-            // upon clicking on the row, a panel will pop up
-            // showing the transaction's details
-            let dialogTpl = `
+    function showTransaction(el){
+        let tx = (el.name === "tr" ? el : el.closest('tr'));
+        let txdate = new Date(tx.dataset.timestamp*1000).toUTCString();
+        let dialogTpl = `
                 <div class="div-transactions-panel">
                     <h4>Transaction Detail</h4>
                     <table class="custom-table" id="transactions-panel-table">
                         <tbody>
-                            <tr>
-                                <th scope="col">Address</th>
-                                <td>_ADDRESS_</td></tr>
-                            <tr><th scope="col">Amount</th>
-                                <td>_AMOUNT_</td></tr>
-                            <tr><th scope="col">Fee</th>
-                                <td>_FEE_</td></tr>
-                            <tr><th scope="col">Timestamp</th>
-                                <td>_TIMESTAMP_</td></tr>
-                            <tr><th scope="col">Payment Id</th>
-                                <td>_PAYMENTID_</td></tr>
                             <tr><th scope="col">Hash</th>
-                                <td>_HASH_</td></tr>
+                                <td>${tx.dataset.rawhash}</td></tr>
+                            <tr><th scope="col">Address</th>
+                                <td>${remote.getGlobal('wsession').loadedWalletAddress}</td></tr>
+                            <tr><th scope="col">Amount</th>
+                                <td>${tx.dataset.rawamount}</td></tr>
+                            <tr><th scope="col">Fee</th>
+                                <td>${tx.dataset.rawfee}</td></tr>
+                            <tr><th scope="col">Timestamp</th>
+                                <td>${tx.dataset.timestamp} (${txdate})</td></tr>
+                            <tr><th scope="col">Payment Id</th>
+                                <td>${tx.dataset.rawpaymentid}</td></tr>
                             <tr><th scope="col">Block Index</th>
-                                <td>_BLOCKINDEX_</td></tr>
+                                <td>${tx.dataset.blockindex}</td></tr>
                             <tr><th scope="col">Is Base?</th>
-                                <td>_ISBASE_</td></tr>
+                                <td>${tx.dataset.isbase}</td></tr>
                             <tr><th scope="col">Unlock Time</th>
-                                <td>_UNLOCKTIME_</td></tr>
+                                <td>${tx.dataset.unlocktime}</td></tr>
                             <tr><th scope="col">Extra</th>
-                                <td>_EXTRA_</td></tr>
+                                <td>${tx.dataset.extra}</td></tr>
                         </tbody>
                     </table> 
                 </div>
                 <div class="div-panel-buttons">
-                    <button type="button" class="form-bt button-red" id="button-transactions-panel-close">Close</button>
+                    <button data-target="#tx-dialog" type="button" class="form-bt button-red dialog-close-default" id="button-transactions-panel-close">Close</button>
                 </div>
             `;
-            
-            row.addEventListener('click', function(event) {
-                const dialog = document.getElementById('tx-dialog');
-                let txDate = new Date(transaction.timestamp * 1000).toString();
-                let txDetail = dialogTpl
-                    .replace('_ADDRESS_',transaction.transfers[0].address)
-                    .replace('_AMOUNT_', (transaction.amount / 100).toFixed(2))
-                    .replace('_TIMESTAMP_', `${transaction.timestamp} (${txDate}) `)
-                    .replace('_HASH_', transaction.transactionHash)
-                    .replace('_BLOCKINDEX_', transaction.blockIndex)
-                    .replace('_ISBASE_', transaction.isBase)
-                    .replace('_UNLOCKTIME_', transaction.unlockTime)
-                    .replace('_FEE_', (transaction.fee / 100).toFixed(2))
-                    .replace('_EXTRA_', transaction.extra)
-                    .replace('_PAYMENTID_', (transaction.paymentId ? transaction.paymentId : '-'));
-                
-                dialog.innerHTML = txDetail;
-                dialog.showModal();
-                document.getElementById('button-transactions-panel-close').addEventListener('click', (event) => {
-                    let txdialog = document.getElementById('tx-dialog');
-                    txdialog.close();
-                    //txdialog.innerHTML = '';
-                    gutils.clearChild(txdialog);
-                });
-            });
-            i++;
-        }
-        table.deleteRow(0);
-        // show the current page and the total number of pages
-        pageText.innerHTML = 'Page ' + currentPage + ' of ' + totalPages;
+
+        let dialog = document.getElementById('tx-dialog');
+        gutils.innerHTML(dialog, dialogTpl);
+        dialog = document.getElementById('tx-dialog');
+        dialog.showModal();
     }
 
-    
-    refreshButton.addEventListener('click', (event) => {
-        let txlist = remote.getGlobal('wsession').txList;
-        if(!txlist.length){
-            while(table.childElementCount > 1) {
-                table.removeChild(table.lastChild);
+    function listTransactions(){
+        if(remote.getGlobal('wsession').txLen <=0) return;
+        let txs = remote.getGlobal('wsession').txNew;
+        if(!txs.length) return;
+        let txsPerPage = 12;
+       
+        if(TXLIST === null){
+            if(txs.length > txsPerPage){
+                txListOpts.page = txsPerPage;
+                txListOpts.pagination = [{
+                    innerWindow: 2,
+                    outerWindow: 1
+                }]; 
             }
-            table.insertRow(-1).insertCell(0).innerHTML = '<div class="progfiller"><span>Collecting transaction data...</span><progress></progress></div>';
+            TXLIST = new List('transaction-lists', txListOpts, txs);
+            txSortTimeButton.click();
         }else{
-            showPage(1);
+            TXLIST.add(txs);
+            txSortTimeButton.click();
         }
-    });
-
-    nextButton.addEventListener('click', (event) => {
-        showPage(currentPage + 1);
-    })
-
-    previousButton.addEventListener('click', (event) => {
-        showPage(currentPage - 1);
-    });
-
-    firstButton.addEventListener('click', (event) => {
-        showPage(1);
-    });
-
-    lastButton.addEventListener('click', (event) => {
-        showPage(Math.ceil(remote.getGlobal('wsession').txLen / transactionsPerPage));
-    });
-
-    // function that sorts the transactions list and refreshes the page
-    function sortTransactionsList (sortBy) {
-        let sortFunction;
-        switch (sortBy) {
-            case 'date':
-                sortFunction = function (a, b) {
-                    if (a.timestamp > b.timestamp) return 1;
-                    if (a.timestamp < b.timestamp) return -1;
-                    return 0;
-                }
-                break;
-            case 'hash':
-                sortFunction = function (a, b) {
-                    let str1 = a.transactionHash;
-                    let str2 = b.transactionHash;
-                    return str1.localeCompare(str2);
-                }
-                break;
-            case 'amount':
-                sortFunction = function  (a, b) {
-                    if (a.amount > b.amount)  return 1;
-                    if (a.amount < b.amount) return -1;
-                    return 0;
-                }
-                break;
-            case 'payid':
-                sortFunction = function (a, b) {
-                    let str1 = a.paymentId;
-                    let str2 = b.paymentId;
-                    return str1.localeCompare(str2);
-                }
-        }
-        let rTxList = remote.getGlobal('wsession').txList;
-        rTxList.sort((a, b) => currentSortOrder * sortFunction(a, b));
-        remote.getGlobal('wsession').txList = rTxList;
-        showPage(currentPage);
     }
 
-    // assing to each option the ability to call the sort function
-    // passing a specific compare function
-    selectSort.addEventListener('change', function(event) {
-        currentSortBy = event.target.value;
-        sortTransactionsList(currentSortBy);
+    function sortAmount(a, b){
+        var aVal = parseFloat(a._values.amount.replace(/[^0-9.-]/g, ""));
+        var bVal = parseFloat(b._values.amount.replace(/[^0-9.-]/g, ""));
+        if (aVal > bVal) return 1;
+        if (aVal < bVal) return -1;
+        return 0;
+    }
+ 
+    txSortAmountButton.addEventListener('click',(event)=>{
+        event.preventDefault();
+        let currentDir = event.target.dataset.dir;
+        let targetDir = (currentDir === 'desc' ? 'asc' : 'desc');
+        event.target.dataset.dir = targetDir;
+        
+        let sortedEl = document.querySelectorAll('.asc, .desc');
+        Array.from(sortedEl).forEach((el)=>{
+            el.classList.remove('asc');
+            el.classList.remove('desc');
+        });
+
+        event.target.classList.add(targetDir);
+        TXLIST.sort('amount', {
+            order: targetDir,
+            sortFunction: sortAmount
+        });
     });
 
-    // sort button
-    // allows the user to sort in descending or ascending order
-    sortButton.addEventListener('click', function(event) {
-        sortIcon = document.getElementById('icon-transactions-sort');
-        // change the icon everytime the user clicks
-        if (currentSortOrder == 1) {
-            sortIcon.classList.toggle('fa-chevron-up');
-            sortIcon.classList.toggle('fa-chevron-down');
-        } else {
-            sortIcon.classList.toggle('fa-chevron-down');
-            sortIcon.classList.toggle('fa-chevron-up');
-        }
-        currentSortOrder *= -1;
-        sortTransactionsList(currentSortBy);
+    txSortTimeButton.addEventListener('click',(event)=>{
+        event.preventDefault();
+        let currentDir = event.target.dataset.dir;
+        let targetDir = (currentDir === 'desc' ? 'asc' : 'desc');
+        event.target.dataset.dir = targetDir;
+        let sortedEl = document.querySelectorAll('.asc, .desc');
+        Array.from(sortedEl).forEach((el)=>{
+            el.classList.remove('asc');
+            el.classList.remove('desc');
+        });
+
+        event.target.classList.add(targetDir);
+        TXLIST.sort('timestamp', {
+            order: targetDir
+        });
+    });
+
+    refreshButton.addEventListener('click', (event) => {
+        listTransactions();
     });
     /** ------------------ END Transaction --------------------- */
 }

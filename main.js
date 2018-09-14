@@ -249,6 +249,7 @@ app.on('ready', () => {
         txLen: 0,
         txLastHash: '',
         txLastTimestamp: '',
+        txNew: [],
         tmpPath: app.getPath('temp'),
         dataPath: app.getPath('userData'),
         nodeFee: null,

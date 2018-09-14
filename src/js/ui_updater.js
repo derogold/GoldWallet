@@ -126,26 +126,31 @@ function updateBalance(data){
     setWinTitle(wintitle);
 }
 
-function updateTransactions(data){
-    const blocks = data.items;
-    const newTxLen = blocks.length;
-    const currentTxLen = remote.getGlobal('wsession').txLen;
+function updateTransactions(result){
+    const blockItems = result.items;
+    if(!blockItems.length) return;
+    let txlistExisting = remote.getGlobal('wsession').txList;
+    let txListNew = [];
 
-    if(!newTxLen || newTxLen <= currentTxLen) return;
-
-    let txlist = [];
-    Array.prototype.forEach.call(blocks, block => {
-        Array.prototype.forEach.call(block.transactions, transaction => {
-            if(transaction.amount !== 0){
-                txlist.unshift(transaction);
+    Array.from(blockItems).forEach((block) => {
+        block.transactions.map((tx, index) => {
+            if(tx.amount !== 0 && !gutils.objInArray(txlistExisting, tx, 'transactionHash')){
+                tx.amount = (tx.amount/100).toFixed(2);
+                tx.timeStr = tx.timeStr = new Date(tx.timestamp * 1000).toDateString();
+                tx.fee = (tx.fee/100).toFixed(2);
+                tx.paymentId = tx.paymentId.length ? tx.paymentId : '-';
+                tx.txType = (tx.amount > 0 ? 'in' : 'out');
+                tx.rawAmount = tx.amount;
+                tx.rawFee = tx.fee;
+                tx.rawPaymentId = tx.paymentId;
+                tx.rawHash = tx.transactionHash;
+                txListNew.unshift(tx);
             }
         });
     });
 
-    if(!txlist.length) return;
-    
-    let oldLastHash = remote.getGlobal('wsession').txLastHash;
-    let latestTx = txlist[0];
+    if(!txListNew.length) return;
+    let latestTx = txListNew[0];
     let newLastHash = latestTx.transactionHash;
     let newLastTimestamp = latestTx.timestamp;
     let newTxAmount = latestTx.amount;
@@ -153,19 +158,21 @@ function updateTransactions(data){
     // store it
     remote.getGlobal('wsession').txLastHash = newLastHash;
     remote.getGlobal('wsession').txLastTimestamp = newLastTimestamp;
-    remote.getGlobal('wsession').txList = txlist;
-    remote.getGlobal('wsession').txLen = newTxLen;
+    remote.getGlobal('wsession').txList = txListNew.concat(remote.getGlobal('wsession').txList);
+    remote.getGlobal('wsession').txLen = remote.getGlobal('wsession').txList.length;
+    remote.getGlobal('wsession').txNew = txListNew;
+
     // date to compare
     let currentDate = new Date();
     currentDate = `${currentDate.getUTCFullYear()}-${currentDate.getUTCMonth()+1}-${currentDate.getUTCDate()}`
     let lastTxDate = new Date(newLastTimestamp*1000);
     lastTxDate = `${lastTxDate.getUTCFullYear()}-${lastTxDate.getUTCMonth()+1}-${lastTxDate.getUTCDate()}`
+    
     // amount to check
     let theAmount = (newTxAmount/100);
-
     let rememberedLastHash = settings.get('last_notification', '');
-
     let notify = true;
+
     if(lastTxDate !== currentDate){
         notify = false;
     }else if(theAmount < 0){
@@ -173,6 +180,8 @@ function updateTransactions(data){
     }else if(rememberedLastHash === newLastHash){
         notify = false;
     }
+
+    document.getElementById('button-transactions-refresh').click();
 
     if(notify){
         settings.set('last_notification', newLastHash);
@@ -189,7 +198,6 @@ function updateTransactions(data){
             if(!brwin.isFocused()) brwin.focus();
         }
     }
-    document.getElementById('button-transactions-refresh').click();
 }
 
 function showFeeWarning(fee){
