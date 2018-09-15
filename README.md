@@ -27,7 +27,7 @@ If you don't trust the bundled `turtle-service` file, you can compare the sha256
 
 ### Download &amp; Run WalletShell
 
-* Download latest packaged release for your platform here: https://github.com/rixombea/turtle-wallet-electron/releases
+* Download latest packaged release for your platform here: https://github.com/turtlecoin//turtle-wallet-electron/releases
 
 * Extract downloaded file
 * Open/Run the wallet executable, located in the extracted directory:  
@@ -41,23 +41,40 @@ You need to have `Node.js` and `npm` installed, go to https://nodejs.org and fin
 
 Once you have Node installed:
 ```
+# first, download turtle-service binary for each platform
+# from TurtleCoin official repo
+# https://github.com/turtlecoin/turtlecoin/releases
+# extract the turtle-service executable somewhere
+
 # clone the repo
-git clone https://github.com/turtlecoin/turtle-wallet-electron
-cd turtle-wallet-electron
+$ git clone https://github.com/turtlecoin/turtle-wallet-electron
+$ cd turtle-wallet-electron
 
 # install dependencies
-npm install
+$ npm install
+
+# create build directory
+$ mkdir ./build
+
+# copy/symlink icons from assets, required for packaging
+$ cp ./assets/icon.* ./build/
 
 # build GNU/Linux package
-npm run linpack
+$ mkdir -p ./tbin/lin
+$ cp /path/to/linux-version-of/turtle-service ./tbin/lin/
+$ npm run linpack
 
 # build Windows package
-npm run winpack
+$ mkdir -p ./tbin/win
+$ cp /path/to/win-version-of/turtle-service.exe ./tbin/win/
+$ npm run winpack
 
 # build OSX package
-npm run osxpack
+$ mkdir -p ./tbin/osx
+$ cp /path/to/osx-version-of/turtle-service ./tbin/osx/
+$ npm run osxpack
 ```
 
-Find the binary in a ready to package folder for each platform inside `build` subdirectory.
+You can find the resulting walletshell binary in a ready to package folder inside `build/walletshell-<platform>-<arch>` subdirectory.
 
 

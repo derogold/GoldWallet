@@ -20,6 +20,7 @@ ipcRenderer.on('cleanup', (event, message) => {
     if(remote.getGlobal('wsession').loadedWalletAddress !== ''){
         var htmlText = 'Saving &amp; closing your wallet...';    
     }
+
     let htmlStr = `<div class="div-save-main" style="text-align: center;padding:1rem;"><i class="fas fa-spinner fa-pulse"></i><span style="padding:0px 10px;">${htmlText}</span></div>`;
     dialog.innerHTML = htmlStr;
     dialog.showModal();
@@ -34,8 +35,6 @@ ipcRenderer.on('cleanup', (event, message) => {
         console.log(err);
     });
 });
-
-
 
 document.addEventListener('DOMContentLoaded', () => {
     var enterableInputs = document.querySelectorAll('.section input');
@@ -61,6 +60,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }, false);
     });
 }, false);
+
+window.addEventListener('resize', (event) => {
+    let tw = document.querySelector('.transaction-table-wrapper');
+    tw.style.maxHeight = `${(window.innerHeight - 260)}px`
+});
 
 /* section switcher */
 var TXLIST = null;
@@ -127,6 +131,7 @@ function initBaseEvent(){
                 return;
             }else{
                 if(button.getAttribute('id')) svcmain.onSectionChanged(button.getAttribute('id'));
+                initNodeCompletion();
                 changeSection(targetSection);
             }
         });
@@ -322,15 +327,10 @@ function initBaseEvent(){
                 var wname = spl[0];
                 var waddr = spl[1];
                 var wpayid = spl[2];
-                //let waddrChopped = `${waddr.slice(0,16)}...${waddr.slice(-12)}`;
-                //let wpayidChopped = '';
-                //if(wpayid.length) wpayidChopped = ` | ${wpayid.toUpperCase()}`;
-                //return `<div class="autocomplete-suggestion" data-paymentid="${wpayid}" data-val="${waddr}">${wname.replace(re, "<b>$1</b>")}<br><span class="autocomplete-wallet-addr">${waddrChopped.replace(re, "<b>$1</b>")}${wpayidChopped.replace(re, "<b>$1</b>")}</span></div>`;
                 return `<div class="autocomplete-suggestion" data-paymentid="${wpayid}" data-val="${waddr}">${wname.replace(re, "<b>$1</b>")}<br><span class="autocomplete-wallet-addr">${waddr.replace(re, "<b>$1</b>")}<br>Payment ID: ${(wpayid ? wpayid.replace(re, "<b>$1</b>") : 'N/A')}</span></div>`;
             },
             onSelect: function(e, term, item){               
                 document.getElementById('input-send-payid').value = item.getAttribute('data-paymentid');
-                //document.getElementById('input-send-payid').focus();
             }
         });
     }
@@ -362,27 +362,42 @@ function initBaseEvent(){
     /** ------------------ END settings ------------------------- */
 
     /** ------------------ BEGIN address book ------------------- */
-    // insert sample address :)
-    if(abook.size <= 0){
-        let myName = 'rixombea labaylabay';
-        let myAddress = 'TRTLv1A26ngXApin33p1JsSE9Yf6REj97Xruz15D4JtSg1wuqYTmsPj5Geu2kHtBzD8TCsfd5dbdYRsrhNXMGyvtJ61AoYqLXVS';
-        let myPaymentId = 'DF794857BC4587ECEC911AF6A6AB02513FEA524EC5B98DA8702FAC92195A94B2';
-        let myHash =  gutils.b2sSum(myAddress + myPaymentId);
-        let myQr = gutils.genQrDataUrl(myAddress);
-        let myData = {
-            name: myName,
-            address: myAddress,
-            paymentId: myPaymentId,
-            qrCode: myQr
-        }
-        abook.set(myHash, myData);
+    function insertSampleAddresses(){
+        let flag = 'addressBookFirstUse';
+        
+        if(!settings.get(flag, true)) return;
+
+        const sampleData = [
+            { name: 'labaylabay rixombea',
+              address: 'TRTLv1A26ngXApin33p1JsSE9Yf6REj97Xruz15D4JtSg1wuqYTmsPj5Geu2kHtBzD8TCsfd5dbdYRsrhNXMGyvtJ61AoYqLXVS',
+              paymentId: 'DF794857BC4587ECEC911AF6A6AB02513FEA524EC5B98DA8702FAC92195A94B2', 
+            },
+            { name: 'Macroshock',
+              address: 'TRTLv3R17LWbVw8Qv4si2tieyKsytUfKQXUgsmjksgrgJsTsnhzxNAeLKPjsyDGF7HGfjqkDegu2LPaC5NeVYot1SnpfcYmjwie',
+              paymentId: '', 
+            },
+            { name: 'RockSteady',
+              address: 'TRTLuxEnfjdF46cBoHhyDtPN32weD9fvL43KX5cx2Ck9iSP4BLNPrJY3xtuFpXtLxiA6LDYojhF7n4SwPNyj9M64iTwJ738vnJk',
+              paymentId: '', 
+            }
+        ];
+
+        sampleData.forEach((item) => {
+            let ahash = gutils.b2sSum(item.address + item.paymentId);
+            let aqr = gutils.genQrDataUrl(item.address);
+            item.qrCode = aqr;
+            abook.set(ahash, item);
+        });
+        settings.set(flag, false);
     }
+    // insert sample address :)
+    insertSampleAddresses();
+    // abook fields & buttons
     const addressBookNameField = document.getElementById('input-addressbook-name');
     const addressBookWalletField = document.getElementById('input-addressbook-wallet');
     const addressBookPaymentIdField = document.getElementById('input-addressbook-paymentid');
     const addressBookUpdateField = document.getElementById('input-addressbook-update');
     const addressBookSaveButton = document.getElementById('button-addressbook-save');
-
     addressBookSaveButton.addEventListener('click', (event) => {
         formStatusClear();
         let nameValue = addressBookNameField.value ? addressBookNameField.value.trim() : '';
@@ -399,7 +414,6 @@ function initBaseEvent(){
             formStatusMsg('addressbook','error',"Invalid TurtleCoin address");
             return;
         }
-
         
         if( paymentIdValue.length){
             if( !gutils.validatePaymentId(paymentIdValue) ){
@@ -442,7 +456,6 @@ function initBaseEvent(){
     const openWalletPathField = document.getElementById('input-load-path');
     const openWalletPasswordField = document.getElementById('input-load-password');
     const openWalletButton = document.getElementById('button-load-load');
-    //const openWalletScanHeightField = document.getElementById('input-creation-height');
     
     function initOpenWallet(){
         if(settings.has('recentWallet')){
@@ -460,7 +473,6 @@ function initBaseEvent(){
 
         function onError(err){
             formStatusClear();
-            //console.log(err);
             formStatusMsg('load','error', err);
             return false;
         }
@@ -897,13 +909,37 @@ ${keys.mnemonicSeed}`;
         });
     }
 
+    function setTxFiller(show){
+        show = show || false;
+        
+        let fillerRow = document.getElementById('txfiller');
+        if(!show && fillerRow){
+            fillerRow.remove();
+            return;
+        }
+
+        let hasItemRow = document.querySelector('#transaction-list-table > tbody > tr.txlist-item');
+        if(!fillerRow && !hasItemRow){
+            let tx = document.querySelector('#transaction-list-table > tbody');
+            let tpl = `<tr id="txfiller"><td colspan="2" class="text-center">No transactions found, yet -:(.</td></tr>`;
+            gutils.innerHTML(tx, tpl);
+        }
+    }
+
     function listTransactions(){
-        if(remote.getGlobal('wsession').txLen <=0) return;
+        if(remote.getGlobal('wsession').txLen <=0){
+            setTxFiller(true);
+            return;
+        }
         let txs = remote.getGlobal('wsession').txNew;
-        if(!txs.length) return;
-        let txsPerPage = 12;
-       
+        if(!txs.length) {
+            setTxFiller(true);
+            return;
+        }
+
+        let txsPerPage = 20;
         if(TXLIST === null){
+            setTxFiller();
             if(txs.length > txsPerPage){
                 txListOpts.page = txsPerPage;
                 txListOpts.pagination = [{
@@ -915,11 +951,14 @@ ${keys.mnemonicSeed}`;
             TXLIST.sort('timestamp', {order: 'desc'});
             resetTxSortMark();
             txSortTimeButton.classList.add('desc');
+            txSortTimeButton.dataset.dir = 'desc';
         }else{
+            setTxFiller();
             TXLIST.add(txs);
             TXLIST.sort('timestamp', {order: 'desc'});
             resetTxSortMark();
             txSortTimeButton.classList.add('desc');
+            txSortTimeButton.dataset.dir = 'desc';
             //showToast(`Transaction list updated`);
         }
     }

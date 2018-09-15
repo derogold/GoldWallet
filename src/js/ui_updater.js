@@ -1,5 +1,5 @@
-const electron = require('electron');
-const remote = electron.remote;
+const {webFrame, remote} = require('electron');
+//const remote = electron.remote;
 const Store = require('electron-store');
 const settings = new Store({name: 'Settings'});
 const abook = new Store({name: 'AddressBook',  encryptionKey: ['79009fb00ca1b7130832a42d','e45142cf6c4b7f33','3fe6fba5'].join('')});
@@ -19,6 +19,10 @@ const connInfoDiv = document.getElementById('conn-info');
 const connAddrText = document.getElementById('status-node-addr');
 const connFeeText = document.getElementById('status-node-fee');
 const connWarnText = document.getElementById('status-node-warning');
+
+const WFCLEAR_INTERVAL = 5;
+let WFCLEAR_TICK = 0;
+
 
 function toggleProgressExtra(show){
     const progressExtra = document.querySelectorAll('.block-progress-extra');
@@ -119,6 +123,12 @@ function updateSyncProgres(data){
         connAddrText.innerHTML = `${settings.get('daemon_host')}:${settings.get('daemon_port')}`;
         document.getElementById('status-node-fee').innerHTML = (nFee ? "TRTL " + nFee : '-');
     }
+
+    if(WFCLEAR_TICK === 0 || WFCLEAR_TICK === WFCLEAR_INTERVAL){
+        webFrame.clearCache();
+        WFCLEAR_TICK = 0;
+    }
+    WFCLEAR_TICK++;
 }
 
 function updateBalance(data){

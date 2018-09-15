@@ -11,6 +11,7 @@ const IS_DEBUG = (process.argv[1] === 'debug' || process.argv[2] === 'debug');
 const SERVICE_FILENAME =  (platform === 'win32' ? 'turtle-service.exe' : 'turtle-service' );
 const DEFAULT_SERVICE_BIN = path.join(process.resourcesPath, SERVICE_FILENAME);
 const DEFAULT_TITLE = 'TurtleCoin Wallet';
+const DEFAULT_TRAY_TIP = 'Slow and steady wins the race!';
 const PUBLIC_NODES_URL = 'https://raw.githubusercontent.com/turtlecoin/turtlecoin-nodes-json/master/turtlecoin-nodes.json';
 const FALLBACK_NODES = [
     'public.turtlenode.io:11898',
@@ -30,34 +31,27 @@ const DEFAULT_SETTINGS = {
     tray_close: false
 }
 
-let win;
+
 app.prompExit = true;
 app.needToExit = false;
 
-let trayIcon = path.join(__dirname,'src/assets/tray_24x24.png');
-if(platform === 'darwin'){
-    trayIcon = path.join(__dirname,'src/assets/tray.icns');
-}else if(platform === 'win32'){
-    trayIcon = path.join(__dirname,'src/assets/tray.ico');
-}
+let trayIcon = path.join(__dirname,'src/assets/tray.png');
+let trayIconHide = path.join(__dirname,'src/assets/trayon.png');
 
-let trayIconHide = path.join(__dirname,'src/assets/trayon_24x24.png');
-if(platform === 'darwin'){
-    trayIconHide = path.join(__dirname,'src/assets/trayon.icns');
-}else if(platform === 'win32'){
-    trayIconHide = path.join(__dirname,'src/assets/trayon.ico');
-}
+let win;
+let tray;
 
 function createWindow () {
     // Create the browser window.
     win = new BrowserWindow({
         title: DEFAULT_TITLE,
         icon: path.join(__dirname,'src/assets/walletshell_icon.png'),
-        frame: true,//frame: false,
+        frame: true,
         width: 800,
         height: 680,
         minWidth: 800,
         minHeight: 680,
+        // maxWidth: 1280,
         show: false,
         backgroundColor: '#02853e',
     });
@@ -70,11 +64,11 @@ function createWindow () {
             }
         }
     ]);
-    // linux default;
-    const tray = new Tray(trayIcon);
+    
+    tray = new Tray(trayIcon);
     tray.setPressedImage(trayIconHide);
     tray.setTitle(DEFAULT_TITLE);
-    tray.setToolTip('Slow and steady wins the race!');
+    tray.setToolTip(DEFAULT_TRAY_TIP);
     tray.setContextMenu(contextMenu);
     tray.on('click', () => {
         win.isVisible() ? win.hide() : win.show();
@@ -92,6 +86,7 @@ function createWindow () {
             }
         ]);
         tray.setContextMenu(contextMenu);
+        tray.setToolTip(DEFAULT_TRAY_TIP);
     });
 
     win.on('hide', () => {
@@ -130,6 +125,7 @@ function createWindow () {
     win.once('ready-to-show', () => {
         win.show();
         win.setTitle(DEFAULT_TITLE);
+        tray.setToolTip(DEFAULT_TRAY_TIP);
     })
 
     win.on('close', (e) => {
@@ -238,6 +234,7 @@ if (!silock) app.quit();
 
 app.on('ready', () => {
     initSettings();    
+    if(IS_DEBUG) console.log('Running in debug mode');
 
     global.wsession = {
         loadedWalletAddress: '',
@@ -261,8 +258,6 @@ app.on('ready', () => {
         debug: IS_DEBUG
     };
 
-    if(IS_DEBUG) console.log('Running in debug mode');
-
     let today = new Date();
     let last_checked = new Date(settings.get('pubnodes_date'));
     diff_d = parseInt((today-last_checked)/(1000*60*60*24),10);
@@ -281,7 +276,7 @@ app.on('ready', () => {
 app.on('window-all-closed', () => {
     // On macOS it is common for applications and their menu bar
     // to stay active until the user quits explicitly with Cmd + Q
-    if (process.platform !== 'darwin') app.quit();
+    if (platform !== 'darwin') app.quit();
 });
 
 app.on('activate', () => {
@@ -304,12 +299,10 @@ process.on('exit', (code) => {
 });
 
 process.on('warning', (warning) => {
-    if(IS_DEBUG){
-        console.warn(warning.name);
-        console.warn(warning.message);
-        console.warn(warning.code);
-        console.warn(warning.stack);
-        console.warn(warning.detail);
-    }
-});
+    if(IS_DEBUG) console.warn(warning.code, warning.message);
+    // console.warn(warning.name);
+    // console.warn(warning.code);
+    // console.warn(warning.stack);
+    // console.warn(warning.detail);
 
+});
