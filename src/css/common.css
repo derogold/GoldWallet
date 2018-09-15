@@ -45,6 +45,9 @@ body {
     text-align: center;
 }
 
+.text-center{
+    text-align: center;
+}
 /* The titlebar */
 .titlebar {
     z-index: 1;
@@ -153,6 +156,14 @@ body {
     top: 15px;
     left: 10px;
 }
+.navbar-inner{
+    height: 45px;
+    overflow: hidden;
+    max-width: 1380px;
+    margin: 0 auto;
+    padding: 0;
+    width: 100%;
+}
 
 .navbar-button {
     height: 45px;
@@ -198,12 +209,12 @@ body {
 
 #main-div {
     width: 99.6%;
-    height: 88.5%;
-    position: relative;
-    top:0;
+    height: 91.5%;
+    position: absolute;
+    top:45px;
     /* margin: -130px 0 0 0; */
     /* margin: -14.5% 0 0 0; */
-    margin: -15.5% 0 0 0;
+    /* margin: -15.5% 0 0 0; */
     padding: 0;
 }
 
@@ -497,7 +508,7 @@ input.short-number{
 /* Sections */
 .section {
     position: absolute;
-    top: 0;
+    top: 1rem;
     left: 0;
     right: 0;
     bottom: 0;
@@ -506,7 +517,6 @@ input.short-number{
     height: 99%;
     min-width: 797.3px; /* maybe 800px is too much? */
     min-height: 400px;
-    padding: 0;
     /* Hidden by default */
     pointer-events: none;
     visibility: hidden;
@@ -526,12 +536,13 @@ input.short-number{
 .section > div{
     position: relative;
     width: 87.7%;
+    max-width: 1280px;
     margin: 0 auto;
     height: 92.9%;
     user-select: none;
 }
 .section-contents{
-    padding: 1rem 3rem 0 3rem;
+    padding: 2rem 3rem 0 3rem;
 }
 .welcome-box{
 width: 80%;
@@ -981,7 +992,7 @@ span.form-help-qr.hidden{
     display: inline-block;
     background-color: #00632e;    
     color: #fff;
-    padding: 0px 8px;
+    padding: 0px 0px;
     margin: 0 4px 0 0;
     text-align: center;
     line-height: normal !important;
@@ -999,6 +1010,7 @@ span.form-help-qr.hidden{
     font-size: 1.2rem;
     font-weight: 600;
     text-decoration: none;
+    padding: 0px 8px;
 
 }
 
@@ -1196,6 +1208,7 @@ padding: 10px 0 0 0;
     border: 2px solid #ccc;
     border-radius: 4px;
     margin-left: 2px;
+    cursor: pointer;
 }
 
 .csort.asc:after,
@@ -1278,6 +1291,7 @@ progress.light{
     height: 0.25em;
 }
 
+/*
 @media only screen and (max-width : 780px) {
     .section > div, .section-contents{
         width: 81.4%;
@@ -1291,3 +1305,15 @@ progress.light{
         padding: 10% 3rem 0 3rem;
     }
 }
+
+
+@media only screen and (min-width : 1290px) {
+    body{
+        background: #333;
+    }
+    .section-contents {
+        background-image: url("../assets/background.png");
+        background-size: cover;       
+    }
+}
+*/
