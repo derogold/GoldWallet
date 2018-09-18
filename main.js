@@ -1,4 +1,4 @@
-const {app, BrowserWindow, dialog, Tray, Menu, NativeImage} = require('electron');
+const {app, BrowserWindow, dialog, Tray, Menu} = require('electron');
 const path = require('path');
 const url = require('url');
 const https = require('https');
@@ -6,8 +6,17 @@ const platform = require('os').platform();
 const crypto = require('crypto');
 const Store = require('electron-store');
 const settings = new Store({name: 'Settings'});
+const log = require('electron-log');
 
 const IS_DEBUG = (process.argv[1] === 'debug' || process.argv[2] === 'debug');
+const LOG_LEVEL = IS_DEBUG ? 'debug' : 'warn';
+
+log.transports.file.appName = 'WalletShell';
+log.transports.console.level = LOG_LEVEL;
+log.transports.file.level = LOG_LEVEL;
+log.transports.file.maxSize = 5 * 1024 * 1024;
+
+
 const SERVICE_FILENAME =  (platform === 'win32' ? 'turtle-service.exe' : 'turtle-service' );
 const DEFAULT_SERVICE_BIN = path.join(process.resourcesPath, SERVICE_FILENAME);
 const DEFAULT_TITLE = 'TurtleCoin Wallet';
@@ -22,7 +31,7 @@ const DEFAULT_SETTINGS = {
     service_host: '127.0.0.1',
     service_port: 8070,
     service_password: crypto.randomBytes(32).toString('hex'),
-    daemon_host: '127.0.0.1',
+    daemon_host: 'public.turtlenode.io',
     daemon_port: 11898,
     pubnodes_date: null,
     pubnodes_data: FALLBACK_NODES,
@@ -30,7 +39,6 @@ const DEFAULT_SETTINGS = {
     tray_minimize: false,
     tray_close: false
 }
-
 
 app.prompExit = true;
 app.needToExit = false;
@@ -134,10 +142,7 @@ function createWindow () {
             win.hide();
         }else if(app.prompExit){
             e.preventDefault();
-
             let msg = 'Are you sure want to exit?';
-            if(wsession.loadedWalletAddress !== '') msg = 'Are you sure want to close your wallet and exit?';
-
             dialog.showMessageBox({
                 type: 'question',
                 buttons: ['Yes', 'No'],
@@ -164,24 +169,25 @@ function createWindow () {
     // misc handler
     win.webContents.on('crashed', (event, killed) => { 
         // todo: prompt to restart
-        if(IS_DEBUG) console.log('webcontent was crashed', event, killed);
+        log.debug('webcontent was crashed');
     });
 
     win.on('unresponsive', (even) => {
         // todo: prompt to restart
-        if(IS_DEBUG) console.log('unresponsive!');
+        log.debug('webcontent is unresponsive')
     });
 }
 
 function storeNodeList(pnodes){
     pnodes = pnodes || settings.get('pubnodes_data');
+    let validNodes = [];
     if( pnodes.hasOwnProperty('nodes')){
         pnodes.nodes.forEach(element => {
             let item = `${element.url}:${element.port}`;
-            global.wsession.nodeChoices.push(item);
+            validNodes.push(item);
         });
     }
-    settings.set('pubnodes_data', global.wsession.nodeChoices);
+    if(validNodes.length) settings.set('pubnodes_data', validNodes);
 }
 
 function doNodeListUpdate(){
@@ -198,18 +204,16 @@ function doNodeListUpdate(){
                 var pnodes = JSON.parse(result);
                 let today = new Date();
                 storeNodeList(pnodes);
-                if(IS_DEBUG) console.log('nodelist has been updated');
+                log.debug('Public node list has been updated');
                 let mo = (today.getMonth()+1);
                 settings.set('pubnodes_date', `${today.getFullYear()}-${mo}-${today.getDate()}`);
             }catch(e){
-                if(IS_DEBUG) console.log('failed to parse json data', e);
-                if(IS_DEBUG) console.log('type of input', typeof d);
-                if(IS_DEBUG) console.log(JSON.stringify(d));
+                log.debug(`Failed to update public node list: ${e.message}`);
                 storeNodeList();
             }
         });
-    }).on('error', (e) => { 
-        console.error(e);
+    }).on('error', (e) => {
+        log.debug(`Failed to update public node list: ${e.message}`);
     });
 }
 
@@ -222,7 +226,7 @@ function initSettings(){
 }
 
 
-const silock = app.requestSingleInstanceLock()
+const silock = app.requestSingleInstanceLock();
 app.on('second-instance', (commandLine, workingDirectory) => {
     if (win) {
         if (!win.isVisible()) win.show();
@@ -234,41 +238,23 @@ if (!silock) app.quit();
 
 app.on('ready', () => {
     initSettings();    
-    if(IS_DEBUG) console.log('Running in debug mode');
+    log.warn('Running in debug mode');
 
     global.wsession = {
-        loadedWalletAddress: '',
-        walletHash: '',
-        synchronized: false,
-        syncStarted: false,
-        serviceReady: false,
-        txList: [],
-        txLen: 0,
-        txLastHash: '',
-        txLastTimestamp: '',
-        txNew: [],
-        tmpPath: app.getPath('temp'),
-        dataPath: app.getPath('userData'),
-        nodeFee: null,
-        nodeChoices: settings.get('pubnodes_data'),
-        servicePath: settings.get('service_bin'),
-        configUpdated: false,
-        uiStateChanged: false,
-        defaultTitle: DEFAULT_TITLE,
-        debug: IS_DEBUG
+        debug: IS_DEBUG,
+        //loadedWalletAddress: ''
     };
 
     let today = new Date();
     let last_checked = new Date(settings.get('pubnodes_date'));
     diff_d = parseInt((today-last_checked)/(1000*60*60*24),10);
     if(diff_d >= 1){
-        console.log('Performing daily node list update.');
+        log.info('Performing daily public-node list update.');
         doNodeListUpdate();
     }else{
-        console.log('Node list is up to date.');
+        log.info('Public node list up to date, skipping update');
         storeNodeList(false); // from local cache
     }
-
     createWindow();
 });
 
@@ -286,23 +272,18 @@ app.on('activate', () => {
 });
 
 process.on('uncaughtException', function (err) { 
-    if(IS_DEBUG) console.log(err);
+    log.error(`Uncaught exception: ${e.message}`);
     process.exit(1);
 });
 
 process.on('beforeExit', (code) => {
-    if(IS_DEBUG) console.log(`beforeExit code: ${code}`);
+    log.debug(`beforeExit code: ${code}`);
 });
 
 process.on('exit', (code) => {
-    if(IS_DEBUG) console.log(`exit with code: ${code}`);
+    log.debug(`exit with code: ${code}`);
 });
 
 process.on('warning', (warning) => {
-    if(IS_DEBUG) console.warn(warning.code, warning.message);
-    // console.warn(warning.name);
-    // console.warn(warning.code);
-    // console.warn(warning.stack);
-    // console.warn(warning.detail);
-
+    log.warn(`${warning.code}, ${warning.name}`);
 });

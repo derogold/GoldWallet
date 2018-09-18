@@ -7,6 +7,9 @@ const abook = new Store({name: 'AddressBook',  encryptionKey: ['79009fb00ca1b713
 const gutils = require('./gutils');
 const brwin = remote.getCurrentWindow();
 
+const gSession = require('./gsessions');
+const wlsession = new gSession();
+
 /* sync progress ui */
 const syncDiv = document.getElementById('navbar-div-sync');
 const syncText = document.getElementById('navbar-text-sync');
@@ -24,20 +27,9 @@ const WFCLEAR_INTERVAL = 5;
 let WFCLEAR_TICK = 0;
 
 
-function toggleProgressExtra(show){
-    const progressExtra = document.querySelectorAll('.block-progress-extra');
-    show = show || false;
-    Array.from(progressExtra).forEach( (el) => {
-        if(show){
-            el.classList.remove('hidden');
-        }else{
-            el.classList.add('hidden');
-        }
-    });
-}
-
 function setWinTitle(title){
-    let defaultTitle = remote.getGlobal('wsession').defaultTitle;
+    //let defaultTitle = remote.getGlobal('wsession').defaultTitle;
+    let defaultTitle = wlsession.get('defaultTitle');
     let newTitle = defaultTitle;
     if(title){
         newTitle = `${defaultTitle} ${title}`;
@@ -47,9 +39,9 @@ function setWinTitle(title){
 
 function updateSyncProgres(data){
     const iconSync = document.getElementById('navbar-icon-sync');
-    let blockCount = data['blockCount'];
-    let knownBlockCount = data['knownBlockCount'];
-
+    let blockCount = data['displayBlockCount'];
+    let knownBlockCount = data['displayKnownBlockCount'];
+    let blockSyncPercent = data['syncPercent'];
     // restore/reset
     if(knownBlockCount === -100){
         //toggleProgressExtra(false);
@@ -59,7 +51,7 @@ function updateSyncProgres(data){
         gutils.clearChild(syncKnownText);
         gutils.clearChild(syncSlash);
         gutils.clearChild(syncPercent);
-        
+
         iconSync.setAttribute('data-icon', 'pause-circle');
         iconSync.classList.remove('fa-spin');
 
@@ -88,14 +80,13 @@ function updateSyncProgres(data){
         connWarnText.innerHTML = '- Connection failed, try switching to another Node in settings page, close and reopen your wallet';
     }else{
         gutils.clearChild(connWarnText);
-        let dispKnownBlockCount = (knownBlockCount-1);
-        let dispBlockCount = (blockCount > dispKnownBlockCount ? dispKnownBlockCount : blockCount);
-
-        syncCountText.innerHTML = dispBlockCount;
+        
+        syncCountText.innerHTML = blockCount;
         syncSlash.innerHTML = ' / ';
-        syncKnownText.innerHTML = dispKnownBlockCount;
+        syncKnownText.innerHTML = knownBlockCount;
 
-        remote.getGlobal('wsession').syncStarted = true;
+        //remote.getGlobal('wsession').syncStarted = true;
+        wlsession.set('syncStarted', true);
 
         if(blockCount+1 >= knownBlockCount && knownBlockCount != 0) {
             syncDiv.classList = 'synced';
@@ -103,22 +94,18 @@ function updateSyncProgres(data){
             gutils.clearChild(syncPercent);
             iconSync.setAttribute('data-icon', 'check');
             iconSync.classList.remove('fa-spin');
-            remote.getGlobal('wsession').synchronized = true;
-            remote.getGlobal('wsession').syncStarted = true;
-            //toggleProgressExtra(false);
-        } else {
+            wlsession.set('synchronized', true);
+         } else {
             syncDiv.className = 'syncing';
             syncText.innerHTML = 'SYNCING ';
-            let synchedPercent = ((dispBlockCount / dispKnownBlockCount) * 100).toFixed(2);
-            syncPercent.innerHTML =  `(${synchedPercent}%)`;
+            syncPercent.innerHTML =  `(${blockSyncPercent}%)`;
             iconSync.setAttribute('data-icon', 'sync');
             iconSync.classList.add('fa-spin');
-            remote.getGlobal('wsession').syncStarted = true;
-            remote.getGlobal('wsession').synchronized = false;
+            wlsession.set('synchronized', true);
             //toggleProgressExtra(true);
         }
-
-        let nFee = remote.getGlobal('wsession').nodeFee;
+        //let nFee = remote.getGlobal('wsession').nodeFee;
+        let nFee = wlsession.get('nodeFee');
         document.getElementById('conn-info').classList.remove('conn-warning');
         connAddrText.innerHTML = `${settings.get('daemon_host')}:${settings.get('daemon_port')}`;
         document.getElementById('status-node-fee').innerHTML = (nFee ? "TRTL " + nFee : '-');
@@ -149,7 +136,8 @@ function updateBalance(data){
 function updateTransactions(result){
     const blockItems = result.items;
     if(!blockItems.length) return;
-    let txlistExisting = remote.getGlobal('wsession').txList;
+    //let txlistExisting = remote.getGlobal('wsession').txList;
+    let txlistExisting = wlsession.get('txList');
     let txListNew = [];
 
     Array.from(blockItems).forEach((block) => {
@@ -176,26 +164,31 @@ function updateTransactions(result){
     let newTxAmount = latestTx.amount;
 
     // store it
-    remote.getGlobal('wsession').txLastHash = newLastHash;
-    remote.getGlobal('wsession').txLastTimestamp = newLastTimestamp;
-    remote.getGlobal('wsession').txList = txListNew.concat(remote.getGlobal('wsession').txList);
-    remote.getGlobal('wsession').txLen = remote.getGlobal('wsession').txList.length;
-    remote.getGlobal('wsession').txNew = txListNew;
+    wlsession.set('txLastHash',newLastHash);
+    wlsession.set('txLastTimestamp', newLastTimestamp);
+    let txList = txListNew.concat(txlistExisting);
+    wlsession.set('txList', txList);
+    wlsession.set('txLen', txList.length);
+    wlsession.set('txNew', txListNew);
+    // remote.getGlobal('wsession').txLastHash = newLastHash;
+    // remote.getGlobal('wsession').txLastTimestamp = newLastTimestamp;
+    // remote.getGlobal('wsession').txList = txListNew.concat(remote.getGlobal('wsession').txList);
+    // remote.getGlobal('wsession').txLen = remote.getGlobal('wsession').txList.length;
+    // remote.getGlobal('wsession').txNew = txListNew;
 
     // date to compare
     let currentDate = new Date();
     currentDate = `${currentDate.getUTCFullYear()}-${currentDate.getUTCMonth()+1}-${currentDate.getUTCDate()}`
     let lastTxDate = new Date(newLastTimestamp*1000);
     lastTxDate = `${lastTxDate.getUTCFullYear()}-${lastTxDate.getUTCMonth()+1}-${lastTxDate.getUTCDate()}`
-    
+
     // amount to check
-    let theAmount = (newTxAmount/100);
     let rememberedLastHash = settings.get('last_notification', '');
     let notify = true;
 
     if(lastTxDate !== currentDate){
         notify = false;
-    }else if(theAmount < 0){
+    }else if(newTxAmount < 0){
         notify = false;
     }else if(rememberedLastHash === newLastHash){
         notify = false;
@@ -206,7 +199,7 @@ function updateTransactions(result){
     if(notify){
         settings.set('last_notification', newLastHash);
         let notiOptions = {
-            'body': `Amount: ${(theAmount).toFixed(2)} TRTL<br>Hash: ${newLastHash.substring(24,-0)}...`,
+            'body': `Amount: ${(newTxAmount)} TRTL<br>Hash: ${newLastHash.substring(24,-0)}...`,
             'icon': '../assets/walletshell_icon.png'
         };
         let itNotification = new Notification('Incoming Transfer', notiOptions);
@@ -236,7 +229,7 @@ function showFeeWarning(fee){
         </p>
         <p style="text-align:center;margin-top: 1.25rem;"><button  type="button" class="form-bt button-green" id="dialog-end">OK, I Understand</button></p>
     `;
-    
+
     gutils.innerHTML(dialog, htmlStr);
     let dialogEnd = document.getElementById('dialog-end');
     dialogEnd.addEventListener('click', (event) => {
@@ -265,7 +258,8 @@ function updateQr(address){
     }
 
     let walletHash = gutils.b2sSum(address);
-    remote.getGlobal('wsession').walletHash = walletHash;
+    wlsession.set('walletHash', walletHash);
+    //remote.getGlobal('wsession').walletHash = walletHash;
 
     let oldImg = document.getElementById('qr-gen-img');
     if(oldImg) oldImg.remove();
@@ -359,7 +353,6 @@ function displayAddressBookEntry(event){
         let axdialog = document.getElementById('ab-dialog');
         axdialog.close();
         gutils.clearChild(axdialog);
-        
     });
 }
 
@@ -382,7 +375,7 @@ function listAddressBook(force){
 
     if(abookLength > perPage){
         listOpts.page = perPage;
-        listOpts.pagination = true; 
+        listOpts.pagination = true;
     }
 
     const addressList = new List('addressbooks', listOpts);
@@ -405,7 +398,7 @@ function listAddressBook(force){
 }
 
 function resetFormState(initiator){
-    const allFormInputs = document.querySelectorAll('.section input,.section textarea');   
+    const allFormInputs = document.querySelectorAll('.section input,.section textarea');
     Array.from(allFormInputs).forEach((el) => {
         if(el.dataset.initial){
             if(!el.dataset.noclear){
@@ -421,7 +414,8 @@ function resetFormState(initiator){
 
     const connInfo = document.getElementById('conn-info');
     const settingsBackBtn = document.getElementById('button-settings-back');
-    if(remote.getGlobal('wsession').serviceReady){
+    //if(remote.getGlobal('wsession').serviceReady){
+    if(wlsession.get('serviceReady')){
         connInfo.classList.remove('hidden');
         settingsBackBtn.dataset.section = 'section-welcome';
     }else{
