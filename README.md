@@ -21,7 +21,7 @@ WalletShell relies on `turtle-service` to manage wallet container &amp; rpc comm
 
 WalletShell release packaged includes ready to use `turtle-service` binary, which is unmodified copy TurtleCoin release archive.
 
-On first launch, WalletShell will try to detect location/path of bundled `turtle-service` binary, but if it's failed, can set path to the `turtle-service` binary on the Settings tab.
+On first launch, WalletShell will try to detect location/path of bundled `turtle-service` binary, but if it's failed, you can set path to the `turtle-service` binary on the Settings tab.
 
 If you don't trust the bundled `turtle-service` file, you can compare the sha256 sum against one from the official release, or just download and use binary from official TurtleCoin release, which you can download here: https://github.com/turtlecoin/turtlecoin/releases. Then,  make sure to update your `turtle-service` path setting.
 
@@ -57,7 +57,7 @@ $ npm install
 $ mkdir ./build
 
 # copy/symlink icons from assets, required for packaging
-$ cp ./assets/icon.* ./build/
+$ cp ./src/assets/icon.* ./build/
 
 # build GNU/Linux package
 $ mkdir -p ./tbin/lin
