@@ -227,8 +227,7 @@ svcRequest.prototype.sendTransaction = function (params) {
         //[{address: "TRTLxxxx...", amount: 100}];
         var req_params = {
             transfers: [{address: params.address, amount: params.amount}],
-            fee: params.fee,
-            anonymity: 7
+            fee: params.fee
         };
 
         if(params.paymentId) req_params.paymentId = params.paymentId;

@@ -271,7 +271,7 @@ app.on('activate', () => {
     if (win === null) createWindow();
 });
 
-process.on('uncaughtException', function (err) { 
+process.on('uncaughtException', function (e) {
     log.error(`Uncaught exception: ${e.message}`);
     process.exit(1);
 });

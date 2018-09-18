@@ -22,18 +22,18 @@ function checkBlockUpdate(){
     let svc = new svcRequest(SERVICE_CFG);
     svc.getStatus().then((blockStatus) => {
         let blockCount = parseInt(blockStatus.blockCount,10);
-        let newKnownBlockCount = parseInt(blockStatus.knownBlockCount, 10);
+        let knownBlockCount = parseInt(blockStatus.knownBlockCount, 10);
 
-        if(blockCount <= BLOCK_COUNT_LOCAL || newKnownBlockCount <= BLOCK_COUNT_NETWORK){
+        if(blockCount <= BLOCK_COUNT_LOCAL || knownBlockCount <= BLOCK_COUNT_NETWORK){
             BLOCK_COUNT_LOCAL = blockCount;
-            BLOCK_COUNT_NETWORK = newKnownBlockCount;
+            BLOCK_COUNT_NETWORK = knownBlockCount;
             return;
         }
 
         BLOCK_COUNT_LOCAL = blockCount;
-        BLOCK_COUNT_NETWORK = newKnownBlockCount;
+        BLOCK_COUNT_NETWORK = knownBlockCount;
         // add any extras here, so renderer not doing too much thing
-        let dispKnownBlockCount = (newKnownBlockCount-1);
+        let dispKnownBlockCount = (knownBlockCount-1);
 
         let dispBlockCount = (blockCount > dispKnownBlockCount ? dispKnownBlockCount : blockCount);
 
@@ -56,14 +56,16 @@ function checkBlockUpdate(){
         if(BLOCK_COUNT_LOCAL <= 1) return;
 
         // don't check if block count not updated
-        if(LAST_BLOCK_COUNT_LOCAL === BLOCK_COUNT_LOCAL && TX_CHECK_STARTED) return;
+        if(LAST_BLOCK_COUNT_LOCAL === BLOCK_COUNT_LOCAL && TX_CHECK_STARTED) {
+            return;
+        }
 
         // only check if block count >= 4;
-        let newBlocks = (BLOCK_COUNT_LOCAL - LAST_BLOCK_COUNT_LOCAL);
-        if( newBlocks >= 4 ){
-            checkTransactionsUpdate();
-            LAST_BLOCK_COUNT_LOCAL = BLOCK_COUNT_LOCAL;
-        }
+        //let newBlocks = (BLOCK_COUNT_LOCAL - LAST_BLOCK_COUNT_LOCAL);
+        //if( newBlocks >= 4 ){
+        checkTransactionsUpdate();
+        LAST_BLOCK_COUNT_LOCAL = BLOCK_COUNT_LOCAL;
+        //}
     }).catch((err) => {
         return false;
     });
