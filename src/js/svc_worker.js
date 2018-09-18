@@ -5,44 +5,66 @@ const CHECK_INTERVAL = 5 * 1000;
 var BLOCK_COUNT_LOCAL = 1;
 var BLOCK_COUNT_NETWORK = 1;
 var LAST_BLOCK_COUNT_LOCAL = 0;
+
 var SERVICE_CFG = null; // { service_host: '127.0.0.1', service_port: '8070', service_password: 'xxx'};
 var SAVE_COUNTER = 0;
 var LOGPREFIX = '[SVCWORKER]:';
+
 var TX_LAST_INDEX = 1;
 var TX_LAST_COUNT = 0;
 var TX_CHECK_STARTED = false;
 
 var taskWorker = null;
 
-
-
-
 // every 5 secs
 function checkBlockUpdate(){
     if(!SERVICE_CFG) return;
     let svc = new svcRequest(SERVICE_CFG);
     svc.getStatus().then((blockStatus) => {
-        if( parseInt(blockStatus.blockCount,10) !== BLOCK_COUNT_LOCAL
-            || parseInt(blockStatus.knowBlockCount, 10) !== BLOCK_COUNT_NETWORK
-        ){
-            BLOCK_COUNT_LOCAL = parseInt(blockStatus.blockCount,10);
-            BLOCK_COUNT_NETWORK = parseInt(blockStatus.knowBlockCount,10);
-            process.send({
-                type: 'blockUpdated',
-                data: blockStatus
-            });
+        let blockCount = parseInt(blockStatus.blockCount,10);
+        let newKnownBlockCount = parseInt(blockStatus.knownBlockCount, 10);
 
-            if(LAST_BLOCK_COUNT_LOCAL !== BLOCK_COUNT_LOCAL || !TX_CHECK_STARTED){
-                let newBlocks = (BLOCK_COUNT_LOCAL - LAST_BLOCK_COUNT_LOCAL);
-                if( newBlocks >= 4 ){
-                    //console.log(`${newBlocks} block detected (${BLOCK_COUNT_LOCAL}), check for new transaction...`);
-                    checkTransactionsUpdate();
-                    LAST_BLOCK_COUNT_LOCAL = BLOCK_COUNT_LOCAL;
-                }
-            }
+        if(blockCount <= BLOCK_COUNT_LOCAL || newKnownBlockCount <= BLOCK_COUNT_NETWORK){
+            BLOCK_COUNT_LOCAL = blockCount;
+            BLOCK_COUNT_NETWORK = newKnownBlockCount;
+            return;
+        }
+
+        BLOCK_COUNT_LOCAL = blockCount;
+        BLOCK_COUNT_NETWORK = newKnownBlockCount;
+        // add any extras here, so renderer not doing too much thing
+        let dispKnownBlockCount = (newKnownBlockCount-1);
+
+        let dispBlockCount = (blockCount > dispKnownBlockCount ? dispKnownBlockCount : blockCount);
+
+        let syncPercent = ((dispBlockCount / dispKnownBlockCount) * 100);
+        if(syncPercent >= 99){
+            syncPercent = syncPercent.toFixed(3);
+        }else{
+            syncPercent = syncPercent.toFixed(2);
+        }
+
+        blockStatus.displayBlockCount = dispBlockCount;
+        blockStatus.displayKnownBlockCount = dispKnownBlockCount;
+        
+        process.send({
+            type: 'blockUpdated',
+            data: blockStatus
+        });
+
+        // don't check if we can't get any block
+        if(BLOCK_COUNT_LOCAL <= 1) return;
+
+        // don't check if block count not updated
+        if(LAST_BLOCK_COUNT_LOCAL === BLOCK_COUNT_LOCAL && TX_CHECK_STARTED) return;
+
+        // only check if block count >= 4;
+        let newBlocks = (BLOCK_COUNT_LOCAL - LAST_BLOCK_COUNT_LOCAL);
+        if( newBlocks >= 4 ){
+            checkTransactionsUpdate();
+            LAST_BLOCK_COUNT_LOCAL = BLOCK_COUNT_LOCAL;
         }
     }).catch((err) => {
-        //console.log(`${LOGPREFIX} failed: checkBlockUpdate`, err);
         return false;
     });
 }
@@ -60,12 +82,7 @@ function checkTransactionsUpdate(){
                 type: 'balanceUpdated',
                 data: balance
             });
-            // also update transaction
-            // let fbfi = BLOCK_FIRST_INDEX;
-            // let fbtc = 
-            
-            
-            // test incremental check
+
             if(BLOCK_COUNT_LOCAL > 1){
                 let currentBLockCount = BLOCK_COUNT_LOCAL-1;
                 let startIndex = (!TX_CHECK_STARTED ? 1 : TX_LAST_INDEX);
@@ -79,8 +96,6 @@ function checkTransactionsUpdate(){
 
                 let startIndexWithMargin = (startIndex == 1 ? 1 : (startIndex-blockMargin));
                 let searchCountWithMargin = needCountMargin ?  searchCount+blockMargin : searchCount;
-                //console.log(`Checking for new tx, scan range: ${startIndexWithMargin}-${(startIndexWithMargin+searchCountWithMargin)}`);
-                
                 let trx_args = {
                     firstBlockIndex: startIndexWithMargin,
                     blockCount: searchCountWithMargin
@@ -95,7 +110,6 @@ function checkTransactionsUpdate(){
                     console.log(`${LOGPREFIX} failed to get transaction`,err);
                     return false;
                 });
-                
                 TX_CHECK_STARTED = true;
                 TX_LAST_INDEX = currentBLockCount;
                 TX_LAST_COUNT = currentBLockCount;
@@ -122,12 +136,6 @@ function saveWallet(){
 function workOnTasks(){
     taskWorker = setInterval(() => {
         checkBlockUpdate();
-        //if(TASK_COUNTER > 3){
-         //   checkTransactionsUpdate();
-         //   TASK_COUNTER = 0;
-        //}
-        //TASK_COUNTER++;
-
         if(SAVE_COUNTER > 60){
             saveWallet();
             SAVE_COUNTER = 0;
@@ -155,12 +163,14 @@ process.on('message', (msg) => {
             break;
         case 'start':
             try { clearInterval(taskWorker);} catch (err) {}
-            // initial check
-            checkTransactionsUpdate();
+            // initial block check;
             checkBlockUpdate();
+
+            // initial check
+            //checkTransactionsUpdate(); // just to get balance
+
             // scheduled tasks
             setTimeout(workOnTasks, 5000);
-            
             break;
         case 'stop':
             if(taskWorker === undefined || taskWorker === null){
@@ -178,7 +188,7 @@ process.on('message', (msg) => {
     }
 });
 
-process.on('uncaughtException', function (err) { 
+process.on('uncaughtException', function (err) {
     console.log(LOGPREFIX, err);
     process.exit(1);
 });

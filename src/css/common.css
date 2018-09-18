@@ -141,6 +141,7 @@ body {
     position: fixed;
     /* top: 31px; */
     top: 0px;
+    left: 0px;
     height: 45px;
     width: 100%;
     margin: 0;

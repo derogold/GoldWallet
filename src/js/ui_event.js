@@ -8,6 +8,9 @@ const settings = new Store({name: 'Settings'});
 const abook = new Store({ name: 'AddressBook', encryptionKey: ['79009fb00ca1b7130832a42d','e45142cf6c4b7f33','3fe6fba5'].join('')});
 const Menu = remote.Menu;
 
+const gSession = require('./gsessions');
+const wlsession = new gSession();
+
 let win = remote.getCurrentWindow();
 ipcRenderer.on('cleanup', (event, message) => {
     if(!win.isVisible()) win.show();
@@ -17,8 +20,9 @@ ipcRenderer.on('cleanup', (event, message) => {
 
     var dialog = document.getElementById('main-dialog');
     htmlText = 'Terminating turtle-service...';
-    if(remote.getGlobal('wsession').loadedWalletAddress !== ''){
-        var htmlText = 'Saving &amp; closing your wallet...';    
+    //if(remote.getGlobal('wsession').loadedWalletAddress !== ''){
+    if(wlsession.get('loadedWalletAddress') !== ''){
+        var htmlText = 'Saving &amp; closing your wallet...';
     }
 
     let htmlStr = `<div class="div-save-main" style="text-align: center;padding:1rem;"><i class="fas fa-spinner fa-pulse"></i><span style="padding:0px 10px;">${htmlText}</span></div>`;
@@ -116,14 +120,14 @@ function initBaseEvent(){
         button.addEventListener('click', function(event) {
             let targetSection = button.getAttribute('data-section');
             let syncText = document.getElementById('navbar-text-sync').textContent.trim();
-            if( ( targetSection === 'section-transactions'  
-                  || targetSection === 'section-send' 
-                  || targetSection === 'section-overview') 
-                  && !remote.getGlobal('wsession').serviceReady
+            if( ( targetSection === 'section-transactions'
+                  || targetSection === 'section-send'
+                  || targetSection === 'section-overview')
+                  && !wlsession.get('serviceReady')
             ){
                 changeSection('section-welcome');
                 showToast("Please create/open your wallet!");
-            }else if(targetSection === 'section-welcome' && remote.getGlobal('wsession').serviceReady){
+            }else if(targetSection === 'section-welcome' && wlsession.get('serviceReady') ){
                 // the opposite
                 changeSection('section-overview');
             }else if(targetSection === 'section-send' && syncText !== 'SYNCED'){
@@ -479,7 +483,7 @@ function initBaseEvent(){
 
         function onSuccess(theWallet, scanHeight){
             formStatusClear();
-            document.getElementById('wallet-address').value = remote.getGlobal('wsession').loadedWalletAddress;
+            document.getElementById('wallet-address').value = wlsession.get('loadedWalletAddress');
             document.getElementById('button-section-overview').click();
             let thefee = svcmain.getNodeFee();
         }
@@ -502,6 +506,7 @@ function initBaseEvent(){
                     svcmain.startService(walletFile, walletPass, scanHeight, onError, onSuccess);
                 },1200);
             }).catch((err) => {
+                console.log(err);
                 formStatusMsg('load','error', "Unable to start service");
                 return false;
             });
@@ -530,7 +535,13 @@ function initBaseEvent(){
                 // send fake blockUpdated event
                 let resetdata = {
                     type: 'blockUpdated',
-                    data: {blockCount: -100, knownBlockCount: -100}
+                    data: {
+                        blockCount: -100,
+                        displayBlockCount: -100,
+                        knownBlockCount: -100,
+                        displayKnownBlockCount: -100,
+                        syncPercent: -100
+                    }
                 };
                 svcmain.handleWorkerUpdate(resetdata);
                 dialog = document.getElementById('main-dialog');
@@ -623,7 +634,7 @@ ${keys.mnemonicSeed}`;
             return;
         }
 
-        if(recAddress === remote.getGlobal('wsession').loadedWalletAddress){
+        if(recAddress === wlsession.get('loadedWalletAddress')){
             formStatusMsg('send','error',"Sorry, can't send to your own address");
             return;
         }
@@ -665,7 +676,7 @@ ${keys.mnemonicSeed}`;
 
         if(recPayId.length) tx.paymentId = recPayId;
 
-        let nodeFee = remote.getGlobal('wsession').nodeFee || 0;
+        let nodeFee = wlsession.get('nodeFee') || 0;
         let tpl = `
             <div class="div-transaction-panel">
                 <h4>Transfer Confirmation</h4>
@@ -862,7 +873,7 @@ ${keys.mnemonicSeed}`;
                             <tr><th scope="col">Hash</th>
                                 <td>${tx.dataset.rawhash}</td></tr>
                             <tr><th scope="col">Address</th>
-                                <td>${remote.getGlobal('wsession').loadedWalletAddress}</td></tr>
+                                <td>${wlsession.get('loadedWalletAddress')}</td></tr>
                             <tr><th scope="col">Amount</th>
                                 <td>${tx.dataset.rawamount}</td></tr>
                             <tr><th scope="col">Fee</th>
@@ -927,11 +938,12 @@ ${keys.mnemonicSeed}`;
     }
 
     function listTransactions(){
-        if(remote.getGlobal('wsession').txLen <=0){
+        if(wlsession.get('txLen') <= 0){
             setTxFiller(true);
             return;
         }
-        let txs = remote.getGlobal('wsession').txNew;
+
+        let txs = wlsession.get('txNew');
         if(!txs.length) {
             setTxFiller(true);
             return;
