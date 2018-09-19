@@ -11,14 +11,14 @@ const log = require('electron-log');
 const IS_DEBUG = (process.argv[1] === 'debug' || process.argv[2] === 'debug');
 const LOG_LEVEL = IS_DEBUG ? 'debug' : 'warn';
 
-log.transports.file.appName = 'WalletShell';
 log.transports.console.level = LOG_LEVEL;
 log.transports.file.level = LOG_LEVEL;
 log.transports.file.maxSize = 5 * 1024 * 1024;
 
 
 const SERVICE_FILENAME =  (platform === 'win32' ? 'turtle-service.exe' : 'turtle-service' );
-const DEFAULT_SERVICE_BIN = path.join(process.resourcesPath, SERVICE_FILENAME);
+const SERVICE_OSDIR = (platform === 'win32' ? 'win' : (platform === 'darwin' ? 'osx' : 'lin'));
+const DEFAULT_SERVICE_BIN = path.join(process.resourcesPath,'bin', SERVICE_OSDIR, SERVICE_FILENAME);
 const DEFAULT_TITLE = 'TurtleCoin Wallet';
 const DEFAULT_TRAY_TIP = 'Slow and steady wins the race!';
 const PUBLIC_NODES_URL = 'https://raw.githubusercontent.com/turtlecoin/turtlecoin-nodes-json/master/turtlecoin-nodes.json';
@@ -42,6 +42,8 @@ const DEFAULT_SETTINGS = {
 
 app.prompExit = true;
 app.needToExit = false;
+
+app.setAppUserModelId('lol.turtlecoin.walletshell');
 
 let trayIcon = path.join(__dirname,'src/assets/tray.png');
 let trayIconHide = path.join(__dirname,'src/assets/trayon.png');

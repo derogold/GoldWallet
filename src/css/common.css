@@ -890,7 +890,7 @@ span.form-help-qr.hidden{
 
 .inline-block-div.half-width{
     width: 47.7%;
-    height: 70px;
+    vertical-align: top;
 }
 
 .inline-block-div.half-width-end{
@@ -957,6 +957,12 @@ span.form-help-qr.hidden{
 
 
 /** TRX **/
+#txfiller p{
+    padding: 1rem;
+    border: 1px solid #ccccccb8;
+    background: rgba(0, 25, 15, 0.37);
+    border-radius: 6px;
+}
 .noborder{
     border: none !important;
 }
@@ -1138,13 +1144,13 @@ span.form-help-qr.hidden{
 }
 
 dt.dt-ib{
-    display: inline-block;
-    padding-right: 0.25rem;
+    display: block;
 }
 
 dd.dd-ib{
-    display: inline-block;
-    width:80%;
+    display: block;
+    margin-left: 1rem;
+
 }
 
 /* autocomplete **/

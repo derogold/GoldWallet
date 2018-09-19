@@ -65,10 +65,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 }, false);
 
-window.addEventListener('resize', (event) => {
-    let tw = document.querySelector('.transaction-table-wrapper');
-    tw.style.maxHeight = `${(window.innerHeight - 260)}px`
-});
+// window.addEventListener('resize', (event) => {
+//     let tw = document.querySelector('.transaction-table-wrapper');
+//     tw.style.maxHeight = `${(window.innerHeight - 260)}px`
+// });
 
 /* section switcher */
 var TXLIST = null;
@@ -393,6 +393,7 @@ function initBaseEvent(){
             abook.set(ahash, item);
         });
         settings.set(flag, false);
+        initAddressCompletion();
     }
     // insert sample address :)
     insertSampleAddresses();
@@ -546,7 +547,17 @@ function initBaseEvent(){
                 svcmain.handleWorkerUpdate(resetdata);
                 dialog = document.getElementById('main-dialog');
                 if(dialog.hasAttribute('open')) dialog.close();
+                svcmain.resetGlobals();
                 gutils.clearChild(dialog);
+                try{
+                    if(null !== TXLIST){
+                        TXLIST.clear();
+                        TXLIST.update();
+                    }
+
+                    TXLIST = null;
+                }catch(e){}
+                setTxFiller(true);
             }, 1200);
         }).catch((err) => {
             console.log(err);
@@ -611,6 +622,9 @@ ${keys.mnemonicSeed}`;
     const sendAmount = document.getElementById('input-send-amount');
     const sendPayID = document.getElementById('input-send-payid');
     const sendFee = document.getElementById('input-send-fee');
+
+    
+
     sendFee.value = 0.1;
     const sendButton = document.getElementById('button-send-send');
 
@@ -655,7 +669,7 @@ ${keys.mnemonicSeed}`;
             formStatusMsg('send','error',"Amount can't have more than 2 decimal places");
             return;
         }
-        amount *= 100;
+        amount = parseInt((amount*100),10);
 
         if (isNaN(fee) || fee < 0.10) {
             formStatusMsg('send','error','Invalid fee amount!');
@@ -666,17 +680,28 @@ ${keys.mnemonicSeed}`;
             formStatusMsg('send','error',"Fee can't have more than 2 decimal places");
             return;
         }
-        fee *= 100;
+        fee = parseInt((fee*100), 10);
+
+        let nodeFee = parseInt(wlsession.get('nodeFee'),10) || 0;
+        nodeFee = parseFloat(nodeFee*100,10);
+
+        let tobeSent = (amount+nodeFee+fee);
+        const balanceText = document.querySelector('#balance-available > span').textContent.trim() || 0;
+        const availableBalance = parseFloat(balanceText) * 100;
+        if(tobeSent > availableBalance){
+            formStatusMsg('send','error', 
+                `You don't have enough funds to process this transfer<br>
+                Your balance: ${(availableBalance/100).toFixed(2)}, Requested transfer amount: ${(tobeSent/100).toFixed(2)}`
+            );
+            return;
+        }
 
         let tx = {
             address: recAddress,
             fee: fee,
             amount: amount
         }
-
         if(recPayId.length) tx.paymentId = recPayId;
-
-        let nodeFee = wlsession.get('nodeFee') || 0;
         let tpl = `
             <div class="div-transaction-panel">
                 <h4>Transfer Confirmation</h4>
@@ -693,6 +718,8 @@ ${keys.mnemonicSeed}`;
                         <dd class="dd-ib">${(fee/100).toFixed(2)} TRTL</dd>
                         <dt class="dt-ib">Node Fee:</dt>
                         <dd class="dd-ib">${(nodeFee > 0 ? (nodeFee/100).toFixed(2) : '0.00')} TRTL</dd>
+                        <dt class="dt-ib">Total:</dt>
+                        <dd class="dd-ib">${(tobeSent/100).toFixed(2)} TRTL</dd>
                     </dl>
                 </div>
             </div>
@@ -922,18 +949,18 @@ ${keys.mnemonicSeed}`;
 
     function setTxFiller(show){
         show = show || false;
-        
         let fillerRow = document.getElementById('txfiller');
-        if(!show && fillerRow){
-            fillerRow.remove();
-            return;
-        }
+        let txRow = document.getElementById('transaction-lists');
 
-        let hasItemRow = document.querySelector('#transaction-list-table > tbody > tr.txlist-item');
-        if(!fillerRow && !hasItemRow){
-            let tx = document.querySelector('#transaction-list-table > tbody');
-            let tpl = `<tr id="txfiller"><td colspan="2" class="text-center">No transactions found, yet -:(.</td></tr>`;
-            gutils.innerHTML(tx, tpl);
+        if(!show && fillerRow){
+            fillerRow.classList.add('hidden');
+            txRow.classList.remove('hidden');
+        }else{
+            let hasItemRow = document.querySelector('#transaction-list-table > tbody > tr.txlist-item');
+            if(!hasItemRow)  {
+                txRow.classList.add('hidden');
+                fillerRow.classList.remove('hidden');
+            }
         }
     }
 
@@ -945,13 +972,13 @@ ${keys.mnemonicSeed}`;
 
         let txs = wlsession.get('txNew');
         if(!txs.length) {
-            setTxFiller(true);
+            if(TXLIST === null || TXLIST.size() <= 0) setTxFiller(true);
             return;
         }
 
+        setTxFiller(false);
         let txsPerPage = 20;
         if(TXLIST === null){
-            setTxFiller();
             if(txs.length > txsPerPage){
                 txListOpts.page = txsPerPage;
                 txListOpts.pagination = [{
@@ -965,14 +992,14 @@ ${keys.mnemonicSeed}`;
             txSortTimeButton.classList.add('desc');
             txSortTimeButton.dataset.dir = 'desc';
         }else{
-            setTxFiller();
+            setTxFiller(false);
             TXLIST.add(txs);
             TXLIST.sort('timestamp', {order: 'desc'});
             resetTxSortMark();
             txSortTimeButton.classList.add('desc');
             txSortTimeButton.dataset.dir = 'desc';
-            //showToast(`Transaction list updated`);
         }
+        
     }
  
     txSortAmountButton.addEventListener('click',(event)=>{

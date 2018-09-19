@@ -8,9 +8,9 @@ It is meant to be able to work on Windows, Linux and MacOS, however so far we've
 
 ### Features:
 This wallet contains the basic functions required to manage your TurtleCoin wallet:
-  * Basic tasks: Open an existing wallet file, create new wallet file, import an existing wallet using keys or mnemonic seed
-  * Wallet operations: display wallet balance, list transactions, send new transaction, display/export private keys &amp; mnemonic seed
-  * Address book: store and label your contact's wallet address, searchable and can be looked up during sending new transaction
+  * Basic tasks: Open an existing wallet file, create new wallet file, import an existing wallet using keys or mnemonic seed.
+  * Wallet operations: display wallet balance, list transactions, send new transfer, display/export private keys &amp; mnemonic seed.
+  * Address book: store and label your contact's wallet address, searchable and can be looked up during sending new transaction.
   * UI/Misc: Provides up-to-date public node address or specify your own local node, able to specify start scan height when importing wallet for faster sync, incoming transaction notification, minimize/close to system tray.
 
 There is still plenty of room for improvements and features, so we will gladly accept help from anyone who is capable of lending a hand.
@@ -27,19 +27,17 @@ If you don't trust the bundled `turtle-service` file, you can compare the sha256
 
 ### Download &amp; Run WalletShell
 
-* Download latest packaged release for your platform here: https://github.com/turtlecoin//turtle-wallet-electron/releases
+* Download latest packaged release/installer for your platform here: https://github.com/turtlecoin//turtle-wallet-electron/releases
 
-* Extract downloaded file
-* Open/Run the wallet executable, located in the extracted directory:  
-  * GNU/Linux: `walletshell-<version>-linux/walletshell`
-  * Windows: `walletshell-<version>-windows/walletshell.exe`
-  * macOS: ?? `walletshell-<version>-osx/walletshell.app/Contents/MacOs/walletshell` ??
+* Windows: run the downloaded installer `walletshell-<version>-win-setup.exe`, WalletShell will be lauched after installation completed.
+* GNU/Linux: extract downloaded archived, then run the executable binary (`walletshell-<version>/walletshell`) 
+* macOS: ??? extract downloaded archived, then run the executable binary (`WalletShell.app/Contents/MacOs/WalleSshell`) ??
 
 
 ### Build
 You need to have `Node.js` and `npm` installed, go to https://nodejs.org and find out how to get it installed on your platform.
 
-Once you have Node installed:
+Once you have Node+npm installed:
 ```
 # first, download turtle-service binary for each platform
 # from TurtleCoin official repo
@@ -53,28 +51,26 @@ $ cd turtle-wallet-electron
 # install dependencies
 $ npm install
 
-# create build directory
-$ mkdir ./build
+# create build+dist directory
+$ mkdir -p ./build && mkdir -p ./dist
 
 # copy/symlink icons from assets, required for packaging
 $ cp ./src/assets/icon.* ./build/
 
 # build GNU/Linux package
-$ mkdir -p ./tbin/lin
-$ cp /path/to/linux-version-of/turtle-service ./tbin/lin/
-$ npm run linpack
+$ mkdir -p ./bin/lin
+$ cp /path/to/linux-version-of/turtle-service ./bin/lin/
+$ npm run dist-lin
 
 # build Windows package
-$ mkdir -p ./tbin/win
-$ cp /path/to/win-version-of/turtle-service.exe ./tbin/win/
-$ npm run winpack
+$ mkdir -p ./bin/win
+$ cp /path/to/win-version-of/turtle-service.exe ./bin/win/
+$ npm run dist-lin
 
 # build OSX package
-$ mkdir -p ./tbin/osx
-$ cp /path/to/osx-version-of/turtle-service ./tbin/osx/
-$ npm run osxpack
+$ mkdir -p ./bin/osx
+$ cp /path/to/osx-version-of/turtle-service ./bin/osx/
+$ npm run dist-mac
 ```
 
-You can find the resulting walletshell binary in a ready to package folder inside `build/walletshell-<platform>-<arch>` subdirectory.
-
-
+Resulting packages or installer can be found inside `dist/` directory.
