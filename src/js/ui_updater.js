@@ -121,22 +121,36 @@ function updateSyncProgres(data){
 function updateBalance(data){
     const balanceAvailableField = document.querySelector('#balance-available > span');
     const balanceLockedField = document.querySelector('#balance-locked > span');
-    if(!data || !data.availableBalance) return;
-    if(data.availableBalance <= 0) return;
+    const maxSendFormHelp = document.getElementById('sendFormHelp');
+    let inputSendAmountField = document.getElementById('input-send-amount');
 
-    let bUnlocked = (data.availableBalance / 100).toFixed(2);
+    if(!data) return;
+    let availableBalance = parseFloat(data.availableBalance) || 0;
+    if(availableBalance <= 0){
+        inputSendAmountField.setAttribute('max','1.00');
+        maxSendFormHelp.innerHTML = "You don't have any funds to be sent.";
+        if(availableBalance < 0) return;
+    }
+
+    let bUnlocked = (availableBalance / 100).toFixed(2);
     let bLocked = (data.lockedAmount / 100).toFixed(2);
     balanceAvailableField.innerHTML = bUnlocked;
     balanceLockedField.innerHTML = bLocked;
     let walletFile = require('path').basename(settings.get('recentWallet'));
     let wintitle = `(${walletFile}) - ${bUnlocked} TRTL`;
     setWinTitle(wintitle);
+    
+    if(availableBalance > 0){
+        let maxSend = (bUnlocked - (wlsession.get('nodeFee')+0.10)).toFixed(2);
+        inputSendAmountField.setAttribute('max',maxSend);
+        maxSendFormHelp.innerHTML = `Max. amount you can send is ${maxSend}`;
+    }
+    
 }
 
 function updateTransactions(result){
     const blockItems = result.items;
     if(!blockItems.length) return;
-    //let txlistExisting = remote.getGlobal('wsession').txList;
     let txlistExisting = wlsession.get('txList');
     let txListNew = [];
 
@@ -170,11 +184,6 @@ function updateTransactions(result){
     wlsession.set('txList', txList);
     wlsession.set('txLen', txList.length);
     wlsession.set('txNew', txListNew);
-    // remote.getGlobal('wsession').txLastHash = newLastHash;
-    // remote.getGlobal('wsession').txLastTimestamp = newLastTimestamp;
-    // remote.getGlobal('wsession').txList = txListNew.concat(remote.getGlobal('wsession').txList);
-    // remote.getGlobal('wsession').txLen = remote.getGlobal('wsession').txList.length;
-    // remote.getGlobal('wsession').txNew = txListNew;
 
     // date to compare
     let currentDate = new Date();
@@ -193,13 +202,12 @@ function updateTransactions(result){
     }else if(rememberedLastHash === newLastHash){
         notify = false;
     }
-
     document.getElementById('button-transactions-refresh').click();
 
     if(notify){
         settings.set('last_notification', newLastHash);
         let notiOptions = {
-            'body': `Amount: ${(newTxAmount)} TRTL<br>Hash: ${newLastHash.substring(24,-0)}...`,
+            'body': `Amount: ${(newTxAmount)} TRTL\nHash: ${newLastHash.substring(24,-0)}...`,
             'icon': '../assets/walletshell_icon.png'
         };
         let itNotification = new Notification('Incoming Transfer', notiOptions);

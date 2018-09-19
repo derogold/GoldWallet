@@ -179,14 +179,17 @@ function startWorker(){
         }
     });
 
-    the_cworker.send({
+    let cfgData = {
         type: 'cfg',
         data: {
             service_host: settings.get('service_host'),
             service_port: settings.get('service_port'),
             service_password: settings.get('service_password')
-        }
-    });
+        },
+        debug: SERVICE_LOG_DEBUG
+    }
+
+    the_cworker.send(cfgData);
 
     the_cworker.on('close', function (code, signal) {
         log.debug(`service worker terminated by ${signal}`);

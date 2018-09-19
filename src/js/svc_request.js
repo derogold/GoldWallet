@@ -225,6 +225,7 @@ svcRequest.prototype.sendTransaction = function (params) {
         if (!params.amount) return reject(new Error('Missing transaction amount parameter'));
         if (parseFloat(params.fee) < 0.1) return reject(new Error('Minimum fee is 0.1 TRTL'));
         //[{address: "TRTLxxxx...", amount: 100}];
+        
         var req_params = {
             transfers: [{address: params.address, amount: params.amount}],
             fee: params.fee
@@ -233,7 +234,7 @@ svcRequest.prototype.sendTransaction = function (params) {
         if(params.paymentId) req_params.paymentId = params.paymentId;
 
         // give extra long timeout
-        this._sendRequest('sendTransaction', req_params, 6000).then((result) => {
+        this._sendRequest('sendTransaction', req_params, 8000).then((result) => {
             return resolve(result);
         }).catch((err) => {
             return reject(err);

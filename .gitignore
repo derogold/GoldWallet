@@ -3,3 +3,5 @@ node_modules/*
 tbin/*
 .vscode/*
 build/*
+dist/*
+bin/*

@@ -2,7 +2,12 @@
     <section class="section" id="section-transactions">
         <div class="section-contents">
             <div class="div-title"><h2 class="title">Transactions</h2></div>
-            <div  id="transaction-lists" class="list-tables">
+            <div id="txfiller" class="list-tables">
+                <p>Transaction data not available.<br>
+                   Either you haven't made any transaction or your wallet still being synchronized.
+                </p>
+            </div>
+            <div id="transaction-lists" class="list-tables hidden">
                 <div class="tx-tools">
                     <div class="tx-search">
                     <input id="tx-search" class="text-block search" placeholder="Search by anything..." />
@@ -16,11 +21,7 @@
                 <!-- <progress class="light block-progress-extra"></progress> -->
                 <div class="transaction-table-wrapper">
                     <table class="custom-table transaction-list-table" id="transaction-list-table">
-                        <tbody class="list">
-                            <tr id="txfiller">
-                                <td colspan="2" class="text-center">No transactions found, yet -:(.</td>
-                            </tr>
-                        </tbody>
+                        <tbody class="list"></tbody>
                     </table>
                 </div>
                 <ul class="pagination"></ul>

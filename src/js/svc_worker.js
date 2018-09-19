@@ -1,6 +1,11 @@
+const log = require('electron-log');
 const svcRequest = require('./svc_request.js');
 
-//var LAST_KNOW_BALANCE = 0.00;
+DEBUG=false;
+log.transports.file.maxSize = 5 * 1024 * 1024;
+log.transports.console.level = 'debug';
+log.transports.file.level = 'debug';
+
 const CHECK_INTERVAL = 5 * 1000;
 var BLOCK_COUNT_LOCAL = 1;
 var BLOCK_COUNT_NETWORK = 1;
@@ -8,13 +13,16 @@ var LAST_BLOCK_COUNT_LOCAL = 0;
 
 var SERVICE_CFG = null; // { service_host: '127.0.0.1', service_port: '8070', service_password: 'xxx'};
 var SAVE_COUNTER = 0;
-var LOGPREFIX = '[SVCWORKER]:';
-
 var TX_LAST_INDEX = 1;
 var TX_LAST_COUNT = 0;
 var TX_CHECK_STARTED = false;
 
 var taskWorker = null;
+
+function logDebug(msg){
+    if(!DEBUG) return;
+    log.debug(msg);
+}
 
 // every 5 secs
 function checkBlockUpdate(){
@@ -25,20 +33,20 @@ function checkBlockUpdate(){
         let knownBlockCount = parseInt(blockStatus.knownBlockCount, 10);
 
         if(blockCount <= BLOCK_COUNT_LOCAL || knownBlockCount <= BLOCK_COUNT_NETWORK){
-            BLOCK_COUNT_LOCAL = blockCount;
-            BLOCK_COUNT_NETWORK = knownBlockCount;
+            logDebug('blockCout unchanged OR Invalid');
             return;
         }
 
         BLOCK_COUNT_LOCAL = blockCount;
         BLOCK_COUNT_NETWORK = knownBlockCount;
-        // add any extras here, so renderer not doing too much thing
+        // add any extras here, so renderer not doing too much things
         let dispKnownBlockCount = (knownBlockCount-1);
-
         let dispBlockCount = (blockCount > dispKnownBlockCount ? dispKnownBlockCount : blockCount);
 
         let syncPercent = ((dispBlockCount / dispKnownBlockCount) * 100);
-        if(syncPercent >= 99){
+        if(syncPercent <=0 ){
+            syncPercent = 100;
+        }else if(syncPercent >= 99){
             syncPercent = syncPercent.toFixed(3);
         }else{
             syncPercent = syncPercent.toFixed(2);
@@ -46,7 +54,7 @@ function checkBlockUpdate(){
 
         blockStatus.displayBlockCount = dispBlockCount;
         blockStatus.displayKnownBlockCount = dispKnownBlockCount;
-        
+        blockStatus.syncPercent = syncPercent;
         process.send({
             type: 'blockUpdated',
             data: blockStatus
@@ -54,32 +62,25 @@ function checkBlockUpdate(){
 
         // don't check if we can't get any block
         if(BLOCK_COUNT_LOCAL <= 1) return;
-
         // don't check if block count not updated
-        if(LAST_BLOCK_COUNT_LOCAL === BLOCK_COUNT_LOCAL && TX_CHECK_STARTED) {
-            return;
-        }
-
-        // only check if block count >= 4;
-        //let newBlocks = (BLOCK_COUNT_LOCAL - LAST_BLOCK_COUNT_LOCAL);
-        //if( newBlocks >= 4 ){
+        if(LAST_BLOCK_COUNT_LOCAL === BLOCK_COUNT_LOCAL && TX_CHECK_STARTED) return;
+        
         checkTransactionsUpdate();
         LAST_BLOCK_COUNT_LOCAL = BLOCK_COUNT_LOCAL;
-        //}
+
     }).catch((err) => {
+        logDebug(`checkBlockUpdate failed: ${err.message}`);
         return false;
     });
 }
 
 //var TX_CHECK_COUNTER = 0;
 function checkTransactionsUpdate(){
-    // no config or not running
     if(!SERVICE_CFG) return;
-    // check balance
+
     let svc = new svcRequest(SERVICE_CFG);
+
     svc.getBalance().then((balance)=> {
-        // if(parseFloat(balance.availableBalance) !== LAST_KNOW_BALANCE){
-            LAST_KNOW_BALANCE = balance.availableBalance;
             process.send({
                 type: 'balanceUpdated',
                 data: balance
@@ -102,6 +103,7 @@ function checkTransactionsUpdate(){
                     firstBlockIndex: startIndexWithMargin,
                     blockCount: searchCountWithMargin
                 };
+                
                 svc.getTransactions( trx_args ).then((trx) => {
                     process.send({
                         type: 'transactionUpdated',
@@ -109,7 +111,7 @@ function checkTransactionsUpdate(){
                     });
                     return true;
                 }).catch((err)=>{
-                    console.log(`${LOGPREFIX} failed to get transaction`,err);
+                    logDebug(`svc.getTransaction failed: ${err.message}`);
                     return false;
                 });
                 TX_CHECK_STARTED = true;
@@ -117,7 +119,7 @@ function checkTransactionsUpdate(){
                 TX_LAST_COUNT = currentBLockCount;
             }
     }).catch((err)=>{
-        console.log(`${LOGPREFIX} Failed to checkTransactionsUpdate`, err);
+        logDebug(`svc.getBalance failed: ${err.message}`);
         return false;
     });
 }
@@ -127,10 +129,10 @@ function saveWallet(){
     // check balance
     let svc = new svcRequest(SERVICE_CFG);
     svc.save().then(()=> {
-        console.log(`${LOGPREFIX} wallet has been saved`);
+        logDebug(`wallet has been saved`);
         return true;
     }).catch((err)=>{
-        console.log(`${LOGPREFIX} Failed: saving error`, err);
+        logDebug(`svc.save failed: ${err.message}`);
         return false;
     });
 }
@@ -162,6 +164,10 @@ process.on('message', (msg) => {
                     data: 'OK'
                 });
             }
+            if(cmd.debug){
+                DEBUG = true;
+                logDebug('Running worker in debug mode');
+            }
             break;
         case 'start':
             try { clearInterval(taskWorker);} catch (err) {}
@@ -169,7 +175,7 @@ process.on('message', (msg) => {
             checkBlockUpdate();
 
             // initial check
-            //checkTransactionsUpdate(); // just to get balance
+            checkTransactionsUpdate(); // just to get balance
 
             // scheduled tasks
             setTimeout(workOnTasks, 5000);
@@ -177,11 +183,11 @@ process.on('message', (msg) => {
         case 'stop':
             if(taskWorker === undefined || taskWorker === null){
                 try{
-                    console.log(`${LOGPREFIX} stopping request, clearing tasks`);
+                    logDebug(`stopping worker`);
                     clearInterval(taskWorker);
                     process.exit(0);
                 }catch(e){
-                    console.log('Failed to stop worker');
+                    logDebug(`failed to stop worker: ${e.message}`);
                 }
             }
             break;
@@ -191,11 +197,11 @@ process.on('message', (msg) => {
 });
 
 process.on('uncaughtException', function (err) {
-    console.log(LOGPREFIX, err);
+    logDebug(`worker uncaughtException: ${err.message}`);
     process.exit(1);
 });
 
 process.on('disconnect', () => function(err){
-    console.log(LOGPREFIX, 'disconnected');
+    logDebug(`worker disconnected`);
     process.exit(1);
 });
