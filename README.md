@@ -1,5 +1,6 @@
 # WalletShell
 
+![WalletShell Logo](docs/walletshell.png)  
 This is a GUI wallet for TurtleCoin made using Electron, this means it's written in JavaScript, HTML and CSS. 
 
 It is meant to be able to work on Windows, Linux and MacOS, however so far we've only been able to test it on Linux &amp; Windows.
@@ -8,10 +9,32 @@ It is meant to be able to work on Windows, Linux and MacOS, however so far we've
 
 ### Features:
 This wallet contains the basic functions required to manage your TurtleCoin wallet:
-  * Basic tasks: Open an existing wallet file, create new wallet file, import an existing wallet using keys or mnemonic seed.
-  * Wallet operations: display wallet balance, list transactions, send new transfer, display/export private keys &amp; mnemonic seed.
-  * Address book: store and label your contact's wallet address, searchable and can be looked up during sending new transaction.
-  * UI/Misc: Provides up-to-date public node address or specify your own local node, able to specify start scan height when importing wallet for faster sync, incoming transaction notification, minimize/close to system tray.
+
+* Wallet creation
+  * Create new wallet
+  * Import from private keys
+  * Import from mnemonic seed
+* Basic wallet operation
+  * Open an existing  wallet
+  * Display wallet address & balance
+  * Display private keys/seed
+  * Export private keys/seed
+  * Transactions listing/sorting/searching
+  * Display transaction detail
+  * Incoming Transaction notification
+  * Send TurtleCoin to single recipient address, allow to set payment id and custom fee. Provides address lookup from addressbook.
+* Address book
+  * Add/Edit/Delete address entry (label/name, address and payment id)
+  * Listing/sorting/searching existing entries
+  * Allow to store same wallet address with different payment id
+  * Autosave address after sending to new/unknown recipient
+* Misc
+  * Provides setting to set local or public node address
+  * Provides setting to set custom turtle-service path
+  * Provides setting to use system tray (on closing/minimizing wallet)
+  * Provides list of public nodes, fetch/updated daily from turtlecoin-nodes-json repo. Display order of public nodes will be shuffled on every access to settings page, to give relatively fair opportunity for node operators to be on top of the list
+  * Custom node address that is not on the list will be added/remembered for future use
+
 
 There is still plenty of room for improvements and features, so we will gladly accept help from anyone who is capable of lending a hand.
 

@@ -1,11 +1,25 @@
 /* Style page content */
+html{
+    font-family: 'Roboto', sans-serif;
+    background: linear-gradient(90deg, #00843d, #45ad57 50%, #007a3d);
+}
 html, body{
     overflow: hidden;
     height: 100%;
 }
 body {
-    transition: all 0.15s ease;
+    margin: 0;
     color: white;
+    min-width: 800px;
+    min-height: 400px;
+    background-image: url(../assets/walletshell_nx_trans.png);
+    background-position: 50% 55%;
+    background-size: 25%;
+    background-repeat: no-repeat;
+    /* background-clip: border-box; */
+    /* background-attachment: fixed; */
+    /* transition: all 0.15s ease; */
+    /* background-blend-mode: soft-light; */
 }
 
 .main {
@@ -13,17 +27,10 @@ body {
     padding: 0px 10px;
 }
 
-body {
-    min-width: 800px;
-    min-height: 400px;
-    background-image: url("../assets/background.png");
-    background-size: cover;
-    font-family: 'Roboto', sans-serif;
-    margin: 0;
-}
 ::placeholder { 
-    color:    rgba(234, 234, 234, 0.35);
- }
+    color:rgba(234, 234, 234, 0.35);
+}
+
 @keyframes fade {
     0%,100% { opacity: 0 }
     50% { opacity: 1 }
@@ -48,141 +55,32 @@ body {
 .text-center{
     text-align: center;
 }
-/* The titlebar */
-.titlebar {
-    z-index: 1;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    width: 100%;
-    height: 30px;
-    /* Make it draggable */
-    -webkit-user-select: none;
-    -webkit-app-region: drag;
-    cursor: default;
-    pointer-events: none;
-    background-color: #101310;
-    border-bottom: 1px solid #ffffff78;
-}
-
-.titlebar-title {
-    bottom: 11px;
-    position: relative;
-    text-align: center;
-    font-weight: bold;
-    font-family: 'Roboto', sans-serif;
-    color: #ffffff;
-    -webkit-user-select: none;
-    -webkit-app-region: drag;
-}
-
-/* Titlebar buttons */
-.titlebar-button {
-    top: 3px;
-    width: 24px;
-    height: 24px;
-    position: absolute;
-    cursor: default;
-    pointer-events: all;
-    -webkit-app-region: no-drag;
-    text-align: center;
-    color: white;
-    font-size: 115%;
-    transition: color 0.2s;
-    background:transparent;
-    border:none;
-    -webkit-user-select: none;
-}
-
-.titlebar-button:focus {
-   outline: none;
-}
-
-.titlebar-button:hover {
-    color: #b3b3b3;
-}
-
-.titlebar-button:active {
-    color: #fffb00;
-}
-
-#titlebar-button-minimize {
-    right: 75px;
-}
-
-#titlebar-button-maximize {
-    right: 40px;
-}
-
-#titlebar-button-restore {
-    right: 40px;
-}
-
-#titlebar-button-close {
-    right: 5px;
-}
-
-#titlebar-button-settings {
-    left: 5px;
-}
-
-#titlebar-button-about {
-    left: 40px;
-}
-
-#titlebar-button-help {
-    left: 75px;
-}
 
 /* Top navigation bar */
 .navbar {
-    z-index: 1;
-    position: fixed;
-    /* top: 31px; */
-    top: 0px;
-    left: 0px;
-    height: 45px;
-    width: 100%;
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
     background-color: #212721;
+    display: flex;
 }
 
 #navbar-div-sync {
-    display: inline;
-    position: relative;
-    color: #ff0000;
-    top: 15px;
-    left: 10px;
+    flex-grow: 1.2;
+    flex-basis: 42%;
+    padding:12px 0 0 12px;
 }
-.navbar-inner{
-    height: 45px;
-    overflow: hidden;
-    max-width: 1380px;
-    margin: 0 auto;
-    padding: 0;
-    width: 100%;
-}
+
 
 .navbar-button {
     height: 45px;
-    /* width: 140px; */
     padding: 0 14px;
-    float: right;
     color: white;
     display: block;
     text-align: center;
     font-size: 0.98rem;
-    font-family: 'Roboto', sans-serif;
     text-transform: uppercase;
-    /* padding: 10px 2px; */
     background-color: #212721;
-    /* transition: background-color 0.2s; */
-    
     border: none;
     text-shadow: -1px -1px 0 #333;
+    flex-basis: auto;
 }
 
 .navbar-button:hover {
@@ -198,7 +96,9 @@ body {
     background-color: #4d634d;
 }
 
-
+.navbar-button.btn-active{
+    
+}
 
 .navbar-button .navbar-label{
     display: none;
@@ -208,20 +108,10 @@ body {
 }
 
 
-#main-div {
-    width: 99.6%;
-    height: 91.5%;
-    position: absolute;
-    top:45px;
-    /* margin: -130px 0 0 0; */
-    /* margin: -14.5% 0 0 0; */
-    /* margin: -15.5% 0 0 0; */
-    padding: 0;
-}
+
 
 .title {
     font-weight: normal;
-    font-family: 'Roboto', sans-serif;
     color: #fff;
     font-size: 1.85rem;
     text-shadow: 0px -1px 1px #333;
@@ -230,15 +120,14 @@ body {
 
 /* Text */
 .text-block {
-    font-family: 'Roboto', sans-serif;
     padding: 12px 10px;
     margin: 8px 0;
     display: block;
-    border: 1px solid #ccc;
+    border: 1px solid #c3c3c39c;
     border-radius: 4px;
     box-sizing: border-box;
     color: white;
-    background-color: rgba(255,255,255,0.25);
+    background-color: rgba(0, 0, 0, 0.18);
 }
 
 
@@ -257,15 +146,14 @@ input.short-number{
     margin-bottom: 0rem;
 }
 .default-textarea{
-    font-family: 'Roboto', sans-serif;
     padding: 12px 20px;
     margin: 8px 0;
     display: block;
-    border: 1px solid #ccc;
+    border: 1px solid #c3c3c39c;
     border-radius: 4px;
     box-sizing: border-box;
     color: white;
-    background-color: rgba(255,255,255,0.25);
+    background-color: rgba(0, 0, 0, 0.18);
     font-size: 1rem;
 }
 
@@ -281,17 +169,12 @@ input.short-number{
     line-height: 150%;
     display: inline-block;
     color: #fff;
-    /* -webkit-transition: opacity 3s ease-in-out;
-    -moz-transition: opacity 3s ease-in-out;
-    -ms-transition: opacity 3s ease-in-out;
-    -o-transition: opacity 3s ease-in-out; */
     opacity: 1;
     visibility: visible;
     font-size: 0.9rem;
     padding: 2px 4px;
     margin-top: 0.5rem;
 }
-
 
 .form-ew.fade{
     visibility: hidden;
@@ -305,17 +188,14 @@ input.short-number{
     letter-spacing: 1px;
 }
 
-
-
 .text-spaced-bold {
     letter-spacing: 1px;
-    font-weight: bold; 
-    
+    font-weight: bold;
 }
 
 .text-spaced-error {
     letter-spacing: 1px;
-    background:rgba(203, 0, 0, 1); 
+    background:rgba(203, 0, 0, 1);
     font-weight: bold; 
     padding: 2px 4px;
     display: inline-block;
@@ -324,7 +204,7 @@ input.short-number{
 
 .text-spaced-warning {
     letter-spacing: 1px;
-    background:#d14500; 
+    background:#d14500;
     font-weight: bold;
     padding: 2px 4px;
     display: inline-block;
@@ -333,8 +213,8 @@ input.short-number{
 
 .text-spaced-success {
     letter-spacing: 1px;
-    background: #00662f; 
-    font-weight: bold; 
+    background: #00662f;
+    font-weight: bold;
     padding: 2px 4px;
     display: inline-block;
     opacity: 1;
@@ -346,7 +226,6 @@ input.short-number{
     display: block;
     text-align:right;
     margin: 1rem 0 0 0;
-
 }
 
 .div-buttons {
@@ -362,11 +241,11 @@ input.short-number{
 .div-buttons button{
     margin-right: 0.35rem;
 }
+
 .button-gray {
     /* padding: 8px 12px; */
     border: 2px solid #ccc;
     border-radius: 4px;
-    font-family: 'Roboto', sans-serif;
     font-size: 1.15em;
     color: white;
     /*background-color: #00632e;*/
@@ -396,7 +275,6 @@ input.short-number{
     /* padding: 8px 12px; */
     border: 2px solid #ccc;
     border-radius: 4px;
-    font-family: 'Roboto', sans-serif;
     font-size: 1.15em;
     color: white;
     /*background-color: #00632e;*/
@@ -404,6 +282,8 @@ input.short-number{
     text-transform: uppercase;
     text-shadow: 3px 3px 3px rgba(255,255,255, .2);
     transition: all 0.15s ease;
+    /* max-width: 200px; */
+    /* margin: 0 auto; */
 }
 
 .button-green:hover {
@@ -425,7 +305,6 @@ input.short-number{
     /* padding: 8px 12px; */
     border: 2px solid #ccc;
     border-radius: 4px;
-    font-family: 'Roboto', sans-serif;
     font-size: 1.15em;
     color: white;
     /*background-color: #00632e;*/
@@ -462,88 +341,41 @@ input.short-number{
     font-size: 1rem;
 }
 
-/* Tooltips */
-/* Tooltip container */
-.tooltip {
-    position: relative;
-}
-
-/* Tooltip text */
-.tooltip .tooltip-text {
-    visibility: hidden;
-    width: 120px;
-    bottom: 100%;
-    left: 50%;
-    margin-left: -60px;
-    background-color: black;
-    color: #fff;
-    text-align: center;
-    padding: 5px 0;
-    border-radius: 6px;
-    
-    /* Position the tooltip text - see examples below! */
-    position: absolute;
-    z-index: 1;
-
-    opacity: 0;
-    transition: opacity 1s;
-}
-
-.tooltip .tooltip-text::after {
-    content: "";
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    margin-left: -5px;
-    border-width: 5px;
-    border-style: solid;
-    border-color: black transparent transparent transparent;
-}
-
-/* Show the tooltip text when you mouse over the tooltip container */
-.tooltip:hover .tooltip-text {
-    opacity: 1;
-    visibility: visible;
+#main-div {
+    height: 89.2%;
+    display:flex;
+    flex-wrap: wrap;
+    /* border: 1px solid red; */
 }
 
 /* Sections */
 .section {
-    position: absolute;
-    top: 1rem;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    overflow: hidden;
-    font-family: 'Roboto', sans-serif;
-    height: 99%;
-    min-width: 797.3px; /* maybe 800px is too much? */
-    min-height: 400px;
-    /* Hidden by default */
+    transition: visibility 0s .12s linear , opacity .2s ease-in-out;    
+    width:100%;
+    height:100%;
+    flex-basis:100%;
+    flex-grow:1;
+    order:100;
     pointer-events: none;
-    visibility: hidden;
-    opacity: 0;
-    transform: translateY(35px);
-    transition: visibility 0s .12s linear , opacity .12s ease-in, transform .12s ease-in;
-  }
-  
-.section.is-shown {
-    pointer-events: auto;
-    visibility: visible;
-    opacity: 1;
-    transform: translateY(0);
-    transition: visibility 0s 0s linear , opacity .36s ease-out, transform .36s ease-out;
-}
-
-.section > div{
-    position: relative;
-    width: 87.7%;
-    max-width: 1280px;
-    margin: 0 auto;
-    height: 92.9%;
+    opacity:0;
+    visibility:hidden;
     user-select: none;
 }
+    
+.section.is-shown {
+    order:1;
+    pointer-events: auto;
+    opacity:1;
+    visibility:visible;
+}
+
+/* .section > div{} */
 .section-contents{
     padding: 2rem 3rem 0 3rem;
+    height: 100%;
+}
+.section-contents.darkened{
+    background-color: rgba(68, 68, 68, 0.25);
 }
 .welcome-box{
 width: 80%;
@@ -552,32 +384,39 @@ text-align: center;
 }
 
 .div-welcome-top{
-margin-top: 0.5rem;
-text-align: center;
+    margin-top: 0.5rem;
+    text-align: center;
 }
 
-.welcome-intro-title{
-font-weight: normal;
-font-size: 3rem !important;
-text-shadow: 0px -1px 1px #333;
-}
+.welcome-intro-title{margin: 0.25rem 0;font-weight: normal;font-size: 3rem !important;text-shadow: 0px -1px 1px #333;}
 
-.welcome-intro{
-font-size: 1.5rem;
-text-shadow: 0px -1px 0px #333;
-}
+.welcome-intro{font-size: 1.5rem;text-shadow: 0px -1px 0px #333;width: 80%;margin: 1rem auto;}
 
 .dev-welcome-bottom{
-position: absolute;
-bottom: 12%;
-left: 0;
-width: 100%;
-text-align: center;
-
+    position: absolute;
+    bottom: 10%;
+    left: 0;
+    width: 100%;
 }
+
 .welcome-buttons{
-display: block;
-margin: 1rem auto 0 auto;
+    display: block;
+    margin: 1rem auto 0 auto;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    grid-auto-rows: 45px;
+    column-gap: 8px;
+    row-gap: 1rem;
+}
+
+.welcome-buttons button:nth-child(1){
+    grid-column-start: 2;
+    grid-column-end: 4;
+}
+.welcome-buttons button:nth-child(2){
+    grid-column-start: 4; 
+    grid-column-end: 6; 
+
 }
 
 /* Fields */
@@ -615,6 +454,26 @@ margin: 1rem auto 0 auto;
     background: rgba(0,0,0,0.5);
     padding: 0.35rem 0;
 }
+.addressbook-table{
+    table-layout:fixed;
+}
+
+.addressbook-table th[data-sort="addressName"]{
+    width: 25% !important;
+}
+.addressbook-table th[data-sort="addressWallet"]{
+    width: 45%;
+}
+
+.addressbook-table th[data-sort="walletPaymentId"]{
+    width:30%;
+}
+.addressbook-table td{
+    vertical-align:top;
+}
+
+
+
 
 /* Controllers */
 /* Checkbox */
@@ -720,13 +579,16 @@ margin: 1rem auto 0 auto;
 .input-wrap input{
     margin-bottom: 0 !important;
     line-height: normal !important;
+    font-size: 0.9rem;
 }
 .form-help{
     font-size: 0.9rem;
     font-style: italic;
     display: inline-block;
-    color: rgba(255,255,255,0.75);
+    color: #fefefe;
     margin: 0.2rem 0 0 0;
+    /* background: rgba(0,0,0,0.5); */
+    /* padding: 2px 4px; */
 }
 
 .help-hl{
@@ -736,14 +598,14 @@ margin: 1rem auto 0 auto;
 .float-wrap{
     overflow: hidden;
     height: 100%;
+    /* display: grid; */
+    /* grid-auto-columns: 45%; */
 }
 .float-col{
     float:left;
     width: 45%;
 }
-.qr-wrap{
-display: block;
-}
+.qr-wrap{/* display: block; */}
 
 .qr-col{
     margin-top: 0.5rem;
@@ -852,15 +714,19 @@ span.form-help-qr.hidden{
 }
 
 .status-node-info{
-    width: 100%;
-    padding: 0.25rem 0.5rem;
+    /* width: 95%; */
+    padding: 0.25rem 1rem;
     font-size: 0.85rem;
     color: #fefefe;
-    background: rgba(0,25,15,0.70);
-    position: absolute;
-    /* top: 75px; */
-    top: 45px;
-    left: 0;
+    background: #00632e;
+    /* text-align: right; */
+    /* border: 1px solid red; */
+    /* display: block; */
+    /* overflow: hidden; */
+    /* margin: 0 auto; */
+    /* border-bottom-left-radius: 6px; */
+    /* border-bottom-right-radius:  6px; */
+    /* box-shadow: -1px 1px 2px #333; */
 }
 .status-node-info.conn-warning{
     background: rgba(255, 0, 0, 0.7);
@@ -899,7 +765,6 @@ span.form-help-qr.hidden{
 
 .inline-block-div.half-width > input{
     width:100%;
-    font-size: 1
 }
 
 .section-wrap{
@@ -980,7 +845,7 @@ span.form-help-qr.hidden{
 
 .scroll-list-wrap{
     min-height: 300px;
-
+    margin-bottom: 1rem;
 }
 
 .list-tables .search,
@@ -1063,17 +928,16 @@ span.form-help-qr.hidden{
 .addressbook-table td.addressPaymentId{
     text-overflow:ellipsis;
     overflow:hidden;
-    font-size: 0.75rem;
+    font-size: 0.85rem;
 }
 
 .address-book-dialog{
     max-height: 95%;
     width: 90%;
-    max-width: 1280px;
+    max-width: 1100px;
     padding-bottom: 1rem;
     border: 1px solid #ccc;
     border-radius:4px;
-
 }
 
 .address-book-dialog .addressBookDetail{
@@ -1297,6 +1161,24 @@ progress.light{
     width: 100%;
     height: 0.25em;
 }
+
+.main-balance-overview {
+    margin: 1.5rem 0;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-column-gap: 1rem;
+}
+.div-main-address-qr{
+    text-align:right;
+}
+.div-main-address-qr img{
+    border-radius:6px;
+}
+.main-balance-overview h2{
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
 
 /*
 @media only screen and (max-width : 780px) {

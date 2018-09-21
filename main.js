@@ -19,7 +19,7 @@ log.transports.file.maxSize = 5 * 1024 * 1024;
 const SERVICE_FILENAME =  (platform === 'win32' ? 'turtle-service.exe' : 'turtle-service' );
 const SERVICE_OSDIR = (platform === 'win32' ? 'win' : (platform === 'darwin' ? 'osx' : 'lin'));
 const DEFAULT_SERVICE_BIN = path.join(process.resourcesPath,'bin', SERVICE_OSDIR, SERVICE_FILENAME);
-const DEFAULT_TITLE = 'TurtleCoin Wallet';
+const DEFAULT_TITLE = 'WalletShell TurtleCoin Wallet';
 const DEFAULT_TRAY_TIP = 'Slow and steady wins the race!';
 const PUBLIC_NODES_URL = 'https://raw.githubusercontent.com/turtlecoin/turtlecoin-nodes-json/master/turtlecoin-nodes.json';
 const FALLBACK_NODES = [
@@ -41,6 +41,7 @@ const DEFAULT_SETTINGS = {
 }
 
 app.prompExit = true;
+app.prompShown = false;
 app.needToExit = false;
 
 app.setAppUserModelId('lol.turtlecoin.walletshell');
@@ -64,6 +65,9 @@ function createWindow () {
         // maxWidth: 1280,
         show: false,
         backgroundColor: '#02853e',
+        // maximizable: false,
+        // minimizable: true,
+        // resizable: false
     });
 
     let contextMenu = Menu.buildFromTemplate([
@@ -142,15 +146,18 @@ function createWindow () {
         if(settings.get('tray_close') && !app.needToExit){
             e.preventDefault();
             win.hide();
-        }else if(app.prompExit){
+        }else if(app.prompExit ){
             e.preventDefault();
+            if(app.prompShown) return;
             let msg = 'Are you sure want to exit?';
+            app.prompShown = true;
             dialog.showMessageBox({
                 type: 'question',
                 buttons: ['Yes', 'No'],
                 title: 'Exit Confirmation',
                 message: msg
             }, function (response) {
+                app.prompShown = false;
                 if (response === 0) {
                     app.prompExit = false;
                     win.webContents.send('cleanup','Clean it up, Dad!');
@@ -240,12 +247,15 @@ if (!silock) app.quit();
 
 app.on('ready', () => {
     initSettings();    
-    log.warn('Running in debug mode');
+
+    if(IS_DEBUG) log.warn('Running in debug mode');
 
     global.wsession = {
         debug: IS_DEBUG,
         //loadedWalletAddress: ''
     };
+    
+    createWindow();
 
     let today = new Date();
     let last_checked = new Date(settings.get('pubnodes_date'));
@@ -257,7 +267,6 @@ app.on('ready', () => {
         log.info('Public node list up to date, skipping update');
         storeNodeList(false); // from local cache
     }
-    createWindow();
 });
 
 // Quit when all windows are closed.

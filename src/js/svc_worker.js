@@ -16,6 +16,7 @@ var SAVE_COUNTER = 0;
 var TX_LAST_INDEX = 1;
 var TX_LAST_COUNT = 0;
 var TX_CHECK_STARTED = false;
+var NODE_CONNECTED = true;
 
 var taskWorker = null;
 
@@ -29,11 +30,36 @@ function checkBlockUpdate(){
     if(!SERVICE_CFG) return;
     let svc = new svcRequest(SERVICE_CFG);
     svc.getStatus().then((blockStatus) => {
+        //logDebug('test block status');
+        //logDebug(blockStatus);
+        let lastConStatus = NODE_CONNECTED;
+        let conFailed  = parseInt(blockStatus.knownBlockCount, 10) === 1;
+        if(conFailed){
+            if(lastConStatus !== conFailed){
+                fakeStatus = {
+                    blockCount: -200,
+                    knownBlockCount: -200,
+                    displayBlockCount: -200,
+                    displayKnownBlockCount: -200,
+                    syncPercent: -200
+                }
+                process.send({
+                    type: 'blockUpdated',
+                    data: fakeStatus
+                });
+            }
+            NODE_CONNECTED = false;
+            return;
+        }
+
+        // we have good connection
+        NODE_CONNECTED = true;
+
         let blockCount = parseInt(blockStatus.blockCount,10);
         let knownBlockCount = parseInt(blockStatus.knownBlockCount, 10);
 
         if(blockCount <= BLOCK_COUNT_LOCAL || knownBlockCount <= BLOCK_COUNT_NETWORK){
-            logDebug('blockCout unchanged OR Invalid');
+            logDebug('skipping notify blockUpdate, blockCount unchanged OR Invalid');
             return;
         }
 
