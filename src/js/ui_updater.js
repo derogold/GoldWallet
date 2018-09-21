@@ -1,34 +1,21 @@
 const {webFrame, remote} = require('electron');
-//const remote = electron.remote;
 const Store = require('electron-store');
 const settings = new Store({name: 'Settings'});
-const abook = new Store({name: 'AddressBook',  encryptionKey: ['79009fb00ca1b7130832a42d','e45142cf6c4b7f33','3fe6fba5'].join('')});
-
 const gutils = require('./gutils');
 const brwin = remote.getCurrentWindow();
-
 const gSession = require('./gsessions');
 const wlsession = new gSession();
 
 /* sync progress ui */
 const syncDiv = document.getElementById('navbar-div-sync');
-const syncText = document.getElementById('navbar-text-sync');
-const syncCountText = document.getElementById('navbar-text-sync-count');
-const syncSlash = document.getElementById('navbar-text-sync-slash');
-const syncKnownText= document.getElementById('navbar-text-sync-known');
-const syncPercent= document.getElementById('navbar-text-sync-percent');
-
+const syncInfoBar = document.getElementById('navbar-text-sync');
 const connInfoDiv = document.getElementById('conn-info');
-const connAddrText = document.getElementById('status-node-addr');
-const connFeeText = document.getElementById('status-node-fee');
-const connWarnText = document.getElementById('status-node-warning');
 
+/* web frame cache clearing interval */
 const WFCLEAR_INTERVAL = 5;
 let WFCLEAR_TICK = 0;
 
-
 function setWinTitle(title){
-    //let defaultTitle = remote.getGlobal('wsession').defaultTitle;
     let defaultTitle = wlsession.get('defaultTitle');
     let newTitle = defaultTitle;
     if(title){
@@ -37,78 +24,92 @@ function setWinTitle(title){
     brwin.setTitle(newTitle);
 }
 
+function triggerTxRefresh(){
+    const txUpdateInputFlag = document.getElementById('transaction-updated');
+    txUpdateInputFlag.value = 1;
+    txUpdateInputFlag.dispatchEvent(new Event('change'));
+}
+
 function updateSyncProgres(data){
     const iconSync = document.getElementById('navbar-icon-sync');
     let blockCount = data['displayBlockCount'];
     let knownBlockCount = data['displayKnownBlockCount'];
     let blockSyncPercent = data['syncPercent'];
+    let statusText = '';
+
     // restore/reset
     if(knownBlockCount === -100){
-        //toggleProgressExtra(false);
+        // sync status text
+        statusText = 'IDLE';
+        syncInfoBar.innerHTML = statusText;
+        // sync info bar class
         syncDiv.className = '';
-        syncText.innerHTML = 'IDLE';
-        gutils.clearChild(syncCountText);
-        gutils.clearChild(syncKnownText);
-        gutils.clearChild(syncSlash);
-        gutils.clearChild(syncPercent);
-
+        // sync status icon
         iconSync.setAttribute('data-icon', 'pause-circle');
         iconSync.classList.remove('fa-spin');
-
+        // connection status
         connInfoDiv.classList.remove('conn-warning');
         connInfoDiv.classList.add('hidden');
-        connAddrText.innerHTML = 'N/A';
-        connFeeText.innerHTML = 'N/A';
-        gutils.clearChild(connWarnText);
+        connInfoDiv.textContent = '';
+        
+        // sync sess flags
+        wlsession.set('syncStarted', false);
+        wlsession.set('synchronized', false);
+        // reset wintitle
         setWinTitle();
-    }else if(knownBlockCount <=1){
+        // no node connected
+        wlsession.set('connectedNode', '');
+    }else if(knownBlockCount === -200){
         // not connected
-        //toggleProgressExtra(false);
+        // status info bar class
         syncDiv.className = 'failed';
-        syncText.innerHTML = 'NOT CONNECTED';
-        gutils.clearChild(syncCountText);
-        gutils.clearChild(syncKnownText);
-        gutils.clearChild(syncSlash);
-        gutils.clearChild(syncPercent);
-
+        // sync status text
+        statusText = 'NOT CONNECTED';
+        syncInfoBar.textContent = statusText;
+        //sync status icon
         iconSync.setAttribute('data-icon', 'times');
         iconSync.classList.remove('fa-spin');
+        // connection status
         connInfoDiv.classList.remove('hidden');
         connInfoDiv.classList.add('conn-warning');
-        connAddrText.innerHTML = '<span style="color:yellow;">N/A</span>';
-        connFeeText.innerHTML = '<span style="color:yellow;">N/A</span>';
-        connWarnText.innerHTML = '- Connection failed, try switching to another Node in settings page, close and reopen your wallet';
+        connInfoDiv.innerHTML = 'Connection failed, try switching to another Node in settings page, close and reopen your wallet';
+        wlsession.set('connectedNode', '');
     }else{
-        gutils.clearChild(connWarnText);
-        
-        syncCountText.innerHTML = blockCount;
-        syncSlash.innerHTML = ' / ';
-        syncKnownText.innerHTML = knownBlockCount;
-
-        //remote.getGlobal('wsession').syncStarted = true;
+        // sync sess flags
         wlsession.set('syncStarted', true);
-
+        statusText = `${blockCount}/${knownBlockCount}` ;
         if(blockCount+1 >= knownBlockCount && knownBlockCount != 0) {
+            // info bar class
             syncDiv.classList = 'synced';
-            syncText.innerHTML = 'SYNCED ';
-            gutils.clearChild(syncPercent);
+            // status text
+            statusText = `SYNCED ${statusText}`
+            syncInfoBar.textContent = statusText;
+            // status icon 
             iconSync.setAttribute('data-icon', 'check');
             iconSync.classList.remove('fa-spin');
+            // sync status sess flag
             wlsession.set('synchronized', true);
          } else {
+             // info bar class
             syncDiv.className = 'syncing';
-            syncText.innerHTML = 'SYNCING ';
-            syncPercent.innerHTML =  `(${blockSyncPercent}%)`;
+            // status text
+            statusText = `SYNCING ${statusText} (${blockSyncPercent}%)`;
+            syncInfoBar.textContent = statusText;
+            // status icon
             iconSync.setAttribute('data-icon', 'sync');
             iconSync.classList.add('fa-spin');
-            wlsession.set('synchronized', true);
-            //toggleProgressExtra(true);
+            // sync status sess flag
+            wlsession.set('synchronized', false);
         }
-        //let nFee = remote.getGlobal('wsession').nodeFee;
-        let nFee = wlsession.get('nodeFee');
-        document.getElementById('conn-info').classList.remove('conn-warning');
-        connAddrText.innerHTML = `${settings.get('daemon_host')}:${settings.get('daemon_port')}`;
-        document.getElementById('status-node-fee').innerHTML = (nFee ? "TRTL " + nFee : '-');
+        
+        let connStatusText = `Connected to: <strong>${wlsession.get('connectedNode')}</strong>`;
+        let connNodeFee = parseInt(wlsession.get('nodeFee'), 10);
+        if(connNodeFee >=1 ){
+            connStatusText += ` | Node fee: <strong>${connNodeFee} TRTL</strong>`;
+        }
+        connInfoDiv.classList.remove('conn-warning');
+        connInfoDiv.classList.remove('hidden');
+        connInfoDiv.innerHTML = connStatusText;
     }
 
     if(WFCLEAR_TICK === 0 || WFCLEAR_TICK === WFCLEAR_INTERVAL){
@@ -129,6 +130,8 @@ function updateBalance(data){
     if(availableBalance <= 0){
         inputSendAmountField.setAttribute('max','1.00');
         maxSendFormHelp.innerHTML = "You don't have any funds to be sent.";
+        wlsession.set('walletUnlockedBalance', 0);
+        wlsession.set('walletLockedBalance', 0);
         if(availableBalance < 0) return;
     }
 
@@ -136,6 +139,8 @@ function updateBalance(data){
     let bLocked = (data.lockedAmount / 100).toFixed(2);
     balanceAvailableField.innerHTML = bUnlocked;
     balanceLockedField.innerHTML = bLocked;
+    wlsession.set('walletUnlockedBalance', bUnlocked);
+    wlsession.set('walletLockedBalance', bLocked);
     let walletFile = require('path').basename(settings.get('recentWallet'));
     let wintitle = `(${walletFile}) - ${bUnlocked} TRTL`;
     setWinTitle(wintitle);
@@ -202,8 +207,8 @@ function updateTransactions(result){
     }else if(rememberedLastHash === newLastHash){
         notify = false;
     }
-    document.getElementById('button-transactions-refresh').click();
 
+    triggerTxRefresh();
     if(notify){
         settings.set('last_notification', newLastHash);
         let notiOptions = {
@@ -213,7 +218,9 @@ function updateTransactions(result){
         let itNotification = new Notification('Incoming Transfer', notiOptions);
         itNotification.onclick = (event) => {
             event.preventDefault();
-            document.getElementById('button-section-transactions').click();
+            let  txNotifyFiled = document.getElementById('transaction-notify');
+            txNotifyFiled.value = 1;
+            txNotifyFiled.dispatchEvent(new Event('change'));
             if(!brwin.isVisible()) brwin.show();
             if(brwin.isMinimized()) brwin.restore();
             if(!brwin.isFocused()) brwin.focus();
@@ -250,25 +257,18 @@ function showFeeWarning(fee){
     dialog.showModal();
     dialog.addEventListener('close', function(){
         gutils.clearChild(dialog);
-        const overviewBtn = document.getElementById('button-section-overview');
-        const connectedNodeAddr = settings.get('daemon_host');
-        const connectedNodePort = settings.get('daemon_port');
-        document.getElementById('status-node-addr').innerHTML = `${connectedNodeAddr}:${connectedNodePort}`;
-        document.getElementById('status-node-fee').innerHTML = `TRTL ${fee}`;
-        overviewBtn.click();
     });
 }
 
 function updateQr(address){
     if(!address){
-        document.getElementById('button-transactions-refresh').click();
+        triggerTxRefresh();
         return;
     }
 
     let walletHash = gutils.b2sSum(address);
     wlsession.set('walletHash', walletHash);
-    //remote.getGlobal('wsession').walletHash = walletHash;
-
+    
     let oldImg = document.getElementById('qr-gen-img');
     if(oldImg) oldImg.remove();
 
@@ -285,129 +285,12 @@ function updateQr(address){
     }
 }
 
-function displayAddressBookEntry(event){
-   let dialog = document.getElementById('ab-dialog');
-   if(dialog.hasAttribute('open')) dialog.close();
-   let tpl = `
-        <div class="div-transactions-panel">
-            <h4>Address Detail</h4>
-            <div class="addressBookDetail">
-                <div class="addressBookDetail-qr">
-                    <img src="${this.dataset.qrcodeval}" />
-                </div>
-                <div class="addressBookDetail-data">
-                    <dl>
-                        <dt>Name:</dt>
-                        <dd class="tctcl" title="click to copy">${this.dataset.nameval}</dd>
-                        <dt>Wallet Address:</dt>
-                        <dd class="tctcl" title="click to copy">${this.dataset.walletval}</dd>
-                        <dt>Payment Id:</dt>
-                        <dd class="tctcl" title="click to copy">${this.dataset.paymentidval ? this.dataset.paymentidval : '-'}</dd>
-                    </dl>
-                </div>
-            </div>
-        </div>
-        <div class="div-panel-buttons">
-                <button data-addressid="${this.dataset.hash}" type="button" class="form-bt button-green" id="button-addressbook-panel-edit">Edit</button>
-                <button type="button" class="form-bt button-red" id="button-addressbook-panel-delete">Delete</button>
-                <button data-addressid="${this.dataset.hash}" type="button" class="form-bt button-gray" id="button-addressbook-panel-close">Close</button>
-        </div>
-   `;
-
-   gutils.innerHTML(dialog, tpl);
-   // get new dialog
-   dialog = document.getElementById('ab-dialog');
-   dialog.showModal();
-   document.getElementById('button-addressbook-panel-close').addEventListener('click', (event) => {
-        let abdialog = document.getElementById('ab-dialog');
-        abdialog.close();
-        gutils.clearChild(abdialog);
-    });
-
-    let deleteBtn = document.getElementById('button-addressbook-panel-delete');
-    deleteBtn.addEventListener('click', (event) => {
-        let tardel = this.dataset.nameval;
-        let tarhash = this.dataset.hash;
-        if(!confirm(`Are you sure wan to delete ${tardel} from addres book?`)){
-            return;
-        }else{
-            abook.delete(tarhash);
-            let abdialog = document.getElementById('ab-dialog');
-            abdialog.close();
-            gutils.clearChild(abdialog);
-            listAddressBook(true);
-            if(!document.getElementById('datoaste')){
-                iqwerty.toast.Toast("Address book entry was deleted.", {settings: {duration:1800}});
-            }
-        }
-    });
-
-    let editBtn = document.getElementById('button-addressbook-panel-edit');
-    editBtn.addEventListener('click', (event)=>{
-        let entry = abook.get(this.dataset.hash);
-        if(!entry){
-            iqwerty.toast.Toast("Invalid address book entry.", {settings: {duration:1800}});
-        }else{
-            const nameField = document.getElementById('input-addressbook-name');
-            const walletField = document.getElementById('input-addressbook-wallet');
-            const payidField = document.getElementById('input-addressbook-paymentid');
-            const updateField = document.getElementById('input-addressbook-update');
-            nameField.value = entry.name;
-            walletField.value = entry.address;
-            payidField.value = entry.paymentId;
-            updateField.value = 1;
-        }
-        document.querySelector('[data-section="section-addressbook-add"]').click();
-        let axdialog = document.getElementById('ab-dialog');
-        axdialog.close();
-        gutils.clearChild(axdialog);
-    });
-}
-
-gutils.liveEvent('.addressbook-item','click',displayAddressBookEntry);
-function listAddressBook(force){
-    force = force || false;
-    let currentLength = document.querySelectorAll('.addressbook-item:not([data-hash="fake-hash"])').length
-    let abookLength =abook.size;
-    let perPage = 9;
-
-    if(currentLength >= abookLength  && !force)  return;
-
-    let listOpts = {
-        valueNames: [
-            {data: ['hash', 'nameval','walletval','paymentidval','qrcodeval']},
-            'addressName','addressWallet','addressPaymentId'
-        ],
-        indexAsync: true
-    };
-
-    if(abookLength > perPage){
-        listOpts.page = perPage;
-        listOpts.pagination = true;
-    }
-
-    const addressList = new List('addressbooks', listOpts);
-    addressList.clear();
-    Object.keys(abook.get()).forEach((key) => {
-        let et = abook.get(key);
-        addressList.add({
-            hash: key,
-            addressName: et.name,
-            addressWallet: et.address,
-            addressPaymentId: et.paymentId || '-',
-            nameval: et.name,
-            walletval: et.address,
-            paymentidval: et.paymentId || '-',
-            qrcodeval: et.qrCode || ''
-        });
-    });
-
-    addressList.remove('hash', 'fake-hash');
-}
-
 function resetFormState(initiator){
     const allFormInputs = document.querySelectorAll('.section input,.section textarea');
-    Array.from(allFormInputs).forEach((el) => {
+    if(!allFormInputs) return;
+
+    for(var i=0;i<allFormInputs.length;i++){
+        let el = allFormInputs[i];
         if(el.dataset.initial){
             if(!el.dataset.noclear){
                 el.value = settings.has(el.dataset.initial) ? settings.get(el.dataset.initial) : '';
@@ -418,22 +301,16 @@ function resetFormState(initiator){
         }else{
             if(!el.dataset.noclear) el.value = '';
         }
-    });
+    }
 
     const connInfo = document.getElementById('conn-info');
     const settingsBackBtn = document.getElementById('button-settings-back');
-    //if(remote.getGlobal('wsession').serviceReady){
     if(wlsession.get('serviceReady')){
         connInfo.classList.remove('hidden');
         settingsBackBtn.dataset.section = 'section-welcome';
     }else{
         connInfo.classList.add('hidden');
         settingsBackBtn.dataset.section = 'section-overview';
-    }
-
-    // address book
-    if(initiator.trim() === 'button-addressbook-back' || initiator.trim() === 'button-section-addressbook'){
-        listAddressBook();
     }
 }
 
@@ -451,13 +328,16 @@ function updateUiState(msg){
             updateTransactions(msg.data);
             break;
         case 'nodeFeeUpdated':
-            if(parseInt(msg.data,10) >= 1) showFeeWarning(msg.data);
+            let nodeFee = parseInt(msg.data,10);
+            if(nodeFee >= 1){
+                showFeeWarning(msg.data);
+            }
             break;
         case 'addressUpdated':
             updateQr(msg.data);
             break;
         case 'sectionChanged':
-            resetFormState(msg.data);
+            if(msg.data) resetFormState(msg.data);
             break;
         default:
             console.log('invalid command received by ui', msg);

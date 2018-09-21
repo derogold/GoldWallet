@@ -109,6 +109,7 @@ function doRunService(filePath, password, scanHeight, onError, onSuccess) {
     }
 
     // if(scanHeight && scanHeight > 1024) walletArgs = walletArgs.concat(['--scan-height', scanHeight]);
+    log.debug('Starting service...');
     serviceProcess = spawn(settings.get('service_bin'), walletArgs);
     serviceProcess.on('close', function (code, signal) {
         log.debug(`turtle-service terminated by ${signal}, code: ${code}`);
@@ -134,6 +135,7 @@ function doRunService(filePath, password, scanHeight, onError, onSuccess) {
                         type: 'addressUpdated',
                         data: address
                     });
+                    wlsession.set('connectedNode', `${settings.get('daemon_host')}:${settings.get('daemon_port')}`);
                     onSuccess(walletFile, scanHeight);
                     TEST_OK = true;
                 }
@@ -269,7 +271,6 @@ function getNodeFee(){
         return theFee;
     }).catch((err) => {
         log.debug('failed to get node fee');
-        return 0;
     });
 }
 

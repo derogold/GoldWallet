@@ -2,9 +2,9 @@ const remote = require('electron').remote;
 const Store = require('electron-store');
 const settings = new Store({name: 'Settings'});
 
-const DEFAULT_TITLE = 'TurtleCoin Wallet';
+const DEFAULT_TITLE = 'WalletShell TurtleCoin Wallet';
 
-// TODO: better way to pass this single var
+// TODO: this is the only thing left as global
 const IS_DEBUG = remote.getGlobal('wsession').debug;
 
 var gSession = function(){
@@ -12,18 +12,15 @@ var gSession = function(){
 
     this.sessKey = 'wlshell';
     this.eventName = 'sessionUpdated';
-
-    // this.event = new CustomEvent(this.eventName, {
-    //     bubbles: true,
-    //     cancelable: true
-    // });
-
     this.sessDefault = {
         loadedWalletAddress: '',
         walletHash: '',
+        walletUnlockedBalance: 0,
+        walletLockedBalance: 0,
         synchronized: false,
         syncStarted: false,
         serviceReady: false,
+        connectedNode: '',
         txList: [],
         txLen: 0,
         txLastHash: null,
@@ -72,11 +69,6 @@ gSession.prototype.set = function(key, val){
     let sessData = this.get(); // all current data obj
     sessData[key] = val; // update value
     return sessionStorage.setItem(this.sessKey, JSON.stringify(sessData));
-    // this.event.session = {
-    //     key: key,
-    //     value: val
-    // }
-    // return window.dispatchEvent(this.event);
 };
 
 gSession.prototype.reset = function(key){
