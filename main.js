@@ -54,6 +54,8 @@ let tray;
 
 function createWindow () {
     // Create the browser window.
+    let darkmode = settings.get('darkmode', false);
+    let bgColor = darkmode ? '#000000' : '#02853E';
     win = new BrowserWindow({
         title: DEFAULT_TITLE,
         icon: path.join(__dirname,'src/assets/walletshell_icon.png'),
@@ -64,7 +66,7 @@ function createWindow () {
         minHeight: 680,
         // maxWidth: 1280,
         show: false,
-        backgroundColor: '#02853e',
+        backgroundColor: bgColor,
         // maximizable: false,
         // minimizable: true,
         // resizable: false

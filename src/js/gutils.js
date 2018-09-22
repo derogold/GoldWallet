@@ -103,7 +103,7 @@ exports.genQrDataUrl = (inputStr) => {
 
 exports.validateTRTLAddress = (address) => {
     if(!address) return false;
-    let walletRe = new RegExp(/^TRTL(?=\w*$)(?:.{95}|.{182})$/g);
+    let walletRe = new RegExp(/^TRTL(?=\w*$)(?:.{95}|.{183})$/g);
     return walletRe.test(address);
 };
 

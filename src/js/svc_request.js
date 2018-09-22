@@ -97,7 +97,7 @@ svcRequest.prototype.getStatus = function () {
 
 svcRequest.prototype.save = function () {
     return new Promise((resolve, reject) => {
-        this._sendRequest('save').then(() => {
+        this._sendRequest('save', {}, 6000).then(() => {
             return resolve();
         }).catch((err) => {
             return reject(err);
