@@ -6,35 +6,34 @@ log.transports.file.maxSize = 5 * 1024 * 1024;
 log.transports.console.level = 'debug';
 log.transports.file.level = 'debug';
 
-const CHECK_INTERVAL = 5 * 1000;
-var BLOCK_COUNT_LOCAL = 1;
-var BLOCK_COUNT_NETWORK = 1;
-var LAST_BLOCK_COUNT_LOCAL = 0;
+const CHECK_INTERVAL = 8 * 1000;
+var LAST_BLOCK_COUNT = 1;
+var LAST_KNOWN_BLOCK_COUNT = 1;
 
 var SERVICE_CFG = null; // { service_host: '127.0.0.1', service_port: '8070', service_password: 'xxx'};
 var SAVE_COUNTER = 0;
 var TX_LAST_INDEX = 1;
 var TX_LAST_COUNT = 0;
 var TX_CHECK_STARTED = false;
-var NODE_CONNECTED = true;
+var STATE_CONNECTED = true;
+var STATE_SAVING = false;
 
 var taskWorker = null;
 
 function logDebug(msg){
     if(!DEBUG) return;
-    log.debug(msg);
+    log.debug(`[svcworker] ${msg}`);
 }
 
-// every 5 secs
 function checkBlockUpdate(){
-    if(!SERVICE_CFG) return;
+    if(!SERVICE_CFG || STATE_SAVING) return;
+    logDebug('START: checkBlockUpdate');
     let svc = new svcRequest(SERVICE_CFG);
     svc.getStatus().then((blockStatus) => {
-        //logDebug('test block status');
-        //logDebug(blockStatus);
-        let lastConStatus = NODE_CONNECTED;
+        let lastConStatus = STATE_CONNECTED;
         let conFailed  = parseInt(blockStatus.knownBlockCount, 10) === 1;
         if(conFailed){
+            logDebug('Known block count returned 1, mark connection as broken');
             if(lastConStatus !== conFailed){
                 fakeStatus = {
                     blockCount: -200,
@@ -48,27 +47,32 @@ function checkBlockUpdate(){
                     data: fakeStatus
                 });
             }
-            NODE_CONNECTED = false;
+            STATE_CONNECTED = false;
             return;
         }
 
         // we have good connection
-        NODE_CONNECTED = true;
+        STATE_CONNECTED = true;
 
         let blockCount = parseInt(blockStatus.blockCount,10);
         let knownBlockCount = parseInt(blockStatus.knownBlockCount, 10);
+        logDebug(`last bc: ${LAST_BLOCK_COUNT} | current lbc: ${blockCount}`);
+        logDebug(`last kbc: ${LAST_KNOWN_BLOCK_COUNT} | current kbc: ${knownBlockCount}`);
 
-        if(blockCount <= BLOCK_COUNT_LOCAL || knownBlockCount <= BLOCK_COUNT_NETWORK){
-            logDebug('skipping notify blockUpdate, blockCount unchanged OR Invalid');
+        if(blockCount <= LAST_BLOCK_COUNT && knownBlockCount <= LAST_KNOWN_BLOCK_COUNT){
+            logDebug(`SKIPPED: block update notify`);
             return;
         }
 
-        BLOCK_COUNT_LOCAL = blockCount;
-        BLOCK_COUNT_NETWORK = knownBlockCount;
+        logDebug('START: notify block update');
+
+        let txcheck = (LAST_KNOWN_BLOCK_COUNT < knownBlockCount || LAST_BLOCK_COUNT < knownBlockCount);
+        LAST_BLOCK_COUNT = blockCount;
+        LAST_KNOWN_BLOCK_COUNT = knownBlockCount;
+
         // add any extras here, so renderer not doing too much things
         let dispKnownBlockCount = (knownBlockCount-1);
         let dispBlockCount = (blockCount > dispKnownBlockCount ? dispKnownBlockCount : blockCount);
-
         let syncPercent = ((dispBlockCount / dispKnownBlockCount) * 100);
         if(syncPercent <=0 ){
             syncPercent = 100;
@@ -87,23 +91,27 @@ function checkBlockUpdate(){
         });
 
         // don't check if we can't get any block
-        if(BLOCK_COUNT_LOCAL <= 1) return;
-        // don't check if block count not updated
-        if(LAST_BLOCK_COUNT_LOCAL === BLOCK_COUNT_LOCAL && TX_CHECK_STARTED) return;
+        if(LAST_BLOCK_COUNT <= 1) return;
+        // don't check tx if block count not updated
+        if(!txcheck && TX_CHECK_STARTED){
+            logDebug(`SKIPPED: tx check`);
+            return;
+        }
         
         checkTransactionsUpdate();
-        LAST_BLOCK_COUNT_LOCAL = BLOCK_COUNT_LOCAL;
+        LAST_BLOCK_COUNT_LOCAL = LAST_BLOCK_COUNT;
 
     }).catch((err) => {
-        logDebug(`checkBlockUpdate failed: ${err.message}`);
+        logDebug(`FAILED: checkBlockUpdate, ${err.message}`);
         return false;
     });
 }
 
 //var TX_CHECK_COUNTER = 0;
 function checkTransactionsUpdate(){
-    if(!SERVICE_CFG) return;
+    if(!SERVICE_CFG || STATE_SAVING) return;
 
+    logDebug('START: checkTransactionsUpdate');
     let svc = new svcRequest(SERVICE_CFG);
 
     svc.getBalance().then((balance)=> {
@@ -112,8 +120,8 @@ function checkTransactionsUpdate(){
                 data: balance
             });
 
-            if(BLOCK_COUNT_LOCAL > 1){
-                let currentBLockCount = BLOCK_COUNT_LOCAL-1;
+            if(LAST_BLOCK_COUNT > 1){
+                let currentBLockCount = LAST_BLOCK_COUNT-1;
                 let startIndex = (!TX_CHECK_STARTED ? 1 : TX_LAST_INDEX);
                 let searchCount = currentBLockCount;
                 let needCountMargin = false;
@@ -129,6 +137,8 @@ function checkTransactionsUpdate(){
                     firstBlockIndex: startIndexWithMargin,
                     blockCount: searchCountWithMargin
                 };
+
+                logDebug(`START: getTransactions, args: ${JSON.stringify(trx_args)}`);
                 
                 svc.getTransactions( trx_args ).then((trx) => {
                     process.send({
@@ -137,36 +147,42 @@ function checkTransactionsUpdate(){
                     });
                     return true;
                 }).catch((err)=>{
-                    logDebug(`svc.getTransaction failed: ${err.message}`);
+                    logDebug(`FAILED svc.getTransaction, ${err.message}`);
                     return false;
                 });
                 TX_CHECK_STARTED = true;
                 TX_LAST_INDEX = currentBLockCount;
                 TX_LAST_COUNT = currentBLockCount;
             }
-    }).catch((err)=>{
-        logDebug(`svc.getBalance failed: ${err.message}`);
+    }).catch((err)=> {
+        logDebug(`FAILED: svc.getBalance failed: ${err.message}`);
         return false;
     });
 }
 
 function saveWallet(){
     if(!SERVICE_CFG) return;
+    logDebug('Saving wallet..');
+    STATE_SAVING = true;
+
     // check balance
     let svc = new svcRequest(SERVICE_CFG);
     svc.save().then(()=> {
-        logDebug(`wallet has been saved`);
+        logDebug(`OK: wallet has been saved`);
+        STATE_SAVING = false;
         return true;
     }).catch((err)=>{
-        logDebug(`svc.save failed: ${err.message}`);
+        logDebug(`FAILED: svc.save failed, ${err.message}`);
+        STATE_SAVING = false;
         return false;
     });
 }
 
 function workOnTasks(){
     taskWorker = setInterval(() => {
+        logDebug("== TASK WORKER STARTED ==");
         checkBlockUpdate();
-        if(SAVE_COUNTER > 60){
+        if(SAVE_COUNTER > 8){
             saveWallet();
             SAVE_COUNTER = 0;
         }
@@ -204,6 +220,7 @@ process.on('message', (msg) => {
             checkTransactionsUpdate(); // just to get balance
 
             // scheduled tasks
+            logDebug(`Scheduled tasks will be start in 5s, recurring every: ${CHECK_INTERVAL/1000}s`);
             setTimeout(workOnTasks, 5000);
             break;
         case 'stop':
@@ -213,7 +230,7 @@ process.on('message', (msg) => {
                     clearInterval(taskWorker);
                     process.exit(0);
                 }catch(e){
-                    logDebug(`failed to stop worker: ${e.message}`);
+                    logDebug(`FAILED: stopWorker, ${e.message}`);
                 }
             }
             break;

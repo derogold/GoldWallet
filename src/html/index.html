@@ -9,6 +9,7 @@
         <!-- CSS stylesheets -->
         <link rel="stylesheet" href="../css/font-Roboto.css">
         <link rel="stylesheet" href="../css/common.css">
+        <link rel="stylesheet" href="../css/dark.css">
         <!-- HTML pages (each page contains a section) -->
         <link rel="import" href="./about.html">
         <link rel="import" href="./settings.html">
@@ -27,7 +28,7 @@
 
     <body>    
         <!-- Top navbar -->
-        <div class="navbar">
+        <div class="navbar xgrid">
             <div class="idle" id="navbar-div-sync">
                 <i class="fas fa-pause-circle" id="navbar-icon-sync"></i>
                 <span id="navbar-text-sync">IDLE</span>
@@ -60,6 +61,7 @@
         <dialog id="tx-dialog" class="tx-dialog"></dialog>
         <dialog id="ab-dialog" class="default-dialog address-book-dialog"></dialog>
         <dialog id="tf-dialog" class="tx-dialog"></dialog>
+        <button title="Swith to dark mode" id="tswitch"><i class="fas fa-moon"></i></button>
         <script>require('../js/ui_event.js')</script>
     </body>
 </html>

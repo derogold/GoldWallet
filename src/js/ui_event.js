@@ -84,7 +84,17 @@ let txButtonSortAmount;
 let txButtonSortDate;
 let txInputUpdated;
 let txInputNotify;
+
+// misc
+let thtml;
+let dmswitch;
+
+let darkmode = settings.get('darkmode', false);
 function populateElementVars(){
+    // misc
+    thtml = document.querySelector('html');    
+    dmswitch = document.getElementById('tswitch');
+
     // generics
     genericBrowseButton = document.querySelectorAll('.path-input-button');
     genericFormMessage = document.getElementsByClassName('form-ew');
@@ -178,6 +188,26 @@ function showToast(msg, duration){
     duration = duration || 1800;
     if(!document.getElementById('datoaste')){
         iqwerty.toast.Toast(msg, {settings: {duration:duration}});
+    }
+}
+
+// utility: dark mode
+function setDarkMode(dark){
+    let tmode = dark ? 'dark' : '';
+    if(tmode === 'dark'){
+        thtml.classList.add('dark');
+        dmswitch.setAttribute('title', 'Leave dark mode');
+        dmswitch.firstChild.classList.remove('fa-moon');
+        dmswitch.firstChild.classList.add('fa-sun');
+        settings.set('darkmode',true);
+        dmswitch.firstChild.dataset.icon = 'sun';
+    }else{
+        thtml.classList.remove('dark');
+        dmswitch.setAttribute('title', 'Swith to dark mode');
+        dmswitch.firstChild.classList.remove('fa-sun');
+        dmswitch.firstChild.classList.add('fa-moon');
+        settings.set('darkmode', false);
+        dmswitch.firstChild.dataset.icon = 'moon';
     }
 }
 
@@ -872,6 +902,8 @@ function handleSendTransfer(){
         let amount = sendInputAmount.value ?  parseFloat(sendInputAmount.value) : 0;
         let fee = parseFloat(sendInputFee.value);
 
+        let tobeSent = 0;
+
         if(!recAddress.length || !gutils.validateTRTLAddress(recAddress)){
             formMessageSet('send','error','Sorry, invalid TRTL address');
             return;
@@ -898,6 +930,9 @@ function handleSendTransfer(){
             formMessageSet('send','error',"Amount can't have more than 2 decimal places");
             return;
         }
+
+        let rAmount = amount; // copy raw amount for dialog
+        tobeSent += amount;
         amount = parseInt((amount*100),10);
 
         if (fee < 0.10) {
@@ -909,18 +944,21 @@ function handleSendTransfer(){
             formMessageSet('send','error',"Fee can't have more than 2 decimal places");
             return;
         }
+        let rFee = fee; // copy raw fee for dialog
+        tobeSent += fee;
         fee = parseInt((fee*100), 10);
+        
 
-        let nodeFee = parseInt(wlsession.get('nodeFee'),10) || 0;
-        nodeFee = parseFloat(nodeFee*100,10);
+        let nodeFee = wlsession.get('nodeFee') || 0;
+        tobeSent = (tobeSent+nodeFee).toFixed(2);
 
-        let tobeSent = (amount+nodeFee+fee);
-        const availableBalance = parseFloat(wlsession.get('walletUnlockedBalance'));
-        const actualBalance = availableBalance * 100;
-        if(tobeSent > actualBalance){
-            formMessageSet('send','error', 
-                `You don't have enough funds to process this transfer<br>
-                Your balance: ${(availableBalance).toFixed(2)}, Requested transfer amount: ${(tobeSent/100).toFixed(2)}`
+        const availableBalance = wlsession.get('walletUnlockedBalance') || (0).toFixed(2);
+
+        if(tobeSent > availableBalance){
+            formMessageSet(
+                'send',
+                'error', 
+                `You don't have enough funds to process this transfer.<br>Balance: ${availableBalance}, Transfer amount+fees: ${(tobeSent)}`
             );
             return;
         }
@@ -942,13 +980,13 @@ function handleSendTransfer(){
                         <dt>Payment ID:</dt>
                         <dd>${recPayId.length ? recPayId : 'N/A'}</dd>
                         <dt class="dt-ib">Amount:</dt>
-                        <dd class="dd-ib">${parseFloat(sendInputAmount.value).toFixed(2)} TRTL</dd>
+                        <dd class="dd-ib">${rAmount} TRTL</dd>
                         <dt class="dt-ib">Transaction Fee:</dt>
-                        <dd class="dd-ib">${(fee/100).toFixed(2)} TRTL</dd>
+                        <dd class="dd-ib">${rFee} TRTL</dd>
                         <dt class="dt-ib">Node Fee:</dt>
-                        <dd class="dd-ib">${(nodeFee > 0 ? (nodeFee/100).toFixed(2) : '0.00')} TRTL</dd>
+                        <dd class="dd-ib">${(nodeFee > 0 ? nodeFee : '0.00')} TRTL</dd>
                         <dt class="dt-ib">Total:</dt>
-                        <dd class="dd-ib">${(tobeSent/100).toFixed(2)} TRTL</dd>
+                        <dd class="dd-ib">${tobeSent} TRTL</dd>
                     </dl>
                 </div>
             </div>
@@ -1165,6 +1203,9 @@ function handleTransactions(){
 // event handlers
 function initHandlers(){
     initSectionTemplates();
+    let darkStart = settings.get('darkmode', false);
+    setDarkMode(darkStart);
+    
 
     //external link handler
     gutils.liveEvent('a.external', 'click', (event) => {
@@ -1263,6 +1304,14 @@ function initHandlers(){
             pasteMenu.popup(remote.getCurrentWindow());
         }, false);
     }
+
+    dmswitch.addEventListener('click', (event)=>{
+        let tmode = thtml.classList.contains('dark') ? '' : 'dark';
+        setDarkMode(tmode);
+    });
+    
+
+   
 
     // settings handlers
     handleSettings();

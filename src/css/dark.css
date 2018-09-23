@@ -1,0 +1,117 @@
+.dark{
+/*     background: linear-gradient(90deg, #0a0a0a, #212020 50%, #0a0a0a); */
+}
+
+html.dark::before{
+    background: linear-gradient(90deg, #0a0a0a, #212020 50%, #0a0a0a);
+    opacity: 1.0;
+}
+
+.dark body{
+    background-image: url(../assets/walletshell_logo_dm.png);
+}
+
+.dark .navbar{
+    background-color: #0e100e;
+    box-shadow: 0px 0px 4px #eee;
+}
+.dark .navbar-button{
+    background-color: #0e100e;
+}
+
+.dark .navbar-button:hover {
+    background-color: #4d524d;
+}
+
+.dark .navbar-button:active,
+.dark .navbar-button.btn-active{
+    background-color: #252525;
+}
+
+
+.dark .button-green,
+.dark .button-red,
+.dark .button-gray{
+    text-shadow: 1px 1px 1px rgba(255,255,255, .2);
+    font-weight: normal;
+    font-size: 1rem;
+    padding: 0.5rem 0.75rem 0.3rem 0.75rem;
+    border-radius: 3px;
+}
+
+.dark .button-green{
+background: #000;
+border: 2px solid #cccccc59;
+color: #c5c5c5;
+}
+
+.dark .button-green:hover,
+.dark .button-green:active{
+    color:#fff;
+}
+
+.dark .button-red,
+.dark .button-gray{
+background: #3e3e3e;
+border: 2px solid #cccccc59;
+}
+
+.dark .button-gray:hover,
+.dark .button-gray:active,
+.dark .button-red:hover,
+.dark .button-red:active{
+    color: #fff;
+}
+
+
+.dark .list-tables .pagination li{
+    background-color: #000;
+}
+.dark .list-tables .pagination li.active{
+    background-color: #7b7b7b;    
+}
+
+.dark .checkbox-container input:checked ~ .checkmark{
+    background-color:#545454f2;
+}
+.dark .checkbox-container:hover input ~ .checkmark {
+    background-color: #736c6c;
+}
+.dark div.about-links a{
+    background-color: #0000002b;
+    border: 1px solid #9a9a9a8a;
+}
+.dark .status-node-info{
+    background-color: #04040496;
+}
+
+.dark .tx-dialog,
+.dark .default-dialog{
+    background-color:#131313;
+    border: 1px solid #cccccc42;
+}
+
+.dark .tx-tools .tx-sort .csort{
+    background: #333;
+    border: 2px solid #696969b3;
+}
+
+.dark dialog::backdrop{
+    background: rgba(10, 10, 10, 0.87);
+}
+/* .dark .transaction-list-table td.txamount{
+    color: #fff;
+}
+
+.dark .transaction-list-table tr[data-txType="out"] td.txamount{
+    color: #ff5b5b;
+} */
+
+.dark .div-main-address-qr img{
+    image-rendering: -webkit-optimize-contrast;
+    opacity: .9;
+}
+
+.dark .status-node-info.conn-warning {
+       background: rgba(255, 0, 0, 0.7);
+}
