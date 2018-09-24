@@ -1,4 +1,3 @@
-//const {remote} = require('electron');
 const fs = require('fs');
 const childProcess = require('child_process');
 const execFile = childProcess.execFile;
@@ -263,7 +262,6 @@ function getNodeFee(){
         // store
         let theFee = (res.amount / 100);
         wlsession.set('nodeFee', theFee);
-        //remote.getGlobal('wsession').nodeFee = theFee;
         uiUpdater.updateUiState({ // move this to configUpdated listener
             type: 'nodeFeeUpdated',
             data: theFee

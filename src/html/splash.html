@@ -1,0 +1,31 @@
+<!doctype html>
+<html>
+    <head>
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self' https://atom.io https://gh-contractor-zcbenz.s3.amazonaws.com; img-src 'self' file: data:; style-src 'self' 'unsafe-inline'; media-src 'self'">
+        <style>
+            * { box-sizing: border-box; }
+            @keyframes geboy {0%{opacity:0.2;} 50%{opacity:1;} 100%{opacity:0.2;}}
+            html,body{margin: 0; padding: 0;}
+            body{
+                height: 325px;
+                width: 325px;
+                background: #000 url(../assets/splash_bg.png) 50% 50% no-repeat;
+                text-align: center;
+                margin: 0 auto;
+            }
+            img {
+                opacity: 0.2;
+                transition:all 0.5s ease-in-out;
+                animation:geboy normal 4s infinite ease-in-out;
+                animation-delay: 0.5s;
+                width:180px;
+                height:auto;
+                position:relative;
+                left:-10px;
+                top:68px;
+                image-rendering: optimizeQuality;
+            }​
+        </style>
+    </head>
+    <body><img src="../assets/splash_logo.png" /></body>
+</html>

@@ -7,6 +7,7 @@ const crypto = require('crypto');
 const Store = require('electron-store');
 const settings = new Store({name: 'Settings'});
 const log = require('electron-log');
+const splash = require('@trodi/electron-splashscreen');
 
 const IS_DEBUG = (process.argv[1] === 'debug' || process.argv[2] === 'debug');
 const LOG_LEVEL = IS_DEBUG ? 'debug' : 'warn';
@@ -15,7 +16,8 @@ log.transports.console.level = LOG_LEVEL;
 log.transports.file.level = LOG_LEVEL;
 log.transports.file.maxSize = 5 * 1024 * 1024;
 
-
+let VERSION = process.env.npm_package_version || '0.3.2';
+if(IS_DEBUG) log.debug(`Starting WalletShell v${VERSION}`);
 const SERVICE_FILENAME =  (platform === 'win32' ? 'turtle-service.exe' : 'turtle-service' );
 const SERVICE_OSDIR = (platform === 'win32' ? 'win' : (platform === 'darwin' ? 'osx' : 'lin'));
 const DEFAULT_SERVICE_BIN = path.join(process.resourcesPath,'bin', SERVICE_OSDIR, SERVICE_FILENAME);
@@ -56,7 +58,8 @@ function createWindow () {
     // Create the browser window.
     let darkmode = settings.get('darkmode', false);
     let bgColor = darkmode ? '#000000' : '#02853E';
-    win = new BrowserWindow({
+
+    const winOpts = {
         title: DEFAULT_TITLE,
         icon: path.join(__dirname,'src/assets/walletshell_icon.png'),
         frame: true,
@@ -64,12 +67,23 @@ function createWindow () {
         height: 680,
         minWidth: 800,
         minHeight: 680,
-        // maxWidth: 1280,
         show: false,
         backgroundColor: bgColor,
         // maximizable: false,
         // minimizable: true,
         // resizable: false
+    }
+
+    win = splash.initSplashScreen({
+        windowOpts: winOpts,
+        templateUrl: path.join(__dirname, "src/html/splash.html"),
+        delay: 0, 
+        minVisible: 2500,
+        splashScreenOpts: {
+            width: 425,
+            height: 325,
+            transparent: true
+        },
     });
 
     let contextMenu = Menu.buildFromTemplate([
@@ -139,7 +153,7 @@ function createWindow () {
 
     // show windosw
     win.once('ready-to-show', () => {
-        win.show();
+        //win.show();
         win.setTitle(DEFAULT_TITLE);
         tray.setToolTip(DEFAULT_TRAY_TIP);
     })
@@ -249,6 +263,8 @@ if (!silock) app.quit();
 
 app.on('ready', () => {
     initSettings();    
+
+    settings.set('version', VERSION);
 
     if(IS_DEBUG) log.warn('Running in debug mode');
 
