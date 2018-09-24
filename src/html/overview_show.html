@@ -2,9 +2,15 @@
     <section class="section" id="section-overview-show">
         <div class="section-contents darkened">
             <div class="div-title">
-                <h2 class="title">Show private keys</h2>
+                <h2 class="title">Private keys &amp; Mnemonic Seed</h2>
             </div>
             <div class="div-input">
+                <div class="input-wrap">
+                    <span class="form-msg text-spaced-warning">
+                        Please make a backup & keep these keys secret to you. You can use these keys to restore your wallet.
+                        Anyone who knows them can access your wallet.
+                    </span>
+                </div>
                 <div class="input-wrap" title="click to copy">
                     <h4 class="text-spaced">Your view key:</h4>        
                     <input type="text" class="text-block ctcl" id="key-show-view" readonly="readonly" />
@@ -20,14 +26,8 @@
                     <textarea  class="default-textarea  ctcl" id="seed-show" readonly="readonly" rows="3"></textarea>
                 </div>
                 <div class="input-wrap">
-                    <span class="text-spaced-warning">
-                        Please make a backup & keep these keys secret to you. You can use these keys to restore your wallet.
-                        Anyone who knows them can access your wallet.
-                    </span>
-                </div>
-                <div class="input-wrap">
-                    <span class="form-ew text-spaced-error" id="text-secret-error"></span>
-                    <span class="form-ew text-spaced-success" id="text-secret-success"></span>
+                    <span class="form-ew form-msg text-spaced-error" id="text-secret-error"></span>
+                    <span class="form-ew form-msg text-spaced-success" id="text-secret-success"></span>
                 </div>
             </div>
             <div class="action-buttons">

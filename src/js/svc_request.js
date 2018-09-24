@@ -7,6 +7,7 @@ var svcRequest = function(args){
     this.service_port = args.service_port || 8070;
     this.service_password = args.service_password || "WHATEVER1234567891";
     this.tx_fee = (args.tx_fee !== undefined) ? args.tx_fee : 0.1;
+    this.anonimity = 3;
 };
 
 svcRequest.prototype._sendRequest = function (method, params, timeout) {
@@ -244,7 +245,7 @@ svcRequest.prototype.sendTransaction = function (params) {
 
 svcRequest.prototype.reset = function (params) {
     return new Promise((resolve, reject) => {
-        params = params || {}
+        params = params || {};
         //params.viewSecretKey = params.viewSecretKey || false;
         params.scanHeight = params.scanHeight || 0;      
 
@@ -263,6 +264,34 @@ svcRequest.prototype.reset = function (params) {
     });
 };
 
+
+svcRequest.prototype.estimateFusion = function(params){
+    return new Promise((resolve, reject) => {
+        params = params || {};
+        if(!params.threshold) return reject(new Error('Missing threshold parameter'));
+
+
+        this._sendRequest('estimateFusion', params).then((result) => {
+            return resolve(result);
+        }).catch((err) => {
+            return reject(err);
+        });
+
+    });
+}
+
+svcRequest.prototype.sendFusionTransaction = function(params){
+    return new Promise((resolve, reject) => {
+        params = params || '';
+        if(!params.threshold) return reject(new Error('Missing threshold parameter'));
+        if(!params.anonimity) params.anonimity = this.anonimity;
+        this._sendRequest('sendFusionTransaction', params).then((result) => {
+            return resolve(result);
+        }).catch((err) => {
+            return reject(err);
+        });
+    });
+}
 
   
 module.exports = svcRequest;

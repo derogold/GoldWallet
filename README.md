@@ -5,7 +5,7 @@ This is a GUI wallet for TurtleCoin made using Electron, this means it's written
 
 It is meant to be able to work on Windows, Linux and MacOS, however so far we've only been able to test it on Linux &amp; Windows.
 
-![WalletShell Screens](https://raw.githubusercontent.com/rixombea/turtle-wallet-electron/wssx/sc/wssc.gif "WalletShell Screens")
+![WalletShell Screens](https://raw.githubusercontent.com/rixombea/turtle-wallet-electron/wssx/sc/walletshell_ss.gif "WalletShell Screens")
 
 ### Features:
 This wallet contains the basic functions required to manage your TurtleCoin wallet:
@@ -34,6 +34,8 @@ This wallet contains the basic functions required to manage your TurtleCoin wall
   * Provides setting to use system tray (on closing/minimizing wallet)
   * Provides list of public nodes, fetch/updated daily from turtlecoin-nodes-json repo. Display order of public nodes will be shuffled on every access to settings page, to give relatively fair opportunity for node operators to be on top of the list
   * Custom node address that is not on the list will be added/remembered for future use
+  * Dark/Night Mode
+  * [Keyboard shortcuts](docs/shortcut.md)
 
 
 There is still plenty of room for improvements and features, so we will gladly accept help from anyone who is capable of lending a hand.
@@ -52,10 +54,12 @@ If you don't trust the bundled `turtle-service` file, you can compare the sha256
 
 * Download latest packaged release/installer for your platform here: https://github.com/turtlecoin//turtle-wallet-electron/releases
 
-* Windows: run the downloaded installer `walletshell-<version>-win-setup.exe`, WalletShell will be lauched after installation completed.
-* GNU/Linux: extract downloaded archived, then run the executable binary (`walletshell-<version>/walletshell`) 
-* macOS: ??? extract downloaded archived, then run the executable binary (`WalletShell.app/Contents/MacOs/WalleSshell`) ??
-
+* Windows:  
+run the installer (`walletshell-<version>-win-setup.exe`), WalletShell will be lauched after installation completed.
+* GNU/Linux:
+  * AppImage: run/execute (double click) the appimage file (`walletshell-<version>-linux.AppImage`).
+  * tar.bz2 archive: extract downloaded archive, then run the executable binary (`walletshell-<version>/walletshell`) 
+* macOS: ?? extract downloaded archived, then run the executable binary (`WalletShell.app/Contents/MacOs/WalleSshell`) ?? -- _please someone help me to test it!_
 
 ### Build
 You need to have `Node.js` and `npm` installed, go to https://nodejs.org and find out how to get it installed on your platform.
@@ -97,3 +101,6 @@ $ npm run dist-mac
 ```
 
 Resulting packages or installer can be found inside `dist/` directory.
+
+### Screenshots
+![WalletShell Overview](https://raw.githubusercontent.com/rixombea/turtle-wallet-electron/wssx/sc/ss-on.png) ![WalletShell Dark Mode](https://raw.githubusercontent.com/rixombea/turtle-wallet-electron/wssx/sc/ss-od.png)

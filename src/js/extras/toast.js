@@ -23,11 +23,9 @@ iqwerty.toast = (function() {
 
 	const Transitions = {
 		SHOW: {
-			'-webkit-transition': 'opacity ' + TOAST_ANIMATION_SPEED + 'ms, -webkit-transform ' + TOAST_ANIMATION_SPEED + 'ms',
 			'transition': 'opacity ' + TOAST_ANIMATION_SPEED + 'ms, transform ' + TOAST_ANIMATION_SPEED + 'ms',
 			'opacity': '1',
-			'-webkit-transform': 'translateY(-100%) translateZ(0)',
-			'transform': 'translateY(-100%) translateZ(0)'
+			'transform': 'translateY(-10%) translateZ(0)'
 		},
 
 		HIDE: {
@@ -98,11 +96,11 @@ iqwerty.toast = (function() {
 				'color': 'rgba(255, 255, 255, .9)',
 				
 				'padding': '10px 15px',
-				'max-width': '60%',
-				'width': '100%',
+				'max-width': '90%',
+				'width': 'auto',
 				'word-break': 'keep-all',
 				'margin': '0 auto',
-				'text-align': 'center',
+				'text-align': 'left',
 
 				'position': 'fixed',
 				'left': '0',
@@ -202,8 +200,8 @@ iqwerty.toast = (function() {
 	 */
 	Toast.prototype.show = function(text, options) {
 		if(document.getElementById('datoaste')){
-			document.getElementById('datoaste').remove();
 			clearTimeout(Toast.prototype.timeout);
+			document.getElementById('datoaste').remove();
 		}
 		this.generate(text, options.style.main);
 		
