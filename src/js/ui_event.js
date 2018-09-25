@@ -669,7 +669,7 @@ function handleAddressBook(){
          deleteBtn.addEventListener('click', (event) => {
              let tardel = this.dataset.nameval;
              let tarhash = this.dataset.hash;
-             if(!confirm(`Are you sure wan to delete ${tardel} from addres book?`)){
+             if(!confirm(`Are you sure you want to delete ${tardel} from the address book?`)){
                  return;
              }else{
                  abook.delete(tarhash);
