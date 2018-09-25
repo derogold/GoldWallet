@@ -6,23 +6,14 @@
             </div>
             <div class="div-input">
                 <div class="input-wrap">
-                    <h4 class="text-spaced">Select the folder where the wallet file will be stored::</h4>
-                    <input data-initial="recentWalletDir" class="text-block path-input" id="input-create-path" style="padding: 12px 8px;"></input>
-                    <button data-selection="openDirectory" data-targetinput="input-create-path" type="button" class="button-green path-input-button" id="button-create-browse"><i class="fas fa-folder-open"></i></button>
+                    <h4 class="text-spaced">Select where the wallet file will be stored:</h4>
+                    <input class="text-block path-input" id="input-create-path" style="padding: 12px 8px;" />
+                    <button  data-fileobj="wallet file" data-selection="saveFile"  data-targetinput="input-create-path" type="button" class="button-green path-input-button" id="button-create-browse"><i class="fas fa-folder-open"></i></button>
                 </div>
                 <div class="input-wrap">
-                    <div class="div-create-name inline-block-div half-width">
-                        <h4 class="text-spaced">Filename for this wallet file:</h4>
-                        <input class="text-block" id="input-create-name"></input>
-                    </div>
-
-                    <div class="div-create-password  inline-block-div half-width half-width-end">
-                        <h4 class="text-spaced">Set password to open this wallet:</h4>
-                        <input type="password" class="text-block" id="input-create-password"></input>
-                    </div>
+                    <h4 class="text-spaced">Set password to open this wallet:</h4>
+                    <input type="password" class="text-block" id="input-create-password" />
                 </div>
-
-
                 <div class="div-create-messages input-wrap">
                     <span class="form-ew form-msg text-spaced-error" id="text-create-error"></span>
                     <span class="form-ew form-msg text-spaced-success" id="text-create-success"></span>

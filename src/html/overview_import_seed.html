@@ -6,20 +6,13 @@
             </div>
             <div class="div-input">
                 <div class="input-wrap">
-                    <h4 class="text-spaced">Select the folder where the wallet file will be stored:</h4>
-                    <input type="text" data-initial="recentWalletDir" class="text-block path-input" id="input-import-seed-path" style="padding: 12px 8px;" />
-                    <button data-selection="openDirectory" data-targetinput="input-import-seed-path" type="button" class="button-green button-browse path-input-button" id="button-import-seed-browse"><i class="fas fa-folder-open"></i></button>
+                    <h4 class="text-spaced">Select where the wallet file will be stored:</h4>
+                    <input type="text" class="text-block path-input" id="input-import-seed-path" style="padding: 12px 8px;" />
+                    <button  data-fileobj="wallet file" data-selection="saveFile" data-targetinput="input-import-seed-path" type="button" class="button-green button-browse path-input-button" id="button-import-seed-browse"><i class="fas fa-folder-open"></i></button>
                 </div>
                 <div class="input-wrap">
-                    <div class="div-import-name inline-block-div half-width">
-                        <h4 class="text-spaced" style="display: inline;">Filename for this wallet file:</h4>
-                        <input type="text" class="text-block" id="input-import-seed-name" />
-                    </div>
-
-                    <div class="div-import-password inline-block-div half-width half-width-end">
-                        <h4 class="text-spaced" style="display: inline;">Set password to open this wallet:</h4>
-                        <input type="password" class="text-block" id="input-import-seed-password"/>
-                    </div>
+                    <h4 class="text-spaced" style="display: inline;">Set password to open this wallet:</h4>
+                    <input type="password" class="text-block" id="input-import-seed-password"/>
                 </div>
 
                 <div class="input-wrap">

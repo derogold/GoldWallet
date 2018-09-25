@@ -1,4 +1,4 @@
-
+const fs = require('fs');
 const crypto = require('crypto');
 const {nativeImage} = require('electron');
 const qr = require('qr-image');
@@ -103,12 +103,71 @@ exports.genQrDataUrl = (inputStr) => {
 
 exports.validateTRTLAddress = (address) => {
     if(!address) return false;
-    let walletRe = new RegExp(/^TRTL(?=\w*$)(?:.{95}|.{183})$/g);
-    return walletRe.test(address);
+    let re = new RegExp(/^TRTL(?=\w*$)(?:.{95}|.{183})$/g);
+    return re.test(address);
 };
 
 exports.validatePaymentId = (paymentId) => {
     if(!paymentId) return true; // true allow empty
-    let payIdRe = new RegExp(/^(\w{64})$/g);
-    return payIdRe.test(paymentId);
+    let re = new RegExp(/^(\w{64})$/g);
+    return re.test(paymentId);
+};
+
+exports.validateSecretKey = (key) => {
+    if(!key){
+        console.log('emmpty key');
+        return false;
+    }
+    let re = new RegExp(/^\w{64}$/g);
+    return re.test(key);
+};
+
+exports.validateMnemonic = (seed) => {
+    if(!seed) return false;
+    let re = new RegExp(/^\w+(?!.*  )[a-zA-Z0-9 ]*$/g);
+    if(!re.test(seed)) return false;
+    if(seed.split(' ').length !== 25) return false;
+    return true;
+};
+
+exports.isFileExist = (filePath) => {
+    if(!filePath) return false;
+    return fs.existsSync(filePath);
+};
+
+exports.isWritableDirectory = (filePath) => {
+    if(!filePath) return false;
+    try{
+        fs.accessSync(filePath, fs.constants.W_OK);
+    }catch(e){
+        return false;
+    }
+    let stats = fs.statSync(filePath);
+    return stats.isDirectory();
+
+};
+
+exports.isPathWriteable = (filePath) => {
+    if(!filePath){
+        return;
+    }
+    try{
+        fs.accessSync(filePath, fs.constants.W_OK);
+        return true;
+    }catch(e){
+        console.log(e);
+        return false;
+    }
+};
+
+exports.isRegularFileAndWritable = (filePath) => {
+    if(!filePath) return;
+    try{
+        fs.accessSync(filePath, fs.constants.W_OK);
+    }catch(e){
+        return false;
+    }
+
+    let stats = fs.statSync(filePath);
+    return stats.isFile();
 };

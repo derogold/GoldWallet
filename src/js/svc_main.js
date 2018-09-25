@@ -10,9 +10,11 @@ const settings = new Store({name: 'Settings'});
 const gSession = require('./gsessions');
 const wlsession = new gSession();
 const log = require('electron-log');
+const gutils = require('./gutils.js');
 
 const ERROR_WALLETLAUNCH = 'Failed to start turtle-service. Set the path to turtle-service properly in the settings tab.';
 const ERROR_WRONG_PASSWORD = 'Failed to load your wallet, please check your password';
+const ERROR_WALLET_IMPORT = 'Import was failed, please check that you have all informations entered correctly';
 const SERVICE_LOG_DEBUG = wlsession.get('debug');
 const SERVICE_LOG_LEVEL_DEFAULT = 0;
 const SERVICE_LOG_LEVEL_DEBUG = 4;
@@ -309,19 +311,10 @@ function sendTransaction(params){
 
 const ERROR_INVALID_PATH = 'Invalid directory/filename, please enter a valid path that you have write permission';
 const ERROR_WALLET_CREATE = 'Wallet can not be created, please check your input and try again';
-const ERROR_WALLET_IMPORT = 'Wallet import field, please make sure you have entered correct information';
-function createWallet (dir, name, password){
+function createWallet (walletFile, password){
     return new Promise((resolve, reject) => {
-        if(!dir || !name) return reject(new Error(ERROR_INVALID_PATH));
-        try{
-            fs.accessSync(dir, fs.constants.W_OK);
-        }catch(e){
-            return reject(new Error(ERROR_INVALID_PATH));
-        }
-
-        let filename = `${name}.${DEFAULT_WALLET_EXT}`;
-        let walletFile = path.join(dir, filename);
-
+        // let filename = `${name}.${DEFAULT_WALLET_EXT}`;
+        // let walletFile = path.join(dir, filename);
         execFile(
             settings.get('service_bin'),
             [ '-g',  '-w', walletFile,  '-p', password,
@@ -332,6 +325,9 @@ function createWallet (dir, name, password){
                     log.error(`Failed to create wallet: ${error.message}`);
                     return reject(new Error(ERROR_WALLET_CREATE));
                 } else {
+                    if(!gutils.isRegularFileAndWritable(walletFile)){
+                        return reject(new Error(ERROR_WALLET_IMPORT));
+                    }
                     return resolve(walletFile);
                 }
             }
@@ -339,19 +335,9 @@ function createWallet (dir, name, password){
     });
 }
 
-function importFromKey(dir, name, password, viewKey, spendKey, scanHeight) {
+function importFromKey(walletFile, password, viewKey, spendKey, scanHeight) {
     return new Promise((resolve, reject) => {
         scanHeight = scanHeight || 0;
-        if(!dir || !name || !viewKey || !spendKey) return reject(new Error(ERROR_WALLET_IMPORT));
-        try{
-            fs.accessSync(dir, fs.constants.W_OK);
-        }catch(e){
-            return reject(new Error(ERROR_INVALID_PATH));
-        }
-
-        let filename = `${name}.${DEFAULT_WALLET_EXT}`;
-        let walletFile = path.join(dir, filename);
-
         let walletArgs = [
             '-g',
             '-w', walletFile,
@@ -368,9 +354,12 @@ function importFromKey(dir, name, password, viewKey, spendKey, scanHeight) {
             walletArgs,
             (error, stdout, stderr) => {
                 if (error) {
-                    log.debug(`Failed to imeport key: ${error.message}`);
+                    log.debug(`Failed to import key: ${error.message}`);
                     return reject(new Error(ERROR_WALLET_IMPORT));
                 } else {
+                    if(!gutils.isRegularFileAndWritable(walletFile)){
+                        return reject(new Error(ERROR_WALLET_IMPORT));
+                    }
                     return resolve(walletFile);
                 }
             }
@@ -380,18 +369,11 @@ function importFromKey(dir, name, password, viewKey, spendKey, scanHeight) {
 }
 
 
-function importFromSeed(dir, name, password, mnemonicSeed, scanHeight) {
+function importFromSeed(walletFile, password, mnemonicSeed, scanHeight) {
     return new Promise((resolve, reject) => {
         scanHeight = scanHeight || 0;
-        if(!dir || !name || !mnemonicSeed) return reject(new Error(ERROR_WALLET_IMPORT));
-        try{
-            fs.accessSync(dir, fs.constants.W_OK);
-        }catch(e){
-            return reject(new Error(ERROR_INVALID_PATH));
-        }
-
-        let filename = `${name}.${DEFAULT_WALLET_EXT}`;
-        let walletFile = path.join(dir, filename);
+        // let filename = `${name}.${DEFAULT_WALLET_EXT}`;
+        // let walletFile = path.join(dir, filename);
         let walletArgs = [
             '-g',
             '-w', walletFile,
@@ -410,11 +392,13 @@ function importFromSeed(dir, name, password, mnemonicSeed, scanHeight) {
                     log.debug(`Error importing seed: ${error.message}`);
                     return reject(new Error(ERROR_WALLET_IMPORT));
                 } else {
+                    if(!gutils.isRegularFileAndWritable(walletFile)){
+                        return reject(new Error(ERROR_WALLET_IMPORT));
+                    }
                     return resolve(walletFile);
                 }
             }
         );
-
     });
 }
 
