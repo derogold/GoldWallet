@@ -309,7 +309,7 @@ function sendTransaction(params){
 
 const ERROR_INVALID_PATH = 'Invalid directory/filename, please enter a valid path that you have write permission';
 const ERROR_WALLET_CREATE = 'Wallet can not be created, please check your input and try again';
-const ERROR_WALLET_IMPORT = 'Wallet import faield, please make sure you have entered correct information';
+const ERROR_WALLET_IMPORT = 'Wallet import field, please make sure you have entered correct information';
 function createWallet (dir, name, password){
     return new Promise((resolve, reject) => {
         if(!dir || !name) return reject(new Error(ERROR_INVALID_PATH));
