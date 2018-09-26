@@ -18,6 +18,9 @@ const wlsession = new gSession();
 let win = remote.getCurrentWindow();
 
 const WS_VERSION = settings.get('version','unknown');
+const DEFAULT_WALLET_PATH = remote.app.getPath('documents');
+let WALLET_OPEN_IN_PROGRESS = false;
+
 // some obj vars
 var TXLIST_OBJ = null;
 var COMPLETION_PUBNODES;
@@ -291,6 +294,10 @@ function showKeyBindings(){
 }
 
 function switchTab(){
+    if(WALLET_OPEN_IN_PROGRESS){
+        showToast('Opening wallet in progress, please wait...');
+        return;
+    }
     let isServiceReady = wlsession.get('serviceReady') || false;
     let activeTab = document.querySelector('.btn-active');
     let nextTab = activeTab.nextElementSibling || firstTab;
@@ -310,6 +317,10 @@ function switchTab(){
 
 // section switcher
 function changeSection(sectionId, isSettingRedir) {
+    if(WALLET_OPEN_IN_PROGRESS){
+        showToast('Opening wallet in progress, please wait...');
+        return;
+    }
     formMessageReset();
     isSettingRedir = isSettingRedir || false;
     let targetSection = sectionId.trim();
@@ -842,6 +853,7 @@ function handleWalletOpen(){
         formMessageReset();
         if(!walletOpenInputPath.value){
             formMessageSet('load','error', "Invalid wallet file path");
+            WALLET_OPEN_IN_PROGRESS = false;
             setOpenButtonsState(0);
             return;
         }
@@ -849,6 +861,7 @@ function handleWalletOpen(){
         function onError(err){
             formMessageReset();
             formMessageSet('load','error', err);
+            WALLET_OPEN_IN_PROGRESS = false;
             setOpenButtonsState(0);
             return false;
         }
@@ -857,6 +870,7 @@ function handleWalletOpen(){
             walletOpenInputPath.value = settings.get('recentWallet');
             overviewWalletAddress.value = wlsession.get('loadedWalletAddress');
             let thefee = svcmain.getNodeFee();
+            WALLET_OPEN_IN_PROGRESS = false;
             changeSection('section-overview');
             setTimeout(()=>{
                 setOpenButtonsState(0);
@@ -870,10 +884,12 @@ function handleWalletOpen(){
             if(err){
                 formMessageSet('load','error', "Invalid wallet file path");
                 setOpenButtonsState(0);
+                WALLET_OPEN_IN_PROGRESS = false;
                 return false;
             }
 
             setOpenButtonsState(1);
+            WALLET_OPEN_IN_PROGRESS = true;
             settings.set('recentWallet', walletFile);
             formMessageSet('load','warning', "Accessing wallet...<br><progress></progress>");
             svcmain.stopService(true).then((v) => {
@@ -885,6 +901,7 @@ function handleWalletOpen(){
             }).catch((err) => {
                 console.log(err);
                 formMessageSet('load','error', "Unable to start service");
+                WALLET_OPEN_IN_PROGRESS = false;
                 setOpenButtonsState(0);
                 return false;
             });
@@ -951,58 +968,45 @@ function handleWalletCreate(){
         let filePathValue = walletCreateInputPath.value ? walletCreateInputPath.value.trim() : '';
         let passwordValue =  walletCreateInputPassword.value ? walletCreateInputPassword.value.trim() : '';
 
-        if(!filePathValue.length){
-            formMessageSet('create','error', `Wallet file location can't be left blank!`);
-            return;
-        }
-
-        // test if it's a directory only:
-        if(gutils.isWritableDirectory(filePathValue)){
-            formMessageSet('create','error', `Invalid wallet path, please enter the correct full path including filename!`);
-            return;
-        }
-
-        let walletDir = path.dirname(filePathValue);
-        let walletFilename = path.dirname(filePathValue);
-        if(!walletDir || !walletFilename){
-            formMessageSet('create','error', `Please check that you have entered a correct file path that you have write permission !`);
-            return;
-        }
-
-        if(!gutils.isPathWriteable(walletDir)){
-            formMessageSet('create','error', `Please check that you have entered a correct file path that you have write permission !`);
-            return;
-        }
-
-        // validate password
-        if(!passwordValue.length){
-            formMessageSet('create','error', `Please enter a password, creating wallet without a password will not be supported!`);
-            return;
-        }
-
-        // backup existing file, better to remove it?
-        if(gutils.isRegularFileAndWritable(filePathValue)){
-            try{
-                let ts = new Date().getTime();
-                let backfn = `${filePathValue}.bak${ts}`;
-                fs.renameSync(filePathValue, backfn);;
-            }catch(err){
-               formMessageSet('create','error', `Unable to overwrite existing file, please enter new wallet file path`);
-               return;
+        // validate path
+        gutils.validateWalletPath(filePathValue, DEFAULT_WALLET_PATH).then((finalPath)=>{
+            // validate password
+            if(!passwordValue.length){
+                formMessageSet('create','error', `Please enter a password, creating wallet without a password will not be supported!`);
+                return;
             }
-       }
 
-        svcmain.createWallet(
-            filePathValue,
-            passwordValue
-        ).then((walletFile) => {
-            settings.set('recentWallet', walletFile);
-            settings.set('recentWalletDir', walletCreateInputPath.value);
-            walletOpenInputPath.value = walletFile;
-            changeSection('section-overview-load');
-            showToast('Wallet has been created, you can now open your wallet!',12000);
+            settings.set('recentWalletDir', path.dirname(finalPath));
+
+            // user already confirm to overwrite
+            if(gutils.isRegularFileAndWritable(finalPath)){
+                try{
+                    // for now, backup instead of delete, just to be save
+                    let ts = new Date().getTime();
+                    let backfn = `${finalPath}.bak${ts}`;
+                    fs.renameSync(finalPath, backfn);;
+                    //fs.unlinkSync(finalPath);
+                }catch(err){
+                   formMessageSet('create','error', `Unable to overwrite existing file, please enter new wallet file path`);
+                   return;
+                }
+           }
+
+            // create
+            svcmain.createWallet(
+                finalPath,
+                passwordValue
+            ).then((walletFile) => {
+                settings.set('recentWallet', walletFile);
+                walletOpenInputPath.value = walletFile;
+                changeSection('section-overview-load');
+                showToast('Wallet has been created, you can now open your wallet!',12000);
+            }).catch((err) => {
+                formMessageSet('create', 'error', err.message);
+                return;
+            });
         }).catch((err) => {
-            formMessageSet('create', 'error', err);
+            formMessageSet('create','error', err.message);
             return;
         });
     });
@@ -1016,76 +1020,71 @@ function handleWalletImportKeys(){
         let viewKeyValue = importKeyInputViewKey.value ? importKeyInputViewKey.value.trim() : '';
         let spendKeyValue = importKeyInputSpendKey.value ? importKeyInputSpendKey.value.trim() : '';
         let scanHeightValue = importKeyInputScanHeight.value ? parseInt(importKeyInputScanHeight.value,10) : 1;
-        scanHeightValue = (scanHeightValue < 1000 ? 1 : scanHeightValue);
+        
         // validate path
-        if(!filePathValue.length){
-            formMessageSet('import','error', `Wallet file location can't be left blank!`);
-            return;
-        }
-
-        if(gutils.isWritableDirectory(filePathValue)){
-            formMessageSet('import','error', `Invalid wallet path, please enter the correct full path including filename!`);
-            return;
-        }
-
-        let walletDir = path.dirname(filePathValue);
-        let walletFilename = path.dirname(filePathValue);
-        if(!walletDir || !walletFilename){
-            formMessageSet('import','error', `Please check that you have entered a correct file path that you have write permission !`);
-            return;
-        }
-
-        if(!gutils.isPathWriteable(walletDir)){
-            formMessageSet('import','error', `Please check that you have entered a correct file path that you have write permission !`);
-            return;
-        }
-
-        // validate password
-        if(!passwordValue.length){
-            formMessageSet('import','error', `Please enter a password, creating wallet without a password will not be supported!`);
-            return;
-        }
-        // validate viewKey
-        if(!viewKeyValue.length || !spendKeyValue.length){
-            formMessageSet('import','error', 'View Key and Spend Key can not be left blank!');
-            return;
-        }
-
-        if(!gutils.validateSecretKey(viewKeyValue)){
-            formMessageSet('import','error', 'Invalid view key!');
-            return;
-        }
-        // validate spendKey
-        if(!gutils.validateSecretKey(spendKeyValue)){
-            formMessageSet('import','error', 'Invalid spend key!');
-            return;
-        }
-
-        if(gutils.isRegularFileAndWritable(filePathValue)){
-             try{
-                 let ts = new Date().getTime();
-                 let backfn = `${filePathValue}.bak${ts}`;
-                 fs.renameSync(filePathValue, backfn);;
-             }catch(err){
-                formMessageSet('import','error', `Unable to overwrite existing file, please enter new wallet file path`);
+        gutils.validateWalletPath(filePathValue, DEFAULT_WALLET_PATH).then((finalPath)=>{
+            if(!passwordValue.length){
+                formMessageSet('import','error', `Please enter a password, creating wallet without a password will not be supported!`);
                 return;
-             }
-        }
-        settings.set('recentWalletDir', walletDir);
-        svcmain.importFromKey(
-            filePathValue,// walletfile
-            passwordValue,
-            viewKeyValue,
-            spendKeyValue,
-            scanHeightValue
-        ).then((walletFile) => {
-            settings.set('recentWallet', walletFile);
-            settings.set('recentWalletDir', walletDir);
-            walletOpenInputPath.value = walletFile;
-            changeSection('section-overview-load');
-            showToast('Wallet has been imported, you can now open your wallet!', 12000);
-        }).catch((err) => {
-            formMessageSet('import', 'error', err);
+            }
+
+
+            if(scanHeightValue < 0 || scanHeightValue.toPrecision().indexOf('.') !== -1){
+                formMessageSet('import','error', 'Invalid scan height!');
+                return;
+            }
+
+            // validate viewKey
+            if(!viewKeyValue.length || !spendKeyValue.length){
+                formMessageSet('import','error', 'View Key and Spend Key can not be left blank!');
+                return;
+            }
+    
+            if(!gutils.validateSecretKey(viewKeyValue)){
+                formMessageSet('import','error', 'Invalid view key!');
+                return;
+            }
+            // validate spendKey
+            if(!gutils.validateSecretKey(spendKeyValue)){
+                formMessageSet('import','error', 'Invalid spend key!');
+                return;
+            }
+
+            settings.set('recentWalletDir', path.dirname(finalPath));
+
+            // user already confirm to overwrite
+            if(gutils.isRegularFileAndWritable(finalPath)){
+                try{
+                    // for now, backup instead of delete, just to be save
+                    let ts = new Date().getTime();
+                    let backfn = `${finalPath}.bak${ts}`;
+                    fs.renameSync(finalPath, backfn);;
+                    //fs.unlinkSync(finalPath);
+                }catch(err){
+                formMessageSet('create','error', `Unable to overwrite existing file, please enter new wallet file path`);
+                return;
+                }
+            }
+
+            svcmain.importFromKey(
+                finalPath,// walletfile
+                passwordValue,
+                viewKeyValue,
+                spendKeyValue,
+                scanHeightValue
+            ).then((walletFile) => {
+                settings.set('recentWallet', walletFile);
+                settings.set('recentWalletDir', walletDir);
+                walletOpenInputPath.value = walletFile;
+                changeSection('section-overview-load');
+                showToast('Wallet has been imported, you can now open your wallet!', 12000);
+            }).catch((err) => {
+                formMessageSet('import', 'error', err);
+                return;
+            });
+
+        }).catch((err)=>{
+            formMessageSet('import','error', err.message);
             return;
         });
     });
@@ -1098,69 +1097,60 @@ function handleWalletImportSeed(){
         let filePathValue = importSeedInputPath.value ? importSeedInputPath.value.trim() : '';
         let passwordValue =  importSeedInputPassword.value ? importSeedInputPassword.value.trim() : '';
         let seedValue = importSeedInputMnemonic.value ? importSeedInputMnemonic.value.trim() : '';
-        let scanHeightValue = importSeedInputScanHeight.value ? parseInt(importSeedInputScanHeight.value,10) : 1;
-        scanHeightValue = (scanHeightValue < 1000 ? 1 : scanHeightValue);
-
-        if(!filePathValue.length){
-            formMessageSet('import-seed','error', `Wallet file location can't be left blank!`);
-            return;
-        }
-
-        if(gutils.isWritableDirectory(filePathValue)){
-            formMessageSet('import-seed','error', `Invalid wallet path, please enter the correct full path including filename!`);
-            return;
-        }
-
-        let walletDir = path.dirname(filePathValue);
-        let walletFilename = path.dirname(filePathValue);
-        if(!walletDir || !walletFilename){
-            formMessageSet('import-seed','error', `Please check that you have entered a correct file path that you have write permission !`);
-            return;
-        }
-
-        if(!gutils.isPathWriteable(walletDir)){
-            formMessageSet('import-seed','error', `Please check that you have entered a correct file path that you have write permission !`);
-            return;
-        }
-
-        // validate password
-        if(!passwordValue.length){
-            formMessageSet('import-seed','error', `Please enter a password, creating wallet without a password will not be supported!`);
-            return;
-        }
-
-        if(!gutils.validateMnemonic(seedValue)){
-            formMessageSet('import-seed', 'error', 'Invalid mnemonic seed value!');
-            return;
-        }
-
-        if(gutils.isRegularFileAndWritable(filePathValue)){
-            try{
-                let ts = new Date().getTime();
-                let backfn = `${filePathValue}.bak${ts}`;
-                fs.renameSync(filePathValue, backfn);;
-            }catch(err){
-               formMessageSet('import','error', `Unable to overwrite existing file, please enter new wallet file path`);
-               return;
+        let scanHeightValue = importKeyInputScanHeight.value ? parseInt(importKeyInputScanHeight.value,10) : -1;
+        // validate path
+        gutils.validateWalletPath(filePathValue, DEFAULT_WALLET_PATH).then((finalPath)=>{
+            // validate password
+            if(!passwordValue.length){
+                formMessageSet('import-seed','error', `Please enter a password, creating wallet without a password will not be supported!`);
+                return;
             }
-        }
-        settings.set('recentWalletDir', walletDir);
 
-        svcmain.importFromSeed(
-            filePathValue,
-            passwordValue,
-            seedValue,
-            scanHeightValue
-        ).then((walletFile) => {
-            settings.set('recentWallet', walletFile);
-            //settings.set('recentWalletDir', importSeedInputPath.value);
-            walletOpenInputPath.value = walletFile;
-            changeSection('section-overview-load');
-            showToast('Wallet has been imported, you can now open your wallet!', 12000);
-        }).catch((err) => {
-            formMessageSet('import-seed', 'error',err);
+            if(scanHeightValue < 0 || scanHeightValue.toPrecision().indexOf('.') !== -1){
+                formMessageSet('import','error', 'Invalid scan height!');
+                return;
+            }
+
+            if(!gutils.validateMnemonic(seedValue)){
+                formMessageSet('import-seed', 'error', 'Invalid mnemonic seed value!');
+                return;
+            }
+
+            settings.set('recentWalletDir', path.dirname(finalPath));
+
+            // user already confirm to overwrite
+            if(gutils.isRegularFileAndWritable(finalPath)){
+                try{
+                    // for now, backup instead of delete, just to be save
+                    let ts = new Date().getTime();
+                    let backfn = `${finalPath}.bak${ts}`;
+                    fs.renameSync(finalPath, backfn);;
+                    //fs.unlinkSync(finalPath);
+                }catch(err){
+                   formMessageSet('create','error', `Unable to overwrite existing file, please enter new wallet file path`);
+                   return;
+                }
+           }
+
+            svcmain.importFromSeed(
+                finalPath,
+                passwordValue,
+                seedValue,
+                scanHeightValue
+            ).then((walletFile) => {
+                settings.set('recentWallet', walletFile);
+                walletOpenInputPath.value = walletFile;
+                changeSection('section-overview-load');
+                showToast('Wallet has been imported, you can now open your wallet!', 12000);
+            }).catch((err) => {
+                formMessageSet('import-seed', 'error',err);
+                return;
+            });
+
+        }).catch((err)=>{
+            formMessageSet('import','error', err.message);
             return;
-        });
+        })
     });
 }
 
@@ -1192,7 +1182,7 @@ function handleWalletExport(){
                 textContent += `${os.EOL}Mnemonic Seed:${os.EOL}${keys.mnemonicSeed}${os.EOL}`;
                 try{
                     fs.writeFileSync(filename, textContent);
-                    formMessageSet('secret','success', 'Your keys has been exported, please keep the file secret to you!');
+                    formMessageSet('secret','success', 'Your keys have been exported, please keep the file secret!');
                 }catch(err){
                     formMessageSet('secret','error', "Failed to save your keys, please check that you have write permission to the file");
                 }

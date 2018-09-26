@@ -14,7 +14,10 @@ const gutils = require('./gutils.js');
 
 const ERROR_WALLETLAUNCH = 'Failed to start turtle-service. Set the path to turtle-service properly in the settings tab.';
 const ERROR_WRONG_PASSWORD = 'Failed to load your wallet, please check your password';
-const ERROR_WALLET_IMPORT = 'Import was failed, please check that you have all informations entered correctly';
+const ERROR_WALLET_IMPORT = 'Import failed, please check that you have entered all information correctly';
+const ERROR_INVALID_PATH = 'Invalid directory/filename, please enter a valid path that you have write permission';
+const ERROR_WALLET_CREATE = 'Wallet can not be created, please check your input and try again';
+
 const SERVICE_LOG_DEBUG = wlsession.get('debug');
 const SERVICE_LOG_LEVEL_DEFAULT = 0;
 const SERVICE_LOG_LEVEL_DEBUG = 4;
@@ -309,8 +312,6 @@ function sendTransaction(params){
     });
 }
 
-const ERROR_INVALID_PATH = 'Invalid directory/filename, please enter a valid path that you have write permission';
-const ERROR_WALLET_CREATE = 'Wallet can not be created, please check your input and try again';
 function createWallet (walletFile, password){
     return new Promise((resolve, reject) => {
         // let filename = `${name}.${DEFAULT_WALLET_EXT}`;
@@ -353,6 +354,7 @@ function importFromKey(walletFile, password, viewKey, spendKey, scanHeight) {
             settings.get('service_bin'),
             walletArgs,
             (error, stdout, stderr) => {
+                console.log(error, stdout, stderr);
                 if (error) {
                     log.debug(`Failed to import key: ${error.message}`);
                     return reject(new Error(ERROR_WALLET_IMPORT));

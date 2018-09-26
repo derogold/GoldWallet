@@ -7,22 +7,25 @@
             <div class="div-input">
                 <div class="input-wrap">
                     <h4 class="text-spaced">Select where the wallet file will be stored:</h4>
-                    <input type="text" class="text-block path-input" id="input-import-seed-path" style="padding: 12px 8px;" />
+                    <input data-fileobj="wallet file" data-selection="saveFile" data-targetinput="input-import-seed-path" type="text" class="text-block path-input-button" id="input-import-seed-path" style="padding: 12px 8px;" />
                     <button  data-fileobj="wallet file" data-selection="saveFile" data-targetinput="input-import-seed-path" type="button" class="button-green button-browse path-input-button" id="button-import-seed-browse"><i class="fas fa-folder-open"></i></button>
                 </div>
                 <div class="input-wrap">
-                    <h4 class="text-spaced" style="display: inline;">Set password to open this wallet:</h4>
-                    <input type="password" class="text-block" id="input-import-seed-password"/>
+                    <div class="inline-block-div half-width" style="width:64%;">
+                        <h4 class="text-spaced" style="display: inline;">Set password to open this wallet:</h4>
+                        <input type="password" class="text-block" id="input-import-seed-password"/>
+                    </div>
+                    <div class="inline-block-div half-width half-width-end" style="width:30%;float:right;margin-right:1rem;">
+                            <h4 class="text-spaced">Scan Height (optional):</h4>
+                            <input type="number" min="0" step="1" class="text-block short-number" id="key-import-seed-height" />
+                    </div>
                 </div>
 
                 <div class="input-wrap">
                     <h4 class="text-spaced">Mnemonic seed to be imported:</h4>
                     <textarea class="default-textarea" id="key-import-seed" rows="3"></textarea>
                 </div>
-                <div class="input-wrap">
-                    <h4 class="text-spaced">Scan Height (optional):</h4>
-                    <input type="number" min="0" step="1" class="text-block short-number" id="key-import-seed-height" />
-                </div>
+                
                 <div class="input-wrap">
                     <span class="form-ew form-msg text-spaced-error" id="text-import-seed-error"></span>
                     <span class="form-ew form-msg text-spaced-success" id="text-import-seed-success"></span>
