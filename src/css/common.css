@@ -675,6 +675,12 @@ span.form-help-qr.hidden{
     border: 1px solid #ccc9;
     padding: 0.65rem 0.75rem;
 }
+input.path-input-button{
+    display:inline-block;
+    width: 90%;
+    margin-right: 6px;
+    cursor: default;
+}
 
 .inline-block-div {
     display: inline-block;
@@ -684,6 +690,10 @@ span.form-help-qr.hidden{
 .inline-block-div.half-width{
     width: 47.7%;
     vertical-align: top;
+}
+
+.inline-block-div.half-width h4{
+    margin-top: 0;
 }
 
 .inline-block-div.half-width-end{

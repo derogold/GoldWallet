@@ -7,7 +7,8 @@ const svcmain = require('./svc_main.js');
 const settings = new Store({name: 'Settings'});
 const abook = new Store({ name: 'AddressBook', encryptionKey: ['79009fb00ca1b7130832a42d','e45142cf6c4b7f33','3fe6fba5'].join('')});
 const Menu = remote.Menu;
-
+const os = require('os');
+const path = require('path');
 const Mousetrap = require('./extras/mousetrap.min.js');
 
 
@@ -17,6 +18,9 @@ const wlsession = new gSession();
 let win = remote.getCurrentWindow();
 
 const WS_VERSION = settings.get('version','unknown');
+const DEFAULT_WALLET_PATH = remote.app.getPath('documents');
+let WALLET_OPEN_IN_PROGRESS = false;
+
 // some obj vars
 var TXLIST_OBJ = null;
 var COMPLETION_PUBNODES;
@@ -38,6 +42,7 @@ let settingsInputServiceBin;
 let settingsInputMinToTray;
 let settingsInputCloseToTray;
 let settingsButtonSave;
+let settingsDaemonHostFormHelp;
 // overview page
 let overviewWalletAddress;
 let overviewWalletCloseButton;
@@ -51,6 +56,7 @@ let addressBookButtonSave;
 let walletOpenInputPath;
 let walletOpenInputPassword;
 let walletOpenButtonOpen;
+let walletOpenButtons;
 // show/export keys page
 let overviewShowKeyButton;
 let showkeyButtonExportKey;
@@ -66,12 +72,12 @@ let sendButtonSend;
 // create wallet
 let overviewButtonCreate;
 let walletCreateInputPath;
-let walletCreateInputFilename;
+//let walletCreateInputFilename;
 let walletCreateInputPassword;
 // import wallet keys
 let importKeyButtonImport;
 let importKeyInputPath;
-let importKeyInputFilename;
+//let importKeyInputFilename;
 let importKeyInputPassword;
 let importKeyInputViewKey;
 let importKeyInputSpendKey;
@@ -79,7 +85,7 @@ let importKeyInputScanHeight;
 // import wallet seed
 let importSeedButtonImport;
 let importSeedInputPath;
-let importSeedInputFilename;
+//let importSeedInputFilename;
 let importSeedInputPassword;
 let importSeedInputMnemonic;
 let importSeedInputScanHeight;
@@ -117,6 +123,8 @@ function populateElementVars(){
     settingsInputMinToTray = document.getElementById('checkbox-tray-minimize');
     settingsInputCloseToTray = document.getElementById('checkbox-tray-close');
     settingsButtonSave = document.getElementById('button-settings-save');
+    settingsDaemonHostFormHelp = document.getElementById('daemonHostFormHelp');
+    settingsDaemonPortFormHelp = document.getElementById('daemonPortFormHelp');
 
     // overview pages
     overviewWalletAddress = document.getElementById('wallet-address');
@@ -133,7 +141,7 @@ function populateElementVars(){
     walletOpenInputPath = document.getElementById('input-load-path');
     walletOpenInputPassword = document.getElementById('input-load-password');
     walletOpenButtonOpen = document.getElementById('button-load-load');
-
+    walletOpenButtons = document.getElementById('walletOpenButtons');
     // show/export keys page
     overviewShowKeyButton = document.getElementById('button-show-reveal');
     showkeyButtonExportKey = document.getElementById('button-show-export');
@@ -150,12 +158,12 @@ function populateElementVars(){
     // create wallet
     overviewButtonCreate = document.getElementById('button-create-create');
     walletCreateInputPath = document.getElementById('input-create-path');
-    walletCreateInputFilename = document.getElementById('input-create-name');
+    //walletCreateInputFilename = document.getElementById('input-create-name');
     walletCreateInputPassword = document.getElementById('input-create-password');
     // import wallet keys
     importKeyButtonImport = document.getElementById('button-import-import');
     importKeyInputPath = document.getElementById('input-import-path');
-    importKeyInputFilename = document.getElementById('input-import-name');
+    //importKeyInputFilename = document.getElementById('input-import-name');
     importKeyInputPassword = document.getElementById('input-import-password');
     importKeyInputViewKey = document.getElementById('key-import-view');
     importKeyInputSpendKey = document.getElementById('key-import-spend');
@@ -163,7 +171,7 @@ function populateElementVars(){
     // import wallet seed
     importSeedButtonImport = document.getElementById('button-import-seed-import');
     importSeedInputPath = document.getElementById('input-import-seed-path');
-    importSeedInputFilename = document.getElementById('input-import-seed-name');
+    //importSeedInputFilename = document.getElementById('input-import-seed-name');
     importSeedInputPassword = document.getElementById('input-import-seed-password');
     importSeedInputMnemonic = document.getElementById('key-import-seed');
     importSeedInputScanHeight = document.getElementById('key-import-seed-height');
@@ -286,6 +294,10 @@ function showKeyBindings(){
 }
 
 function switchTab(){
+    if(WALLET_OPEN_IN_PROGRESS){
+        showToast('Opening wallet in progress, please wait...');
+        return;
+    }
     let isServiceReady = wlsession.get('serviceReady') || false;
     let activeTab = document.querySelector('.btn-active');
     let nextTab = activeTab.nextElementSibling || firstTab;
@@ -305,6 +317,10 @@ function switchTab(){
 
 // section switcher
 function changeSection(sectionId, isSettingRedir) {
+    if(WALLET_OPEN_IN_PROGRESS){
+        showToast('Opening wallet in progress, please wait...');
+        return;
+    }
     formMessageReset();
     isSettingRedir = isSettingRedir || false;
     let targetSection = sectionId.trim();
@@ -336,7 +352,21 @@ function changeSection(sectionId, isSettingRedir) {
         return;
     }else{
         // re-randomize public node selection
-        if(targetSection === 'section-settings') initNodeCompletion();
+        if(targetSection === 'section-settings'){           
+            let defaultText = 'Type first few character(s) and select from public node list, or type to your own node address';
+            if(isServiceReady){
+                settingsInputDaemonAddress.setAttribute('disabled','disabled');
+                settingsInputDaemonPort.setAttribute('disabled','disabled');
+                settingsDaemonHostFormHelp.innerHTML = "Please close your current wallet if you want to update node setting";
+                settingsDaemonPortFormHelp.innerHTML = "Please close your current wallet if you want to update node setting";
+            }else{
+                settingsInputDaemonAddress.removeAttribute('disabled');
+                settingsInputDaemonPort.removeAttribute('disabled');
+                settingsDaemonHostFormHelp.innerHTML = defaultText;
+                settingsDaemonPortFormHelp.innerHTML = '';
+                initNodeCompletion();
+            }
+        }
         finalTarget = targetSection;
         toastMsg = '';
     }
@@ -380,6 +410,7 @@ function initNodeCompletion(){
     let publicNodes = settings.has('pubnodes_custom') ? gutils.arrShuffle(settings.get('pubnodes_data')) : [];
     let nodeChoices = settings.get('pubnodes_custom').concat(publicNodes);
 
+
     COMPLETION_PUBNODES = new autoComplete({
         selector: 'input[name="nodeAddress"]',
         minChars: 0,
@@ -387,13 +418,19 @@ function initNodeCompletion(){
             term = term.toLowerCase();
             var choices = nodeChoices;
             var matches = [];
-            for (i=0; i<choices.length; i++)
-                if (~choices[i].toLowerCase().indexOf(term)) matches.push(choices[i]);
+            for (i=0; i<choices.length; i++){
+                let phost = choices[i].split(':')[0];
+                if (~choices[i].toLowerCase().indexOf(term) && phost.length > term.length){
+                    matches.push(choices[i]);
+                }
+            }
             suggest(matches);
         },
         onSelect: function(e, term, item){
             settingsInputDaemonAddress.value = term.split(':')[0];
             settingsInputDaemonPort.value = term.split(':')[1];
+            settingsInputDaemonAddress.dispatchEvent(new Event('blur'));
+            return settingsButtonSave.dispatchEvent(new Event('focus'));
         }
     });
 }
@@ -443,6 +480,7 @@ function initAddressCompletion(){
     COMPLETION_ADDRBOOK = new autoComplete({
         selector: 'input[id="input-send-address"]',
         minChars: 1,
+        cache: false,
         source: function(term, suggest){
             term = term.toLowerCase();
             var choices = nodeAddress;
@@ -685,7 +723,8 @@ function handleAddressBook(){
      
          let editBtn = document.getElementById('button-addressbook-panel-edit');
          editBtn.addEventListener('click', (event)=>{
-             let entry = abook.get(this.dataset.hash);
+             let origHash = this.dataset.hash;
+             let entry = abook.get(origHash);
              if(!entry){
                  iqwerty.toast.Toast("Invalid address book entry.", {settings: {duration:1800}});
              }else{
@@ -694,6 +733,7 @@ function handleAddressBook(){
                  const payidField = document.getElementById('input-addressbook-paymentid');
                  const updateField = document.getElementById('input-addressbook-update');
                  nameField.value = entry.name;
+                 nameField.dataset.oldhash = origHash;
                  walletField.value = entry.address;
                  payidField.value = entry.paymentId;
                  updateField.value = 1;
@@ -704,6 +744,25 @@ function handleAddressBook(){
              gutils.clearChild(axdialog);
          });
      }
+
+     function setAbPaymentIdState(addr){
+        if(addr.length > 99){
+            addressBookInputPaymentId.value = '';
+            addressBookInputPaymentId.setAttribute('disabled', true);
+        }else{
+            addressBookInputPaymentId.removeAttribute('disabled');
+        }
+    }
+
+    addressBookInputWallet.addEventListener('change', (event) => {
+         let val = event.target.value || '';
+         setAbPaymentIdState(val);
+     });
+
+     addressBookInputWallet.addEventListener('keyup', (event) => {
+        let val = event.target.value || '';
+        setAbPaymentIdState(val);
+    });
 
     addressBookButtonSave.addEventListener('click', (event) => {
         formMessageReset();
@@ -729,10 +788,13 @@ function handleAddressBook(){
             }
         }
 
+        if(walletValue.length > 99) paymentIdValue.value = '';
+
         let entryName = nameValue.trim();
         let entryAddr = walletValue.trim();
         let entryPaymentId = paymentIdValue.trim();
         let entryHash = gutils.b2sSum(entryAddr + entryPaymentId);
+
 
         if(abook.has(entryHash) && !isUpdate){
             formMessageSet('addressbook','error',"This combination of address and payment ID already exist, please enter new address or different payment id.");
@@ -746,11 +808,18 @@ function handleAddressBook(){
                 paymentId: entryPaymentId,
                 qrCode: gutils.genQrDataUrl(entryAddr)
             });
+            let oldHash = addressBookInputName.dataset.oldhash || '';
+            let isNew = (oldHash.length && oldHash !== entryHash);
+            
+            if(isUpdate && isNew){
+                abook.delete(oldHash);
+            }
         }catch(e){
             formMessageSet('addressbook','error',"Address book entry can not be saved, please try again");
             return;
         }
         addressBookInputName.value = '';
+        addressBookInputName.dataset.oldhash = '';
         addressBookInputWallet.value = '';
         addressBookInputPaymentId.value = '';
         addressBookInputUpdate.value = 0;
@@ -771,16 +840,29 @@ function handleWalletOpen(){
         walletOpenInputPath.value = settings.get('recentWallet');
     }
 
+    function setOpenButtonsState(isInProgress){
+        isInProgress = isInProgress ? 1 : 0;
+        if(isInProgress){
+            walletOpenButtons.classList.add('hidden');
+        }else{
+            walletOpenButtons.classList.remove('hidden');
+        }
+    }
+
     walletOpenButtonOpen.addEventListener('click', (event) => {
         formMessageReset();
         if(!walletOpenInputPath.value){
             formMessageSet('load','error', "Invalid wallet file path");
+            WALLET_OPEN_IN_PROGRESS = false;
+            setOpenButtonsState(0);
             return;
         }
 
         function onError(err){
             formMessageReset();
             formMessageSet('load','error', err);
+            WALLET_OPEN_IN_PROGRESS = false;
+            setOpenButtonsState(0);
             return false;
         }
 
@@ -788,7 +870,11 @@ function handleWalletOpen(){
             walletOpenInputPath.value = settings.get('recentWallet');
             overviewWalletAddress.value = wlsession.get('loadedWalletAddress');
             let thefee = svcmain.getNodeFee();
+            WALLET_OPEN_IN_PROGRESS = false;
             changeSection('section-overview');
+            setTimeout(()=>{
+                setOpenButtonsState(0);
+            },300);
         }
 
         let walletFile = walletOpenInputPath.value;
@@ -797,11 +883,14 @@ function handleWalletOpen(){
         fs.access(walletFile, fs.constants.R_OK, (err) => {
             if(err){
                 formMessageSet('load','error', "Invalid wallet file path");
+                setOpenButtonsState(0);
+                WALLET_OPEN_IN_PROGRESS = false;
                 return false;
             }
 
+            setOpenButtonsState(1);
+            WALLET_OPEN_IN_PROGRESS = true;
             settings.set('recentWallet', walletFile);
-            
             formMessageSet('load','warning', "Accessing wallet...<br><progress></progress>");
             svcmain.stopService(true).then((v) => {
                 formMessageSet('load','warning', "Starting wallet service...<br><progress></progress>");
@@ -812,6 +901,8 @@ function handleWalletOpen(){
             }).catch((err) => {
                 console.log(err);
                 formMessageSet('load','error', "Unable to start service");
+                WALLET_OPEN_IN_PROGRESS = false;
+                setOpenButtonsState(0);
                 return false;
             });
         });
@@ -874,23 +965,48 @@ function handleWalletClose(){
 function handleWalletCreate(){
     overviewButtonCreate.addEventListener('click', (event) => {
         formMessageReset();
-        if(!walletCreateInputPath.value || !walletCreateInputFilename.value){
-            formMessageSet('create', 'error', 'Please check your path input');
-            return;
-        }
+        let filePathValue = walletCreateInputPath.value ? walletCreateInputPath.value.trim() : '';
+        let passwordValue =  walletCreateInputPassword.value ? walletCreateInputPassword.value.trim() : '';
 
-        svcmain.createWallet(
-            walletCreateInputPath.value,
-            walletCreateInputFilename.value,
-            walletCreateInputPassword.value
-        ).then((walletFile) => {
-            settings.set('recentWallet', walletFile);
-            settings.set('recentWalletDir', walletCreateInputPath.value);
-            walletOpenInputPath.value = walletFile;
-            changeSection('section-overview-load');
-            showToast('Wallet has been created, you can now open your wallet!',12000);
+        // validate path
+        gutils.validateWalletPath(filePathValue, DEFAULT_WALLET_PATH).then((finalPath)=>{
+            // validate password
+            if(!passwordValue.length){
+                formMessageSet('create','error', `Please enter a password, creating wallet without a password will not be supported!`);
+                return;
+            }
+
+            settings.set('recentWalletDir', path.dirname(finalPath));
+
+            // user already confirm to overwrite
+            if(gutils.isRegularFileAndWritable(finalPath)){
+                try{
+                    // for now, backup instead of delete, just to be save
+                    let ts = new Date().getTime();
+                    let backfn = `${finalPath}.bak${ts}`;
+                    fs.renameSync(finalPath, backfn);;
+                    //fs.unlinkSync(finalPath);
+                }catch(err){
+                   formMessageSet('create','error', `Unable to overwrite existing file, please enter new wallet file path`);
+                   return;
+                }
+           }
+
+            // create
+            svcmain.createWallet(
+                finalPath,
+                passwordValue
+            ).then((walletFile) => {
+                settings.set('recentWallet', walletFile);
+                walletOpenInputPath.value = walletFile;
+                changeSection('section-overview-load');
+                showToast('Wallet has been created, you can now open your wallet!',12000);
+            }).catch((err) => {
+                formMessageSet('create', 'error', err.message);
+                return;
+            });
         }).catch((err) => {
-            formMessageSet('create', 'error', err);
+            formMessageSet('create','error', err.message);
             return;
         });
     });
@@ -899,21 +1015,76 @@ function handleWalletCreate(){
 function handleWalletImportKeys(){
     importKeyButtonImport.addEventListener('click', (event) => {
         formMessageReset();
-        svcmain.importFromKey(
-            importKeyInputPath.value,
-            importKeyInputFilename.value,
-            importKeyInputPassword.value,
-            importKeyInputViewKey.value,
-            importKeyInputSpendKey.value,
-            importKeyInputScanHeight.value
-        ).then((walletFile) => {
-            settings.set('recentWallet', walletFile);
-            settings.set('recentWalletDir', importKeyInputPath.value);
-            walletOpenInputPath.value = walletFile;
-            changeSection('section-overview-load');
-            showToast('Wallet has been imported, you can now open your wallet!', 12000);
-        }).catch((err) => {
-            formMessageSet('import', 'error',err);
+        let filePathValue = importKeyInputPath.value ? importKeyInputPath.value.trim() : '';
+        let passwordValue =  importKeyInputPassword.value ? importKeyInputPassword.value.trim() : '';
+        let viewKeyValue = importKeyInputViewKey.value ? importKeyInputViewKey.value.trim() : '';
+        let spendKeyValue = importKeyInputSpendKey.value ? importKeyInputSpendKey.value.trim() : '';
+        let scanHeightValue = importKeyInputScanHeight.value ? parseInt(importKeyInputScanHeight.value,10) : 1;
+        
+        // validate path
+        gutils.validateWalletPath(filePathValue, DEFAULT_WALLET_PATH).then((finalPath)=>{
+            if(!passwordValue.length){
+                formMessageSet('import','error', `Please enter a password, creating wallet without a password will not be supported!`);
+                return;
+            }
+
+
+            if(scanHeightValue < 0 || scanHeightValue.toPrecision().indexOf('.') !== -1){
+                formMessageSet('import','error', 'Invalid scan height!');
+                return;
+            }
+
+            // validate viewKey
+            if(!viewKeyValue.length || !spendKeyValue.length){
+                formMessageSet('import','error', 'View Key and Spend Key can not be left blank!');
+                return;
+            }
+    
+            if(!gutils.validateSecretKey(viewKeyValue)){
+                formMessageSet('import','error', 'Invalid view key!');
+                return;
+            }
+            // validate spendKey
+            if(!gutils.validateSecretKey(spendKeyValue)){
+                formMessageSet('import','error', 'Invalid spend key!');
+                return;
+            }
+
+            settings.set('recentWalletDir', path.dirname(finalPath));
+
+            // user already confirm to overwrite
+            if(gutils.isRegularFileAndWritable(finalPath)){
+                try{
+                    // for now, backup instead of delete, just to be save
+                    let ts = new Date().getTime();
+                    let backfn = `${finalPath}.bak${ts}`;
+                    fs.renameSync(finalPath, backfn);;
+                    //fs.unlinkSync(finalPath);
+                }catch(err){
+                formMessageSet('import','error', `Unable to overwrite existing file, please enter new wallet file path`);
+                return;
+                }
+            }
+
+            svcmain.importFromKey(
+                finalPath,// walletfile
+                passwordValue,
+                viewKeyValue,
+                spendKeyValue,
+                scanHeightValue
+            ).then((walletFile) => {
+                settings.set('recentWallet', walletFile);
+                settings.set('recentWalletDir', walletDir);
+                walletOpenInputPath.value = walletFile;
+                changeSection('section-overview-load');
+                showToast('Wallet has been imported, you can now open your wallet!', 12000);
+            }).catch((err) => {
+                formMessageSet('import', 'error', err);
+                return;
+            });
+
+        }).catch((err)=>{
+            formMessageSet('import','error', err.message);
             return;
         });
     });
@@ -922,22 +1093,64 @@ function handleWalletImportKeys(){
 function handleWalletImportSeed(){
     importSeedButtonImport.addEventListener('click', (event) => {
         formMessageReset();
-        svcmain.importFromSeed(
-            importSeedInputPath.value,
-            importSeedInputFilename.value,
-            importSeedInputPassword.value,
-            importSeedInputMnemonic.value,
-            importSeedInputScanHeight.value
-        ).then((walletFile) => {
-            settings.set('recentWallet', walletFile);
-            settings.set('recentWalletDir', importSeedInputPath.value);
-            walletOpenInputPath.value = walletFile;
-            changeSection('section-overview-load');
-            showToast('Wallet has been imported, you can now open your wallet!', 12000);
-        }).catch((err) => {
-            formMessageSet('import-seed', 'error',err);
+
+        let filePathValue = importSeedInputPath.value ? importSeedInputPath.value.trim() : '';
+        let passwordValue =  importSeedInputPassword.value ? importSeedInputPassword.value.trim() : '';
+        let seedValue = importSeedInputMnemonic.value ? importSeedInputMnemonic.value.trim() : '';
+        let scanHeightValue = importKeyInputScanHeight.value ? parseInt(importKeyInputScanHeight.value,10) : -1;
+        // validate path
+        gutils.validateWalletPath(filePathValue, DEFAULT_WALLET_PATH).then((finalPath)=>{
+            // validate password
+            if(!passwordValue.length){
+                formMessageSet('import-seed','error', `Please enter a password, creating wallet without a password will not be supported!`);
+                return;
+            }
+
+            if(scanHeightValue < 0 || scanHeightValue.toPrecision().indexOf('.') !== -1){
+                formMessageSet('import-seed','error', 'Invalid scan height!');
+                return;
+            }
+
+            if(!gutils.validateMnemonic(seedValue)){
+                formMessageSet('import-seed', 'error', 'Invalid mnemonic seed value!');
+                return;
+            }
+
+            settings.set('recentWalletDir', path.dirname(finalPath));
+
+            // user already confirm to overwrite
+            if(gutils.isRegularFileAndWritable(finalPath)){
+                try{
+                    // for now, backup instead of delete, just to be save
+                    let ts = new Date().getTime();
+                    let backfn = `${finalPath}.bak${ts}`;
+                    fs.renameSync(finalPath, backfn);;
+                    //fs.unlinkSync(finalPath);
+                }catch(err){
+                   formMessageSet('import-seed','error', `Unable to overwrite existing file, please enter new wallet file path`);
+                   return;
+                }
+           }
+
+            svcmain.importFromSeed(
+                finalPath,
+                passwordValue,
+                seedValue,
+                scanHeightValue
+            ).then((walletFile) => {
+                settings.set('recentWallet', walletFile);
+                walletOpenInputPath.value = walletFile;
+                changeSection('section-overview-load');
+                showToast('Wallet has been imported, you can now open your wallet!', 12000);
+            }).catch((err) => {
+                formMessageSet('import-seed', 'error',err);
+                return;
+            });
+
+        }).catch((err)=>{
+            formMessageSet('import-seed', 'error',err.message);
             return;
-        });
+        })
     });
 }
 
@@ -964,17 +1177,12 @@ function handleWalletExport(){
         });
         if(filename){
             svcmain.getSecretKeys(overviewWalletAddress.value).then((keys) => {
-                let textContent = `View Secret Key:
-${keys.viewSecretKey}
-
-Spend Secret Key:
-${keys.spendSecretKey}
-
-Mnemonic Seed: 
-${keys.mnemonicSeed}`;
+                let textContent = `View Secret Key:${os.EOL}${keys.viewSecretKey}${os.EOL}`;
+                textContent += `${os.EOL}Spend Secret Key:${os.EOL}${keys.spendSecretKey}${os.EOL}`;
+                textContent += `${os.EOL}Mnemonic Seed:${os.EOL}${keys.mnemonicSeed}${os.EOL}`;
                 try{
                     fs.writeFileSync(filename, textContent);
-                    formMessageSet('secret','success', 'Your keys has been exported, please keep the file secret to you!');
+                    formMessageSet('secret','success', 'Your keys have been exported, please keep the file secret!');
                 }catch(err){
                     formMessageSet('secret','error', "Failed to save your keys, please check that you have write permission to the file");
                 }
@@ -987,6 +1195,26 @@ ${keys.mnemonicSeed}`;
 
 function handleSendTransfer(){
     sendInputFee.value = 0.1;
+    function setPaymentIdState(addr){
+        if(addr.length > 99){
+            sendInputPaymentId.value = '';
+            sendInputPaymentId.setAttribute('disabled', true);
+        }else{
+            sendInputPaymentId.removeAttribute('disabled');
+        }
+    }
+    sendInputAddress.addEventListener('change', (event) => {
+        let addr = event.target.value || '';
+        if(!addr.length) initAddressCompletion();
+        setPaymentIdState(addr);
+    });
+    sendInputAddress.addEventListener('keyup', (event) => {
+        let addr = event.target.value || '';
+        if(!addr.length) initAddressCompletion();
+        setPaymentIdState(addr);
+    });
+
+
     sendButtonSend.addEventListener('click', (event) => {
         formMessageReset();
         function precision(a) {
@@ -999,7 +1227,7 @@ function handleSendTransfer(){
         let recAddress = sendInputAddress.value ? sendInputAddress.value.trim() : '';
         let recPayId = sendInputPaymentId.value ? sendInputPaymentId.value.trim() : '';
         let amount = sendInputAmount.value ?  parseFloat(sendInputAmount.value) : 0;
-        let fee = parseFloat(sendInputFee.value);
+        let fee = sendInputFee.value ? parseFloat(sendInputFee.value) : 0;
 
         let tobeSent = 0;
 
@@ -1019,6 +1247,8 @@ function handleSendTransfer(){
                 return;
             }
         }
+
+        if(recAddress.length > 99) recPayId = '';
         
         if (amount <= 0) {
             formMessageSet('send','error','Sorry, invalid amount');
@@ -1032,10 +1262,11 @@ function handleSendTransfer(){
 
         let rAmount = amount; // copy raw amount for dialog
         tobeSent += amount;
+        let minFee = 0.10;
         amount *= 100;
 
         if (fee < 0.10) {
-            formMessageSet('send','error','Invalid fee amount!');
+            formMessageSet('send','error',`Fee can't be less than ${(minFee).toFixed(2)}`);
             return;
         }
 
@@ -1363,11 +1594,26 @@ function initHandlers(){
     for (var i = 0; i < genericBrowseButton.length; i++) {
         let targetInputId = genericBrowseButton[i].dataset.targetinput;
         let targetprop =  genericBrowseButton[i].dataset.selection;
+        let targetFileObj = genericBrowseButton[i].dataset.fileobj;
+        
         genericBrowseButton[i].addEventListener('click', (event) => {
             var targetinput = document.getElementById(targetInputId);
-            remote.dialog.showOpenDialog({properties: [targetprop]}, function (files) {
-                if (files) targetinput.value = files[0];
-            });
+            let objectName = (targetFileObj ? targetFileObj : 'file');
+            let recentDir = settings.get('recentWalletDir','');
+            if(targetprop === 'saveFile'){
+                let saveOpts = {
+                    title: `Select directory to store your ${objectName}, and give it a filename.`,
+                    buttonLabel: 'OK'
+                }
+                if(recentDir.length) saveOpts.defaultPath = recentDir;
+                remote.dialog.showSaveDialog(saveOpts, (file, bookmark)=>{
+                    if (file) targetinput.value = file;
+                });
+            }else{
+                remote.dialog.showOpenDialog({properties: [targetprop]}, function (files) {
+                    if (files) targetinput.value = files[0];
+                });
+            }
         });
     }
 
@@ -1539,7 +1785,7 @@ ipcRenderer.on('cleanup', (event, message) => {
     win.focus();
 
     var dialog = document.getElementById('main-dialog');
-    htmlText = 'Terminating turtle-service...';
+    htmlText = 'Terminating WalletShell...';
     if(wlsession.get('loadedWalletAddress') !== ''){
         var htmlText = 'Saving &amp; closing your wallet...';
     }

@@ -1,4 +1,5 @@
-
+const fs = require('fs');
+const path = require('path');
 const crypto = require('crypto');
 const {nativeImage} = require('electron');
 const qr = require('qr-image');
@@ -103,12 +104,114 @@ exports.genQrDataUrl = (inputStr) => {
 
 exports.validateTRTLAddress = (address) => {
     if(!address) return false;
-    let walletRe = new RegExp(/^TRTL(?=\w*$)(?:.{95}|.{183})$/g);
-    return walletRe.test(address);
+    let re = new RegExp(/^TRTL(?=\w*$)(?:.{95}|.{183})$/g);
+    return re.test(address);
 };
 
 exports.validatePaymentId = (paymentId) => {
     if(!paymentId) return true; // true allow empty
-    let payIdRe = new RegExp(/^(\w{64})$/g);
-    return payIdRe.test(paymentId);
+    let re = new RegExp(/^(\w{64})$/g);
+    return re.test(paymentId);
 };
+
+exports.validateSecretKey = (key) => {
+    if(!key){
+        console.log('emmpty key');
+        return false;
+    }
+    let re = new RegExp(/^\w{64}$/g);
+    return re.test(key);
+};
+
+exports.validateMnemonic = (seed) => {
+    if(!seed) return false;
+    let re = new RegExp(/^\w+(?!.*  )[a-zA-Z0-9 ]*$/g);
+    if(!re.test(seed)) return false;
+    if(seed.split(' ').length !== 25) return false;
+    return true;
+};
+
+exports.isFileExist = (filePath) => {
+    if(!filePath) return false;
+    return fs.existsSync(filePath);
+};
+
+exports.isWritableDirectory = (filePath) => {
+    if(!filePath) return false;
+    try{
+        fs.accessSync(filePath, fs.constants.W_OK);
+    }catch(e){
+        return false;
+    }
+    let stats = fs.statSync(filePath);
+    return stats.isDirectory();
+
+};
+
+exports.isPathWriteable = (filePath) => {
+    if(!filePath){
+        return;
+    }
+    try{
+        fs.accessSync(filePath, fs.constants.W_OK);
+        return true;
+    }catch(e){
+        console.log(e);
+        return false;
+    }
+};
+
+exports.isRegularFileAndWritable = (filePath) => {
+    if(!filePath) return;
+    try{
+        fs.accessSync(filePath, fs.constants.W_OK);
+    }catch(e){
+        return false;
+    }
+
+    let stats = fs.statSync(filePath);
+    return stats.isFile();
+};
+
+
+exports.normalizeWalletFilename = (rawFilename) => {
+    if(!rawFilename) return '';
+    const walletExt = 'twl';
+    let ext = path.extname(rawFilename.trim());
+    if(ext.endsWith('.twl')) return rawFilename;
+    if(ext.endsWith('.')) return `${rawFilename}${walletExt}`;
+    return `${rawFilename}.${walletExt}`;
+}
+
+
+exports.validateWalletPath = (fullpath, defaultDir, isExisting) => {
+    return new Promise((resolve, reject) => {
+        fullpath = fullpath || '';
+        isExisting = isExisting || false;
+        defaultDir = defaultDir ? path.resolve(defaultDir) : path.resolve('.');
+        if(!fullpath.length) return reject(new Error('Wallet file path can not be left blank'));
+        const ERROR_DEFAULT = 'Please specify a full path to the wallet file and make sure you have a proper write permission to the file';
+        fullpath = path.resolve(fullpath);
+
+        fullpath = this.normalizeWalletFilename(fullpath);
+
+        try{
+            let stats = fs.statSync(fullpath);
+            if(stats.isDirectory()){
+                return reject(new Error('2' + ERROR_DEFAULT));
+            }
+        }catch(e){
+            console.log(e.message);
+        }
+
+        if(isExisting){
+            try{
+                fs.accessSync(fullpath);
+            }catch(e){
+                return reject(new Error(ERROR_DEFAULT));
+            }
+        }
+        let finalPath = path.normalize(fullpath)
+        return resolve(finalPath);
+    });
+}

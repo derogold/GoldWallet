@@ -14,12 +14,13 @@
                 <div class="input-wrap">
                     <h4 class="text-spaced">Node address (IP or domain name):</h4>
                     <input data-initial="daemon_host" placeholder="127.0.0.1" name="nodeAddress" class="text-block" id="input-settings-daemon-address" style="padding: 12px 8px;"></input>
-                    <span class="form-help">Type first few character(s) and select from public node list, or type to your own node address.</span>
+                    <span id="daemonHostFormHelp" class="form-help">Type first few character(s) and select from public node list, or type to your own node address.</span>
                 </div>
 
                 <div class="input-wrap">
                     <h4 class="text-spaced">Daemon or public node port:</h4>
                     <input data-initial="daemon_port" placeholder="11898" class="text-block" id="input-settings-daemon-port" style="padding: 12px 8px;"></input>
+                    <span  id="daemonPortFormHelp" class="form-help"></span>
                 </div>
 
                 <div class="input-wrap">
