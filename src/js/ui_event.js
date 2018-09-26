@@ -1061,7 +1061,7 @@ function handleWalletImportKeys(){
                     fs.renameSync(finalPath, backfn);;
                     //fs.unlinkSync(finalPath);
                 }catch(err){
-                formMessageSet('create','error', `Unable to overwrite existing file, please enter new wallet file path`);
+                formMessageSet('import','error', `Unable to overwrite existing file, please enter new wallet file path`);
                 return;
                 }
             }
@@ -1107,7 +1107,7 @@ function handleWalletImportSeed(){
             }
 
             if(scanHeightValue < 0 || scanHeightValue.toPrecision().indexOf('.') !== -1){
-                formMessageSet('import','error', 'Invalid scan height!');
+                formMessageSet('import-seed','error', 'Invalid scan height!');
                 return;
             }
 
@@ -1127,7 +1127,7 @@ function handleWalletImportSeed(){
                     fs.renameSync(finalPath, backfn);;
                     //fs.unlinkSync(finalPath);
                 }catch(err){
-                   formMessageSet('create','error', `Unable to overwrite existing file, please enter new wallet file path`);
+                   formMessageSet('import-seed','error', `Unable to overwrite existing file, please enter new wallet file path`);
                    return;
                 }
            }
@@ -1148,7 +1148,7 @@ function handleWalletImportSeed(){
             });
 
         }).catch((err)=>{
-            formMessageSet('import','error', err.message);
+            formMessageSet('import-seed', 'error',err.message);
             return;
         })
     });
