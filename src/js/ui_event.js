@@ -69,6 +69,8 @@ let sendInputAmount;
 let sendInputPaymentId;
 let sendInputFee;
 let sendButtonSend;
+let maxSendFormHelp;
+let sendMaxAmount;
 // create wallet
 let overviewButtonCreate;
 let walletCreateInputPath;
@@ -155,6 +157,8 @@ function populateElementVars(){
     sendInputPaymentId = document.getElementById('input-send-payid');
     sendInputFee = document.getElementById('input-send-fee');
     sendButtonSend = document.getElementById('button-send-send');
+    maxSendFormHelp = document.getElementById('sendFormHelp');
+    sendMaxAmount = document.getElementById('sendMaxAmount');
     // create wallet
     overviewButtonCreate = document.getElementById('button-create-create');
     walletCreateInputPath = document.getElementById('input-create-path');
@@ -677,11 +681,11 @@ function handleAddressBook(){
                      <div class="addressBookDetail-data">
                          <dl>
                              <dt>Name:</dt>
-                             <dd class="tctcl" title="click to copy">${this.dataset.nameval}</dd>
+                             <dd data-cplabel="Name" class="tctcl" title="click to copy">${this.dataset.nameval}</dd>
                              <dt>Wallet Address:</dt>
-                             <dd class="tctcl" title="click to copy">${this.dataset.walletval}</dd>
+                             <dd data-cplabel="Wallet address" class="tctcl" title="click to copy">${this.dataset.walletval}</dd>
                              <dt>Payment Id:</dt>
-                             <dd class="tctcl" title="click to copy">${this.dataset.paymentidval ? this.dataset.paymentidval : '-'}</dd>
+                             <dd  data-cplabel="Payment ID" class="tctcl" title="click to copy">${this.dataset.paymentidval ? this.dataset.paymentidval : '-'}</dd>
                          </dl>
                      </div>
                  </div>
@@ -1177,7 +1181,8 @@ function handleWalletExport(){
         });
         if(filename){
             svcmain.getSecretKeys(overviewWalletAddress.value).then((keys) => {
-                let textContent = `View Secret Key:${os.EOL}${keys.viewSecretKey}${os.EOL}`;
+                let textContent = `Wallet Address:${os.EOL}${wlsession.get('loadedWalletAddress')}${os.EOL}`;
+                textContent += `${os.EOL}View Secret Key:${os.EOL}${keys.viewSecretKey}${os.EOL}`;
                 textContent += `${os.EOL}Spend Secret Key:${os.EOL}${keys.spendSecretKey}${os.EOL}`;
                 textContent += `${os.EOL}Mnemonic Seed:${os.EOL}${keys.mnemonicSeed}${os.EOL}`;
                 try{
@@ -1187,13 +1192,18 @@ function handleWalletExport(){
                     formMessageSet('secret','error', "Failed to save your keys, please check that you have write permission to the file");
                 }
             }).catch((err) => {
-                formMessageSet('secret','error', "Failed to get key, please try again in a few seconds");
+                formMessageSet('secret','error', "Failed to get keys, please try again in a few seconds");
             });
         }
     });
 }
 
 function handleSendTransfer(){
+    sendMaxAmount.addEventListener('click', (event) => {
+        let maxsend = event.target.dataset.maxsend;
+        if(maxsend) sendInputAmount.value = maxsend;
+        
+    });
     sendInputFee.value = 0.1;
     function setPaymentIdState(addr){
         if(addr.length > 99){
@@ -1395,17 +1405,17 @@ function handleTransactions(){
                     <table class="custom-table" id="transactions-panel-table">
                         <tbody>
                             <tr><th scope="col">Hash</th>
-                                <td>${tx.dataset.rawhash}</td></tr>
+                                <td data-cplabel="Tx. hash" class="tctcl">${tx.dataset.rawhash}</td></tr>
                             <tr><th scope="col">Address</th>
-                                <td>${wlsession.get('loadedWalletAddress')}</td></tr>
+                                <td data-cplabel="Address" class="tctcl">${wlsession.get('loadedWalletAddress')}</td></tr>
                             <tr><th scope="col">Payment Id</th>
-                                <td>${tx.dataset.rawpaymentid}</td></tr>
+                                <td data-cplabel="Payment ID" class="tctcl">${tx.dataset.rawpaymentid}</td></tr>
                             <tr><th scope="col">Amount</th>
-                                <td>${tx.dataset.rawamount}</td></tr>
+                                <td data-cplabel="Tx. amount" class="tctcl">${tx.dataset.rawamount}</td></tr>
                             <tr><th scope="col">Fee</th>
-                                <td>${tx.dataset.rawfee}</td></tr>
+                                <td  data-cplabel="Tx. fee" class="tctcl">${tx.dataset.rawfee}</td></tr>
                             <tr><th scope="col">Timestamp</th>
-                                <td>${tx.dataset.timestamp} (${txdate})</td></tr>
+                                <td data-cplabel="Tx. date" class="tctcl">${tx.dataset.timestamp} (${txdate})</td></tr>
                             <tr><th scope="col">Block Index</th>
                                 <td>${tx.dataset.blockindex}</td></tr>
                             <tr><th scope="col">Is Base?</th>
@@ -1556,20 +1566,24 @@ function initHandlers(){
     // inputs click to copy handlers
     gutils.liveEvent('textarea.ctcl, input.ctcl', 'click', (event) => {
         let el = event.target;
-        wv = el.value ? el.value.trim() : '';
+        let wv = el.value ? el.value.trim() : '';
+        let cplabel = el.dataset.cplabel ? el.dataset.cplabel : '';
+        let cpnotice = cplabel ? `${cplabel} copied to clipboard!` : 'Copied to clipboard';
         el.select();
         if(!wv.length) return;
         clipboard.writeText(wv);
-        showToast('Copied to clipboard!');
+        showToast(cpnotice);
     });
     // non-input elements ctc handlers
     gutils.liveEvent('.tctcl', 'click', (event) => {
         let el = event.target;
-        wv = el.textContent.trim();
+        let wv = el.textContent.trim();
+        let cplabel = el.dataset.cplabel ? el.dataset.cplabel : '';
+        let cpnotice = cplabel ? `${cplabel} copied to clipboard!` : 'Copied to clipboard';
         gutils.selectText(el);
         if(!wv.length) return;
         clipboard.writeText(wv);
-        showToast('Copied to clipboard!');
+        showToast(cpnotice);
     });
 
     // overview page address ctc

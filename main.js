@@ -1,4 +1,4 @@
-const {app, BrowserWindow, dialog, Tray, Menu} = require('electron');
+const {app, dialog, Tray, Menu} = require('electron');
 const path = require('path');
 const url = require('url');
 const https = require('https');
@@ -16,8 +16,8 @@ log.transports.console.level = LOG_LEVEL;
 log.transports.file.level = LOG_LEVEL;
 log.transports.file.maxSize = 5 * 1024 * 1024;
 
-let VERSION = process.env.npm_package_version || '0.3.2';
-if(IS_DEBUG) log.debug(`Starting WalletShell v${VERSION}`);
+let VERSION = app.getVersion() || '0.3.2';
+if(IS_DEBUG) log.debug(`Starting WalletShell ${VERSION}`);
 const SERVICE_FILENAME =  (platform === 'win32' ? 'turtle-service.exe' : 'turtle-service' );
 const SERVICE_OSDIR = (platform === 'win32' ? 'win' : (platform === 'darwin' ? 'osx' : 'lin'));
 const DEFAULT_SERVICE_BIN = path.join(process.resourcesPath,'bin', SERVICE_OSDIR, SERVICE_FILENAME);
@@ -69,6 +69,7 @@ function createWindow () {
         minHeight: 690,
         show: false,
         backgroundColor: bgColor,
+        center: true
         // maximizable: false,
         // minimizable: true,
         // resizable: false
@@ -78,7 +79,7 @@ function createWindow () {
         windowOpts: winOpts,
         templateUrl: path.join(__dirname, "src/html/splash.html"),
         delay: 0, 
-        minVisible: 2500,
+        minVisible: 3000,
         splashScreenOpts: {
             width: 425,
             height: 325,
@@ -269,8 +270,7 @@ app.on('ready', () => {
     if(IS_DEBUG) log.warn('Running in debug mode');
 
     global.wsession = {
-        debug: IS_DEBUG,
-        //loadedWalletAddress: ''
+        debug: IS_DEBUG
     };
     
     createWindow();

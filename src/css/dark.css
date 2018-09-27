@@ -127,7 +127,7 @@ border: 2px solid #cccccc59;
 }
 
 .dark dialog::backdrop{
-    background: rgba(10, 10, 10, 0.87);
+    background: rgba(10, 10, 10, 0.8);
 }
 /* .dark .transaction-list-table td.txamount{
     color: #fff;
@@ -155,4 +155,14 @@ border: 2px solid #cccccc59;
 }
 .dark a.external{
     color: #fffb00;
+}
+
+.dark #datoaste{
+ background-color: #4d524d !important;
+border-top-right-radius: 4px !important;
+border-bottom-right-radius: 4px !important;
+}
+
+.dark h4.input-required:after{
+    color: #ff7a00;
 }
