@@ -166,3 +166,6 @@ border-bottom-right-radius: 4px !important;
 .dark h4.input-required:after{
     color: #ff7a00;
 }
+.dark .text-spaced-info{
+    background:#212721;
+}

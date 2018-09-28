@@ -7,7 +7,9 @@
             <div class="div-input">
                 <div class="input-wrap">
                     <h4 class="text-spaced input-required">Select the wallet file</h4>
-                    <input title="Required" required="required" openFile" data-targetinput="input-load-path" data-initial="recentWallet" type="text" class="text-block path-input-button" id="input-load-path" style="padding: 12px 8px;" tabindex="0" />
+                    <input type="text"  title="Required" required="required" data-selection="openFile" 
+                        data-targetinput="input-load-path" data-initial="recentWallet" readonly="readonly" 
+                        class="text-block path-input-button"  id="input-load-path" style="padding: 12px 8px;" tabindex="0" />
                     <button data-selection="openFile" data-targetinput="input-load-path" type="button" class="button-green path-input-button" id="button-load-browse" tabindex="2"><i class="fas fa-folder-open"></i></button>
                 </div>
 

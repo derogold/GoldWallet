@@ -222,6 +222,9 @@ span.form-msg{
     text-shadow: -1px 0 0 #333;
     max-width: 98.5%;
 }
+.text-spaced-info{
+    background:#004720;
+}
 
 .form-msg progress{
     height: 5px;
@@ -322,7 +325,8 @@ span.form-msg{
 /* Sections */
 .section {
 /*     transition: visibility 0s .12s linear , opacity .2s ease-in-out, transform .2s; */
-    transition: opacity .3s ease-in-out, transform .2s;
+/*     transition: opacity .3s ease-in-out, transform .2s; */
+    transition: opacity .2s cubic-bezier(0.4, 0, 1, 1);
     width:100%;
     height:100%;
     flex-basis:100%;
@@ -334,7 +338,8 @@ span.form-msg{
     user-select: none;
     max-width:1280px;
     margin:0 auto;
-    transform: scale3d(0.8,0.8,0.8);
+/*     transform: scaleX(0.75); */
+/*     transform: scale3d(0.8,0.8,0.8); */
 }
     
 .section.is-shown {
@@ -342,7 +347,7 @@ span.form-msg{
     pointer-events: auto;
     opacity:1;
     visibility:visible;
-    transform: scale3d(1,1,1);
+/*     transform: scaleX(1.0); */
 }
 
 .section-contents{
@@ -606,15 +611,12 @@ span.form-help-qr{
 dialog {
     visibility: hidden;
     opacity: 0;
-    transform: scale(0.1);
-    transition: transform 200ms;
 }
 
 dialog[open]{
     opacity: 1;
     visibility: visible;
     color: #eee !important; 
-    transform: scale(1);
 }
 
 .default-dialog{
@@ -680,8 +682,13 @@ dialog h4{
 }
 
 dialog::backdrop{
-    background: rgba(0,25,15,0.50);
+    background: rgba(0,25,15,0.8);
     z-index:999;
+    transition: opacity .3s ease-in-out;
+}
+
+dialog.dialog-alerted::backdrop{
+    opacity:0.1;
 }
 
 span.form-help-qr.hidden{
@@ -1317,4 +1324,9 @@ a.external{
     border-radius: 3px;
     margin-top: 0.5rem;
     display: inline-block;
+}
+
+input[required]:invalid {
+/*     box-shadow: 0 0 3px 1px red; */
+    border:1px solid rgba(255, 0, 0, 0.7) !important;
 }

@@ -210,8 +210,16 @@ function showToast(msg, duration){
         }},
         settings: {duration: duration}
     }
+    let openedDialog = document.querySelector('dialog[open]');
     if(!document.getElementById('datoaste')){
+        if(openedDialog){
+            openedDialog.classList.add('dialog-alerted');
+            setTimeout(()=>{
+                openedDialog.classList.remove('dialog-alerted');
+            },duration+100);
+        }
         iqwerty.toast.Toast(msg, toastOpts);
+        
     }
 }
 
@@ -603,18 +611,40 @@ function showInitialPage(){
 function handleSettings(){
     settingsButtonSave.addEventListener('click', function(){
         formMessageReset();
-
-        if(!settingsInputServiceBin.value 
-            || !settingsInputDaemonAddress.value
-            || !settingsInputDaemonPort.value
-        ) {
-            formMessageSet('settings','error',"Settings can't be saved, please check your input");
+        let serviceBinValue = settingsInputServiceBin.value ? settingsInputServiceBin.value.trim() : '';
+        let daemonHostValue = settingsInputDaemonAddress.value ? settingsInputDaemonAddress.value.trim() :'';
+        let daemonPortValue = settingsInputDaemonPort.value ? parseInt(settingsInputDaemonPort.value.trim(),10) : '';
+        
+        if(!serviceBinValue.length || !daemonHostValue.length || !Number.isInteger(daemonPortValue)){
+            formMessageSet('settings','error',`Settings can't be saved, please enter correct values`);
             return false;
         }
+
+        if(!gutils.isRegularFileAndWritable(serviceBinValue)){
+            formMessageSet('settings','error',`Unable to find turtle-service, please enter the correct path`);
+            return false;
+        }
+        
+        let validHost = daemonHostValue === 'localhost' ? true : false;
+        if(require('net').isIP(daemonHostValue)) validHost = true;
+        if(!validHost){
+            let domRe = new RegExp(/([a-z])([a-z0-9]+\.)*[a-z0-9]+\.[a-z.]+/ig);
+            if(domRe.test(daemonHostValue)) validHost = true;
+        }
+        if(!validHost){
+            formMessageSet('settings','error',`Invalid daemon/node address!`);
+            return false;
+        }
+
+        if(daemonPortValue <=0){
+            formMessageSet('settings','error',`Invalid daemon/node port number!`);
+            return false;
+        }
+
         let vals = {
-            service_bin: settingsInputServiceBin.value.trim(),
-            daemon_host: settingsInputDaemonAddress.value.trim(),
-            daemon_port: settingsInputDaemonPort.value.trim(),
+            service_bin: serviceBinValue,
+            daemon_host: daemonHostValue,
+            daemon_port: daemonPortValue,
             tray_minimize: settingsInputMinToTray.checked,
             tray_close: settingsInputCloseToTray.checked
         }
