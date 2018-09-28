@@ -6,20 +6,22 @@
             </div>
             <div class="div-settings-input default-inputs">
                 <div class="input-wrap">
-                    <h4 class="text-spaced">Select path to turtle-service executable file:</h4>
-                    <input data-initial="service_bin" class="text-block path-input" id="input-settings-path" style="padding: 12px 8px;"></input>
+                    <h4 class="text-spaced input-required">Select path to turtle-service executable file</h4>
+                    <input  data-selection="openFile" data-targetinput="input-settings-path" title="Required" 
+                    required="required" data-initial="service_bin" class="text-block path-input-button" 
+                    readonly="readonly"  id="input-settings-path" style="padding: 12px 8px;" />
                     <button data-targetinput="input-settings-path" type="button" class="button-green path-input-button" id="button-settings-browse"><i class="fas fa-folder-open"></i></button>
                 </div>
 
                 <div class="input-wrap">
-                    <h4 class="text-spaced">Node address (IP or domain name):</h4>
-                    <input data-initial="daemon_host" placeholder="127.0.0.1" name="nodeAddress" class="text-block" id="input-settings-daemon-address" style="padding: 12px 8px;"></input>
+                    <h4 class="text-spaced input-required">Node address (IP or domain name)</h4>
+                    <input  title="Required" required="required" data-initial="daemon_host" placeholder="127.0.0.1" name="nodeAddress" class="text-block" id="input-settings-daemon-address" style="padding: 12px 8px;" />
                     <span id="daemonHostFormHelp" class="form-help">Type first few character(s) and select from public node list, or type to your own node address.</span>
                 </div>
 
                 <div class="input-wrap">
-                    <h4 class="text-spaced">Daemon or public node port:</h4>
-                    <input data-initial="daemon_port" placeholder="11898" class="text-block" id="input-settings-daemon-port" style="padding: 12px 8px;"></input>
+                    <h4 class="text-spaced input-required">Daemon or public node port</h4>
+                    <input type="number" title="Required" required="required" data-initial="daemon_port" placeholder="11898" class="text-block" id="input-settings-daemon-port" style="padding: 12px 8px;" />
                     <span  id="daemonPortFormHelp" class="form-help"></span>
                 </div>
 

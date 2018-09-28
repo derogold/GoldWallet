@@ -123,6 +123,7 @@ function updateBalance(data){
     const balanceAvailableField = document.querySelector('#balance-available > span');
     const balanceLockedField = document.querySelector('#balance-locked > span');
     const maxSendFormHelp = document.getElementById('sendFormHelp');
+    const sendMaxAmount = document.getElementById('sendMaxAmount');
     let inputSendAmountField = document.getElementById('input-send-amount');
 
     if(!data) return;
@@ -130,6 +131,8 @@ function updateBalance(data){
     if(availableBalance <= 0){
         inputSendAmountField.setAttribute('max','1.00');
         maxSendFormHelp.innerHTML = "You don't have any funds to be sent.";
+        sendMaxAmount.dataset.maxsend = 0;
+        sendMaxAmount.classList.add('hidden');
         wlsession.set('walletUnlockedBalance', 0);
         wlsession.set('walletLockedBalance', 0);
         if(availableBalance < 0) return;
@@ -148,7 +151,9 @@ function updateBalance(data){
     if(availableBalance > 0){
         let maxSend = (bUnlocked - (wlsession.get('nodeFee')+0.10)).toFixed(2);
         inputSendAmountField.setAttribute('max',maxSend);
-        maxSendFormHelp.innerHTML = `Max. amount you can send is ${maxSend}`;
+        maxSendFormHelp.innerHTML = `Max. amount is ${maxSend}`;
+        sendMaxAmount.dataset.maxsend = maxSend;
+        sendMaxAmount.classList.remove('hidden');
     }
     
 }

@@ -54,7 +54,9 @@
       "publisherName": "TurtleCoin"
     },
     "nsis": {
-      "artifactName": "${productName}-${version}-setup.${ext}"
+      "artifactName": "${productName}-${version}-setup.${ext}",
+      "oneClick": false,
+      "perMachine": false
     },
     "mac": {
       "category": "public.app-category.business",
