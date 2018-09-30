@@ -169,3 +169,11 @@ border-bottom-right-radius: 4px !important;
 .dark .text-spaced-info{
     background:#212721;
 }
+
+.dark .wallet-tool{
+    color: rgba(255,255,255,0.5);
+}
+
+.dark .wallet-tool:hover{
+    color: #fefefe;
+}

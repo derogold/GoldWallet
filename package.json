@@ -40,6 +40,7 @@
       "buildResources": "build"
     },
     "linux": {
+      "artifactName": "${productName}-v${version}-${os}-${arch}.${ext}",
       "target": [
         "tar.bz2",
         "AppImage"
@@ -54,11 +55,12 @@
       "publisherName": "TurtleCoin"
     },
     "nsis": {
-      "artifactName": "${productName}-${version}-setup.${ext}",
+      "artifactName": "${productName}-v${version}-${os}-${arch}-setup.${ext}",
       "oneClick": false,
       "perMachine": false
     },
     "mac": {
+      "artifactName": "${productName}-v${version}-${os}-${arch}.${ext}",
       "category": "public.app-category.business",
       "target": "tar.gz"
     }

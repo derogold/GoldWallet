@@ -6,6 +6,8 @@
                     <h2 class="title">Address:</h2>
                     <textarea  data-noclear="1" class="overview-input default-textarea" id="wallet-address" readonly="readonly" rows="2"></textarea>
                     <span id="form-help-wallet-address" class="form-help"></span>
+                    <a id="integrated-wallet-gen" class="wallet-tool form-help align-right">Generate Integrated Address</a>
+                    <a id="payment-id-gen" class="wallet-tool form-help align-right">Generate Payment ID</a>
                 </div>
             </div>
 
@@ -28,7 +30,8 @@
             </div>
             <div class="input-wrap button-wrap">
                 <button type="button" class="form-bt  button-green" id="button-overview-closewallet">Close Wallet</button>
-                <button type="button" class="form-bt button-green" data-section="section-overview-show" id="button-overview-showkeys">Private keys</button>
+                <button type="button" class="form-bt button-green" title="Display or backup your private keys" data-section="section-overview-show" id="button-overview-showkeys">Private keys</button>
+                <button type="button" class="form-bt button-green" title="When possible, perform wallet input/output optimization by creating fusion transactions. Try this if you get error when sending big transaction." id="button-send-optimize">Optimize</button>
             </div>
         </div>
     </section>

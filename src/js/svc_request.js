@@ -282,7 +282,7 @@ svcRequest.prototype.estimateFusion = function(params){
 
 svcRequest.prototype.sendFusionTransaction = function(params){
     return new Promise((resolve, reject) => {
-        params = params || '';
+        params = params || {};
         if(!params.threshold) return reject(new Error('Missing threshold parameter'));
         if(!params.anonimity) params.anonimity = this.anonimity;
         this._sendRequest('sendFusionTransaction', params).then((result) => {
@@ -293,5 +293,16 @@ svcRequest.prototype.sendFusionTransaction = function(params){
     });
 }
 
+svcRequest.prototype.createIntegratedAddress = function(params){
+    return new Promise((resolve, reject) => {
+        params = params || {};
+        if(!params.address || !params.paymentId) return reject(new Error('Address and Payment Id parameters are required'))
+        this._sendRequest('createIntegratedAddress', params).then((result) => {
+            return resolve(result);
+        }).catch((err)=> {
+            return reject(err);
+        });
+    });
+}
   
 module.exports = svcRequest;

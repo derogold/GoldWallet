@@ -190,7 +190,6 @@ function workOnTasks(){
     }, CHECK_INTERVAL);
 }
 
-
 // {type: 'blah', msg: 'any'}
 process.on('message', (msg) => {
     let cmd = msg || '';

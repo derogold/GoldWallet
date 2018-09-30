@@ -16,8 +16,7 @@ log.transports.console.level = LOG_LEVEL;
 log.transports.file.level = LOG_LEVEL;
 log.transports.file.maxSize = 5 * 1024 * 1024;
 
-let VERSION = app.getVersion() || '0.3.2';
-if(IS_DEBUG) log.debug(`Starting WalletShell ${VERSION}`);
+const WALLETSHELL_VERSION = app.getVersion() || '0.3.2';
 const SERVICE_FILENAME =  (platform === 'win32' ? 'turtle-service.exe' : 'turtle-service' );
 const SERVICE_OSDIR = (platform === 'win32' ? 'win' : (platform === 'darwin' ? 'osx' : 'lin'));
 const DEFAULT_SERVICE_BIN = path.join(process.resourcesPath,'bin', SERVICE_OSDIR, SERVICE_FILENAME);
@@ -41,32 +40,36 @@ const DEFAULT_SETTINGS = {
     tray_minimize: false,
     tray_close: false
 }
+const DEFAULT_SIZE = {
+    width: (platform == 'win32' ? 840 : 800),
+    height: 690
+}
 
 app.prompExit = true;
 app.prompShown = false;
 app.needToExit = false;
-
 app.setAppUserModelId('lol.turtlecoin.walletshell');
+
+log.info(`Starting WalletShell ${WALLETSHELL_VERSION}`);
 
 let trayIcon = path.join(__dirname,'src/assets/tray.png');
 let trayIconHide = path.join(__dirname,'src/assets/trayon.png');
-
 let win;
 let tray;
 
 function createWindow () {
     // Create the browser window.
-    let darkmode = settings.get('darkmode', false);
+    let darkmode = settings.get('darkmode', true);
     let bgColor = darkmode ? '#000000' : '#02853E';
 
     const winOpts = {
         title: DEFAULT_TITLE,
         icon: path.join(__dirname,'src/assets/walletshell_icon.png'),
         frame: true,
-        width: (platform == 'win32' ? 840 : 800),
-        height: 690,
-        minWidth: (platform == 'win32' ? 840 : 800),
-        minHeight: 690,
+        width: DEFAULT_SIZE.width,
+        height: DEFAULT_SIZE.height,
+        minWidth: DEFAULT_SIZE.width,
+        minHeight: DEFAULT_SIZE.height,
         show: false,
         backgroundColor: bgColor,
         center: true
@@ -249,8 +252,8 @@ function initSettings(){
             settings.set(k, DEFAULT_SETTINGS[k]);
         }
     });
+    settings.set('version', WALLETSHELL_VERSION);
 }
-
 
 const silock = app.requestSingleInstanceLock();
 app.on('second-instance', (commandLine, workingDirectory) => {
@@ -263,9 +266,7 @@ app.on('second-instance', (commandLine, workingDirectory) => {
 if (!silock) app.quit();
 
 app.on('ready', () => {
-    initSettings();    
-
-    settings.set('version', VERSION);
+    initSettings();
 
     if(IS_DEBUG) log.warn('Running in debug mode');
 
@@ -274,6 +275,13 @@ app.on('ready', () => {
     };
     
     createWindow();
+
+    // target center pos of primary display
+    let eScreen = require('electron').screen;
+    let primaryDisp = eScreen.getPrimaryDisplay();
+    let tx = (primaryDisp.workAreaSize.width - DEFAULT_SIZE.width)/2;
+    let ty = (primaryDisp.workAreaSize.height - (DEFAULT_SIZE.height))/2;
+    win.setPosition(tx, ty);
 
     let today = new Date();
     let last_checked = new Date(settings.get('pubnodes_date'));
