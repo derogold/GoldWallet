@@ -322,7 +322,7 @@ function genPaymentId(ret){
     
     let dialogTpl = `<div class="transaction-panel">
     <h4>Generated Payment ID:</h4>
-    <textarea title="click to copy" class="ctcl default-textarea" rows="1" readonly="readonly">${payId}</textarea>
+    <textarea data-cplabel="Payment ID" title="click to copy" class="ctcl default-textarea" rows="1" readonly="readonly">${payId}</textarea>
     <div class="div-panel-buttons">
         <button  data-target="#ab-dialog" type="button" class="button-gray dialog-close-default">Close</button>
     </div>
@@ -342,14 +342,14 @@ function showIntegratedAddressForm(){
     <h4>Generate Integrated Address:</h4>
     <div class="input-wrap">
     <label>Wallet Address</label>
-    <textarea id="genInputAddress" class="default-textarea">${ownAddress}</textarea>
+    <textarea id="genInputAddress" class="default-textarea" placeholder="Put any valid TRTL address..">${ownAddress}</textarea>
     </div>
     <div class="input-wrap">
     <label>Payment Id (<a id="makePaymentId" class="wallet-tool inline-tool">generate</a>)</label>
-    <input id="genInputPaymentId" type="text" required="required" class="text-block" />
+    <input id="genInputPaymentId" type="text" required="required" class="text-block" placeholder="Put your own payment ID, or click generate to get random ID" />
     </div>
     <div class="input-wrap">
-    <textarea rows="3" id="genOutputIntegratedAddress" class="default-textarea ctcl" readonly="readonly"></textarea>
+    <textarea data-cplabel="Integrated address" placeholder="Fill the form &amp; click generate, integrated address will appear here..." rows="3" id="genOutputIntegratedAddress" class="default-textarea ctcl" readonly="readonly"></textarea>
     </div>
     <div class="input-wrap">
         <span class="form-ew form-msg text-spaced-error hidden" id="text-gia-error"></span>
@@ -1740,7 +1740,12 @@ function initHandlers(){
             return;
         }
         if(!gutils.validateTRTLAddress(addr)){
-            formMessageSet('gia','error', 'Invalid TRTL Address');
+            formMessageSet('gia','error', 'Invalid TRTL address');
+            return;
+        }
+        // only allow standard address
+        if(addr.length > 99){
+            formMessageSet('gia','error', 'Only standard TRTL address are supported');
             return;
         }
         if(!gutils.validatePaymentId(pid)){
