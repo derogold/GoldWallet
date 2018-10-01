@@ -20,6 +20,7 @@ let win = remote.getCurrentWindow();
 const WS_VERSION = settings.get('version','unknown');
 const DEFAULT_WALLET_PATH = remote.app.getPath('documents');
 let WALLET_OPEN_IN_PROGRESS = false;
+let FUSION_IN_PROGRESS = false;
 
 // some obj vars
 var TXLIST_OBJ = null;
@@ -345,7 +346,7 @@ function showIntegratedAddressForm(){
     <textarea id="genInputAddress" class="default-textarea" placeholder="Put any valid TRTL address..">${ownAddress}</textarea>
     </div>
     <div class="input-wrap">
-    <label>Payment Id (<a id="makePaymentId" class="wallet-tool inline-tool">generate</a>)</label>
+    <label>Payment Id (<a id="makePaymentId" class="wallet-tool inline-tool" title="generate random payment id...">generate</a>)</label>
     <input id="genInputPaymentId" type="text" required="required" class="text-block" placeholder="Put your own payment ID, or click generate to get random ID" />
     </div>
     <div class="input-wrap">
@@ -412,6 +413,10 @@ function changeSection(sectionId, isSettingRedir) {
     let needServiceReady = ['section-transactions', 'section-send', 'section-overview'];
     let needServiceStopped = 'section-welcome';
     let needSynced = ['section-send'];
+    if(needSynced.indexOf(targetSection) && FUSION_IN_PROGRESS){
+        showToast('Wallet optimization in progress, please wait');
+        return;
+    }
 
 
     let finalTarget = targetSection;
@@ -1479,8 +1484,10 @@ function handleSendTransfer(){
 
         if(!confirm('You are about to perform wallet optimization. This process may took a while to complete, are you sure?')) return;
         showToast('Optimization started, your balance may appear incorrect during the process', 3000);
+        FUSION_IN_PROGRESS = true;
         svcmain.fusionTx.optimize().then((res) => {
             showToast(res, 6000);
+            FUSION_IN_PROGRESS = false;
         });
         return;
     });

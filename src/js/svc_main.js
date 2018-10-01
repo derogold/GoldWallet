@@ -335,6 +335,7 @@ function createWallet (walletFile, password){
 function importFromKey(walletFile, password, viewKey, spendKey, scanHeight) {
     return new Promise((resolve, reject) => {
         scanHeight = scanHeight || 0;
+
         let walletArgs = [
             '-g',
             '-w', walletFile,
@@ -369,8 +370,7 @@ function importFromKey(walletFile, password, viewKey, spendKey, scanHeight) {
 function importFromSeed(walletFile, password, mnemonicSeed, scanHeight) {
     return new Promise((resolve, reject) => {
         scanHeight = scanHeight || 0;
-        // let filename = `${name}.${DEFAULT_WALLET_EXT}`;
-        // let walletFile = path.join(dir, filename);
+
         let walletArgs = [
             '-g',
             '-w', walletFile,
@@ -412,20 +412,31 @@ function genIntegratedAddress(paymentId, address){
 }
 
 let fusionTx = (() => {
-    this.txHash = [];
+    let txHash = [];
+    const maxTxIter = 256;
+    const maxThreshCheckIter = 20;
+    const FUSION_DONE_MSG = 'Wallet optimization completed, your balance may appear incorrect for a while.';
+    const FUSION_FAILED_MSG = 'Unable to optimize your wallet, please try again in a few seconds';
+    const FUSION_SKIPPED_MSG = 'Wallet already optimized. No further optimization is needed.';
+
     let getMinThreshold = (threshold, minThreshold, maxFusionReadyCount, counter) => {
-        counter = counter || 0;
-        threshold = threshold || (parseInt(wlsession.get('walletUnlockedBalance'),10)*100)+1;
-        threshold = parseInt(threshold,10);
-        minThreshold = minThreshold || threshold;
-        maxFusionReadyCount = maxFusionReadyCount || 0;
         return new Promise((resolve, reject) => {
+            counter = counter || 0;
+            threshold = threshold || (parseInt(wlsession.get('walletUnlockedBalance'),10)*100)+1;
+            threshold = parseInt(threshold,10);
+            minThreshold = minThreshold || threshold;
+            maxFusionReadyCount = maxFusionReadyCount || 0;
+
             the_service.estimateFusion({threshold: threshold}).then((res)=>{
-                if( counter === 0 && res.fusionReadyCount === 0) return resolve(0);
-                if( counter > 20 || threshold < 2) return resolve(threshold);
+                // nothing to optimize
+                if( counter === 0 && res.fusionReadyCount === 0) return resolve(0); 
+                // stop at maxThreshCheckIter or when threshold too low
+                if( counter > maxThreshCheckIter || threshold < 10) return resolve(minThreshold);
+                // we got a possibly best minThreshold
                 if(res.fusionReadyCount < maxFusionReadyCount){
-                    return resolve(threshold);
+                    return resolve(minThreshold);
                 }
+                // continue to find next best minThreshold
                 maxFusionReadyCount = res.fusionReadyCount;
                 minThreshold = threshold;
                 threshold /= 2;
@@ -438,11 +449,20 @@ let fusionTx = (() => {
             });
         });
     }
-    let sendTx = (threshold) => {
+    let sendTx = (threshold, iter) => {
         return new Promise((resolve, reject) => {
+            iter = iter || 0;
+            if(iter >= maxTxIter) return resolve(txhash); // stop at max iter
+            console.log('send fusion tx, iteration: ', iter);
+            // keep sending fusion tx till it hit IOOR or reaching max iter 
             the_service.sendFusionTransaction({threshold: threshold}).then((resp)=> {
-                this.txHash.push(resp.transactionHash);
-                return resolve(this.txHash);
+                txHash.push(resp.transactionHash);
+                iter+=1;
+                setTimeout(()=>{
+                    return resolve(sendTx(threshold, iter).then((resp)=>{
+                        return resp;
+                    }));
+                },100);
             }).catch((err)=>{
                 return reject(new Error(err));
             });
@@ -456,22 +476,22 @@ let fusionTx = (() => {
                         log.debug(`performing fusion tx, threshold: ${res}`);
                         return resolve(
                             sendTx(res).then((txhash) => {
-                                return 'Wallet optimization completed, your balance may appear incorrect for a while.';
+                                return FUSION_DONE_MSG;
                             }).catch((err)=>{
                                 let msg = err.message.toLowerCase();
-                                let outMsg = 'Unable to optimize wallet';
                                 switch(msg){
                                     case 'index is out of range':
-                                        outMsg = 'Wallet already optimized';
+                                        outMsg = txhash.length >=1 ? FUSION_DONE_MSG : FUSION_SKIPPED_MSG;
                                         break;
                                     default:
+                                        outMsg = FUSION_FAILED_MSG;
                                         break;
                                 }
                                 return outMsg;
                             })
                         );
                     }
-                    return resolve('Wallet already optimized');
+                    return resolve(FUSION_SKIPPED_MSG); // fusionReadyCount is 0
                 }).catch((err)=>{
                     return reject((err.message));
                 });

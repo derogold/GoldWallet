@@ -276,7 +276,6 @@ svcRequest.prototype.estimateFusion = function(params){
         }).catch((err) => {
             return reject(err);
         });
-
     });
 }
 
