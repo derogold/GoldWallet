@@ -1,4 +1,3 @@
-const fs = require('fs');
 const childProcess = require('child_process');
 const execFile = childProcess.execFile;
 const spawn = childProcess.spawn;
@@ -15,14 +14,13 @@ const gutils = require('./gutils.js');
 const ERROR_WALLETLAUNCH = 'Failed to start turtle-service. Set the path to turtle-service properly in the settings tab.';
 const ERROR_WRONG_PASSWORD = 'Failed to load your wallet, please check your password';
 const ERROR_WALLET_IMPORT = 'Import failed, please check that you have entered all information correctly';
-const ERROR_INVALID_PATH = 'Invalid directory/filename, please enter a valid path that you have write permission';
 const ERROR_WALLET_CREATE = 'Wallet can not be created, please check your input and try again';
+//const ERROR_INVALID_PATH = 'Invalid directory/filename, please enter a valid path that you have write permission';
 
 const SERVICE_LOG_DEBUG = wlsession.get('debug');
 const SERVICE_LOG_LEVEL_DEFAULT = 0;
 const SERVICE_LOG_LEVEL_DEBUG = 4;
 const SERVICE_LOG_LEVEL = (SERVICE_LOG_DEBUG ? SERVICE_LOG_LEVEL_DEBUG : SERVICE_LOG_LEVEL_DEFAULT);
-const DEFAULT_WALLET_EXT = 'twl';
 
 var serviceInitialized = false;
 var the_service = null;
@@ -314,8 +312,6 @@ function sendTransaction(params){
 
 function createWallet (walletFile, password){
     return new Promise((resolve, reject) => {
-        // let filename = `${name}.${DEFAULT_WALLET_EXT}`;
-        // let walletFile = path.join(dir, filename);
         execFile(
             settings.get('service_bin'),
             [ '-g',  '-w', walletFile,  '-p', password,
@@ -339,6 +335,7 @@ function createWallet (walletFile, password){
 function importFromKey(walletFile, password, viewKey, spendKey, scanHeight) {
     return new Promise((resolve, reject) => {
         scanHeight = scanHeight || 0;
+
         let walletArgs = [
             '-g',
             '-w', walletFile,
@@ -354,7 +351,6 @@ function importFromKey(walletFile, password, viewKey, spendKey, scanHeight) {
             settings.get('service_bin'),
             walletArgs,
             (error, stdout, stderr) => {
-                console.log(error, stdout, stderr);
                 if (error) {
                     log.debug(`Failed to import key: ${error.message}`);
                     return reject(new Error(ERROR_WALLET_IMPORT));
@@ -374,8 +370,7 @@ function importFromKey(walletFile, password, viewKey, spendKey, scanHeight) {
 function importFromSeed(walletFile, password, mnemonicSeed, scanHeight) {
     return new Promise((resolve, reject) => {
         scanHeight = scanHeight || 0;
-        // let filename = `${name}.${DEFAULT_WALLET_EXT}`;
-        // let walletFile = path.join(dir, filename);
+
         let walletArgs = [
             '-g',
             '-w', walletFile,
@@ -404,13 +399,114 @@ function importFromSeed(walletFile, password, mnemonicSeed, scanHeight) {
     });
 }
 
+function genIntegratedAddress(paymentId, address){
+    return new Promise((resolve, reject) => {
+        address = address || wlsession.get('loadedWalletAddress');
+        the_service.createIntegratedAddress({address: address, paymentId: paymentId}).then((result) =>{
+            return resolve(result)
+        }).catch((err)=>{
+            return reject(err);
+        });
+    });
+    
+}
+
+let fusionTx = (() => {
+    let txHash = [];
+    const maxTxIter = 256;
+    const maxThreshCheckIter = 20;
+    const FUSION_DONE_MSG = 'Wallet optimization completed, your balance may appear incorrect for a while.';
+    const FUSION_FAILED_MSG = 'Unable to optimize your wallet, please try again in a few seconds';
+    const FUSION_SKIPPED_MSG = 'Wallet already optimized. No further optimization is needed.';
+
+    let getMinThreshold = (threshold, minThreshold, maxFusionReadyCount, counter) => {
+        return new Promise((resolve, reject) => {
+            counter = counter || 0;
+            threshold = threshold || (parseInt(wlsession.get('walletUnlockedBalance'),10)*100)+1;
+            threshold = parseInt(threshold,10);
+            minThreshold = minThreshold || threshold;
+            maxFusionReadyCount = maxFusionReadyCount || 0;
+
+            the_service.estimateFusion({threshold: threshold}).then((res)=>{
+                // nothing to optimize
+                if( counter === 0 && res.fusionReadyCount === 0) return resolve(0); 
+                // stop at maxThreshCheckIter or when threshold too low
+                if( counter > maxThreshCheckIter || threshold < 10) return resolve(minThreshold);
+                // we got a possibly best minThreshold
+                if(res.fusionReadyCount < maxFusionReadyCount){
+                    return resolve(minThreshold);
+                }
+                // continue to find next best minThreshold
+                maxFusionReadyCount = res.fusionReadyCount;
+                minThreshold = threshold;
+                threshold /= 2;
+                counter += 1;
+                resolve(getMinThreshold(threshold, minThreshold, maxFusionReadyCount, counter).then((res)=>{
+                    return res;
+                }));
+            }).catch((err)=>{
+                return reject(new Error(err));
+            });
+        });
+    }
+    let sendTx = (threshold, iter) => {
+        return new Promise((resolve, reject) => {
+            iter = iter || 0;
+            if(iter >= maxTxIter) return resolve(txhash); // stop at max iter
+            console.log('send fusion tx, iteration: ', iter);
+            // keep sending fusion tx till it hit IOOR or reaching max iter 
+            the_service.sendFusionTransaction({threshold: threshold}).then((resp)=> {
+                txHash.push(resp.transactionHash);
+                iter+=1;
+                setTimeout(()=>{
+                    return resolve(sendTx(threshold, iter).then((resp)=>{
+                        return resp;
+                    }));
+                },100);
+            }).catch((err)=>{
+                return reject(new Error(err));
+            });
+        });
+    }
+    return {
+        optimize: ()=>{
+            return new Promise((resolve, reject) => {
+                getMinThreshold().then((res)=>{
+                    if(res > 0){
+                        log.debug(`performing fusion tx, threshold: ${res}`);
+                        return resolve(
+                            sendTx(res).then((txhash) => {
+                                return FUSION_DONE_MSG;
+                            }).catch((err)=>{
+                                let msg = err.message.toLowerCase();
+                                switch(msg){
+                                    case 'index is out of range':
+                                        outMsg = txhash.length >=1 ? FUSION_DONE_MSG : FUSION_SKIPPED_MSG;
+                                        break;
+                                    default:
+                                        outMsg = FUSION_FAILED_MSG;
+                                        break;
+                                }
+                                return outMsg;
+                            })
+                        );
+                    }
+                    return resolve(FUSION_SKIPPED_MSG); // fusionReadyCount is 0
+                }).catch((err)=>{
+                    return reject((err.message));
+                });
+            });
+        }
+    }
+})();
+
+
 // misc
 function onSectionChanged(what){
-    let msg = {
+    handleWorkerUpdate({
         type: 'sectionChanged',
         data: what
-    };
-    handleWorkerUpdate(msg);
+    });
 }
 
 // just pass it to ui_updater
@@ -433,5 +529,7 @@ module.exports = {
     handleWorkerUpdate,
     onSectionChanged,
     importFromKey,
-    importFromSeed
+    importFromSeed,
+    genIntegratedAddress,
+    fusionTx
 };

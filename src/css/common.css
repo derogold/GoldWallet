@@ -173,7 +173,8 @@ input[type=number]::-webkit-inner-spin-button {
 
 textarea#wallet-address{
     margin: 8px 0 0 0;
-    font-size: 135%
+    font-size: 135%;
+    width: 100%;
 }
 
 .text-block:disabled {
@@ -234,6 +235,11 @@ span.form-msg{
 
 .text-spaced-error {
     background: rgb(203, 23, 0);
+}
+
+dialog .text-spaced-error{
+    /* word-wrap: break-word; */
+    /* padding: 0px; */
 }
 
 .text-spaced-warning {
@@ -550,6 +556,24 @@ h4.input-required:after{
     display: inline-block;
     color: #fefefe;
     margin: 0.2rem 0 0 0;
+}
+.wallet-tool{
+    text-align: right;
+    display: block;
+    float:right;
+    color: #fefefe;
+    cursor: pointer;
+    padding: 0px 4px;
+}
+.wallet-tool:hover{
+    text-decoration: underline;
+    color: #fff;
+}
+.inline-tool{
+    display:inline;
+    float:none;
+    padding: 0;
+    color: #fffb00;
 }
 #sendFormHelp{
     /* cursor: pointer; */
@@ -1305,9 +1329,7 @@ kbd{
 }
 
 .about-logo p{font-size: 1rem;padding: 0;margin: 0;text-shadow: -1px -1px 1px #484848;}
-.about-logo p span{
-    
-}
+
 .about-logo img{
     width: 140px;
     height: auto;
@@ -1328,5 +1350,13 @@ a.external{
 
 input[required]:invalid {
 /*     box-shadow: 0 0 3px 1px red; */
-    border:1px solid rgba(255, 0, 0, 0.7) !important;
+    /* border:1px solid rgba(255, 0, 0, 0.7) !important; */
 }
+/* 
+#button-send-optimize{
+    text-align:left;
+    display: block;
+
+    font-size: 0.75rem;
+    color: #fffb00;
+} */

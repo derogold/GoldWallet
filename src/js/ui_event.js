@@ -20,6 +20,7 @@ let win = remote.getCurrentWindow();
 const WS_VERSION = settings.get('version','unknown');
 const DEFAULT_WALLET_PATH = remote.app.getPath('documents');
 let WALLET_OPEN_IN_PROGRESS = false;
+let FUSION_IN_PROGRESS = false;
 
 // some obj vars
 var TXLIST_OBJ = null;
@@ -46,6 +47,8 @@ let settingsDaemonHostFormHelp;
 // overview page
 let overviewWalletAddress;
 let overviewWalletCloseButton;
+let overviewPaymentIdGen;
+let overviewIntegratedAddressGen;
 // addressbook page
 let addressBookInputName;
 let addressBookInputWallet;
@@ -71,6 +74,7 @@ let sendInputFee;
 let sendButtonSend;
 let maxSendFormHelp;
 let sendMaxAmount;
+let sendOptimize;
 // create wallet
 let overviewButtonCreate;
 let walletCreateInputPath;
@@ -131,6 +135,8 @@ function populateElementVars(){
     // overview pages
     overviewWalletAddress = document.getElementById('wallet-address');
     overviewWalletCloseButton = document.getElementById('button-overview-closewallet');
+    overviewPaymentIdGen = document.getElementById('payment-id-gen');
+    overviewIntegratedAddressGen = document.getElementById('integrated-wallet-gen');
 
     // addressbook page
     addressBookInputName = document.getElementById('input-addressbook-name');
@@ -159,6 +165,7 @@ function populateElementVars(){
     sendButtonSend = document.getElementById('button-send-send');
     maxSendFormHelp = document.getElementById('sendFormHelp');
     sendMaxAmount = document.getElementById('sendMaxAmount');
+    sendOptimize = document.getElementById('button-send-optimize');
     // create wallet
     overviewButtonCreate = document.getElementById('button-create-create');
     walletCreateInputPath = document.getElementById('input-create-path');
@@ -202,25 +209,31 @@ function initSectionTemplates(){
 }
 
 // utility: show toast message
-function showToast(msg, duration){
+function showToast(msg, duration, force){
     duration = duration || 1800;
+    force = force || false;
+    let datoaste = document.getElementById('datoaste');
+    if(datoaste && force) datoaste.parentNode.removeChild(datoaste);
+    
+    //if(datoaste) return;
+
     let toastOpts = {
         style: { main: { 
             'padding': '4px 6px','left': '3px','right':'auto','border-radius': '0px'
         }},
         settings: {duration: duration}
     }
+
     let openedDialog = document.querySelector('dialog[open]');
-    if(!document.getElementById('datoaste')){
-        if(openedDialog){
-            openedDialog.classList.add('dialog-alerted');
-            setTimeout(()=>{
-                openedDialog.classList.remove('dialog-alerted');
-            },duration+100);
-        }
-        iqwerty.toast.Toast(msg, toastOpts);
-        
+    if(openedDialog){
+        openedDialog.classList.add('dialog-alerted');
+        setTimeout(()=>{
+            openedDialog.classList.remove('dialog-alerted');
+        },duration+100);
     }
+    iqwerty.toast.Toast(msg, toastOpts);
+        
+    
 }
 
 // utility: dark mode
@@ -285,7 +298,11 @@ let keybindingTpl = `<div class="transaction-panel">
 <tr>
     <th scope="col"><kbd>Ctrl</kbd>+<kbd>\\</kbd></th>
     <td>Toggle dark/night mode</td>
-</tr> 
+</tr>
+<tr>
+    <th scope="col"><kbd>Ctrl</kbd>+<kbd>/</kbd></th>
+    <td>Display show shortcut key information (this dialog)</td>
+</tr>
 <tr>
     <th scope="col"><kbd>Esc</kbd></th>
     <td>Close any opened dialog</td>
@@ -297,6 +314,55 @@ let keybindingTpl = `<div class="transaction-panel">
 </div>
 </div>
 `;
+
+function genPaymentId(ret){
+    ret = ret || false;
+    
+    let payId = require('crypto').randomBytes(32).toString('hex');
+    if(ret) return payId;
+    
+    let dialogTpl = `<div class="transaction-panel">
+    <h4>Generated Payment ID:</h4>
+    <textarea data-cplabel="Payment ID" title="click to copy" class="ctcl default-textarea" rows="1" readonly="readonly">${payId}</textarea>
+    <div class="div-panel-buttons">
+        <button  data-target="#ab-dialog" type="button" class="button-gray dialog-close-default">Close</button>
+    </div>
+    `;
+    let dialog = document.getElementById('ab-dialog');
+    if(dialog.hasAttribute('open')) dialog.close();
+    dialog.innerHTML = dialogTpl;
+    dialog.showModal();
+}
+
+function showIntegratedAddressForm(){
+    let dialog = document.getElementById('ab-dialog');
+    let ownAddress = wlsession.get('loadedWalletAddress');
+    if(dialog.hasAttribute('open')) dialog.close();
+
+    let iaform = `<div class="transaction-panel">
+    <h4>Generate Integrated Address:</h4>
+    <div class="input-wrap">
+    <label>Wallet Address</label>
+    <textarea id="genInputAddress" class="default-textarea" placeholder="Put any valid TRTL address..">${ownAddress}</textarea>
+    </div>
+    <div class="input-wrap">
+    <label>Payment Id (<a id="makePaymentId" class="wallet-tool inline-tool" title="generate random payment id...">generate</a>)</label>
+    <input id="genInputPaymentId" type="text" required="required" class="text-block" placeholder="Put your own payment ID, or click generate to get random ID" />
+    </div>
+    <div class="input-wrap">
+    <textarea data-cplabel="Integrated address" placeholder="Fill the form &amp; click generate, integrated address will appear here..." rows="3" id="genOutputIntegratedAddress" class="default-textarea ctcl" readonly="readonly"></textarea>
+    </div>
+    <div class="input-wrap">
+        <span class="form-ew form-msg text-spaced-error hidden" id="text-gia-error"></span>
+    </div>
+    <div class="div-panel-buttons">
+        <button id="doGenIntegratedAddr" type="button" class="button-green dialog-close-default">Generate</button>
+        <button  data-target="#ab-dialog" type="button" class="button-gray dialog-close-default">Close</button>
+    </div>
+    `;
+    dialog.innerHTML = iaform;
+    dialog.showModal();
+}
 
 function showKeyBindings(){
     let dialog = document.getElementById('ab-dialog');
@@ -347,6 +413,10 @@ function changeSection(sectionId, isSettingRedir) {
     let needServiceReady = ['section-transactions', 'section-send', 'section-overview'];
     let needServiceStopped = 'section-welcome';
     let needSynced = ['section-send'];
+    if(needSynced.indexOf(targetSection) && FUSION_IN_PROGRESS){
+        showToast('Wallet optimization in progress, please wait');
+        return;
+    }
 
 
     let finalTarget = targetSection;
@@ -386,6 +456,7 @@ function changeSection(sectionId, isSettingRedir) {
     let section = document.getElementById(finalTarget);
     if(section.classList.contains('is-shown')){
         if(toastMsg.length && !isSettingRedir && !untoast) showToast(toastMsg);
+        section.dispatchEvent(new Event('click')); // make it focusable
         return; // don't do anything if section unchanged
     }
 
@@ -402,6 +473,7 @@ function changeSection(sectionId, isSettingRedir) {
     const activeSection = document.querySelector('.is-shown');
     if(activeSection) activeSection.classList.remove('is-shown');
     section.classList.add('is-shown');
+    section.dispatchEvent(new Event('click')); // make it focusable
     // show msg when needed
     if(toastMsg.length && !isSettingRedir && !untoast) showToast(toastMsg);
     // notify section was changed
@@ -1403,6 +1475,22 @@ function handleSendTransfer(){
             gutils.clearChild(md);
         });
     });
+
+    sendOptimize.addEventListener('click', (event)=>{
+        if(!wlsession.get('synchronized', false)){
+            showToast('Synchronization is in progress, please wait.');
+            return;
+        }
+
+        if(!confirm('You are about to perform wallet optimization. This process may took a while to complete, are you sure?')) return;
+        showToast('Optimization started, your balance may appear incorrect during the process', 3000);
+        FUSION_IN_PROGRESS = true;
+        svcmain.fusionTx.optimize().then((res) => {
+            showToast(res, 6000);
+            FUSION_IN_PROGRESS = false;
+        });
+        return;
+    });
 }
 
 function handleTransactions(){
@@ -1634,6 +1722,54 @@ function initHandlers(){
         }
     });
 
+    //genpaymentid+integAddress
+    overviewPaymentIdGen.addEventListener('click', (event)=>{
+        genPaymentId(false);
+    });
+
+    gutils.liveEvent('#makePaymentId', 'click', (event) => {
+        let payId = genPaymentId(true);
+        document.getElementById('genInputPaymentId').value = payId;
+    });
+
+    overviewIntegratedAddressGen.addEventListener('click', showIntegratedAddressForm);
+    gutils.liveEvent('#doGenIntegratedAddr', 'click', (event) => {
+        formMessageReset();
+        let genInputAddress = document.getElementById('genInputAddress');
+        let genInputPaymentId = document.getElementById('genInputPaymentId');
+        let outputField = document.getElementById('genOutputIntegratedAddress');
+        let addr = genInputAddress.value ? genInputAddress.value.trim() : '';
+        let pid = genInputPaymentId.value ? genInputPaymentId.value.trim() : '';
+        outputField.value = '';
+        outputField.removeAttribute('title');
+        if(!addr.length || !pid.length){
+            formMessageSet('gia','error', 'Address & Payment ID is required');
+            return;
+        }
+        if(!gutils.validateTRTLAddress(addr)){
+            formMessageSet('gia','error', 'Invalid TRTL address');
+            return;
+        }
+        // only allow standard address
+        if(addr.length > 99){
+            formMessageSet('gia','error', 'Only standard TRTL address are supported');
+            return;
+        }
+        if(!gutils.validatePaymentId(pid)){
+            console.log(pid);
+            formMessageSet('gia','error', 'Invalid Payment ID');
+            return;
+        }
+
+        svcmain.genIntegratedAddress(pid, addr).then((res) => {
+            formMessageReset();
+            outputField.value = res.integratedAddress;
+            outputField.setAttribute('title', 'click to copy');
+        }).catch((err) => {
+            formMessageSet('gia','error', err.message);
+        });
+    });
+
     // generic browse path btn event
     for (var i = 0; i < genericBrowseButton.length; i++) {
         let targetInputId = genericBrowseButton[i].dataset.targetinput;
@@ -1701,8 +1837,7 @@ function initHandlers(){
     });
 
     kswitch.addEventListener('click', showKeyBindings);
-
-   
+  
 
     // settings handlers
     handleSettings();

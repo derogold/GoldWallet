@@ -129,7 +129,9 @@ function updateBalance(data){
     if(!data) return;
     let availableBalance = parseFloat(data.availableBalance) || 0;
     if(availableBalance <= 0){
-        inputSendAmountField.setAttribute('max','1.00');
+        inputSendAmountField.value = 0;
+        inputSendAmountField.setAttribute('max','0.00');
+        inputSendAmountField.setAttribute('disabled','disabled');
         maxSendFormHelp.innerHTML = "You don't have any funds to be sent.";
         sendMaxAmount.dataset.maxsend = 0;
         sendMaxAmount.classList.add('hidden');
@@ -151,6 +153,7 @@ function updateBalance(data){
     if(availableBalance > 0){
         let maxSend = (bUnlocked - (wlsession.get('nodeFee')+0.10)).toFixed(2);
         inputSendAmountField.setAttribute('max',maxSend);
+        inputSendAmountField.removeAttribute('disabled');
         maxSendFormHelp.innerHTML = `Max. amount is ${maxSend}`;
         sendMaxAmount.dataset.maxsend = maxSend;
         sendMaxAmount.classList.remove('hidden');
@@ -343,6 +346,17 @@ function updateUiState(msg){
             break;
         case 'sectionChanged':
             if(msg.data) resetFormState(msg.data);
+            break;
+        case 'fusionTxCompleted':
+            let notif = 'Optimization completed';
+            let toastOpts = {
+                style: { main: { 
+                    'padding': '4px 6px','left': '3px','right':'auto','border-radius': '0px'
+                }},
+                settings: {duration: 5000}
+            }
+            if(msg.data) notif = msg.data;
+            iqwerty.toast.Toast(notif, toastOpts);
             break;
         default:
             console.log('invalid command received by ui', msg);
