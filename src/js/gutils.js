@@ -40,13 +40,13 @@ exports.selectText= (el, win) => {
         range.moveToElementText(el);
         range.select();
     }
-}
+};
 
 exports.clearChild = (parentEl) => {
     while (parentEl.firstChild) {
         parentEl.removeChild(parentEl.firstChild);
     }
-}
+};
 
 exports.innerHTML = (parentEl, html) => {
     var newEl = parentEl.cloneNode(false);
@@ -58,7 +58,7 @@ exports.innerHTML = (parentEl, html) => {
 exports.arrShuffle = (arr) => {
     return arr.map((a) => ({sort: Math.random(), value: a}))
         .sort((a, b) => a.sort - b.sort)
-        .map((a) => a.value)
+        .map((a) => a.value);
 };
 
 exports.mergeObj = (obj, src) => {
@@ -72,8 +72,8 @@ exports.uniqueObjArr = (objArr, key) => {
 };
 
 exports.diffObjArr = (objArr1, ObjArr2, key) => {
-    let objArrKeys = objArr1.map((item) => { return item[key] });
-    let diff = objArr2.filter((item) => {
+    let objArrKeys = objArr1.map((item) => { return item[key]; });
+    let diff = ObjArr2.filter((item) => {
         return objArrKeys.indexOf(item[key]) === -1;
     });
     return diff;
@@ -181,7 +181,7 @@ exports.normalizeWalletFilename = (rawFilename) => {
     if(ext.endsWith('.twl')) return rawFilename;
     if(ext.endsWith('.')) return `${rawFilename}${walletExt}`;
     return `${rawFilename}.${walletExt}`;
-}
+};
 
 
 exports.validateWalletPath = (fullpath, defaultDir, isExisting) => {
@@ -211,7 +211,7 @@ exports.validateWalletPath = (fullpath, defaultDir, isExisting) => {
                 return reject(new Error(ERROR_DEFAULT));
             }
         }
-        let finalPath = path.normalize(fullpath)
+        let finalPath = path.normalize(fullpath);
         return resolve(finalPath);
     });
-}
+};

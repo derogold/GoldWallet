@@ -23,8 +23,6 @@ svcRequest.prototype._sendRequest = function (method, params, timeout) {
         password: this.service_password
       };
   
-      if (!data.password) delete body.password;
-
       let s_host = this.service_host;
       let s_port = this.service_port;
       request({
@@ -71,7 +69,7 @@ svcRequest.prototype.getFeeInfo = function(){
 
 svcRequest.prototype.getBalance = function(params){
     return new Promise((resolve, reject) => {
-        params = params || {}
+        params = params || {};
         params.address = params.address || '';
 
         let req_params = {
@@ -118,7 +116,7 @@ svcRequest.prototype.getViewKey = function () {
   
 svcRequest.prototype.getSpendKeys = function (params) {
     return new Promise((resolve, reject) => {
-        params = params || {}
+        params = params || {};
         params.address = params.address || '';
 
         if (!params.address.length) return reject(new Error('Missing address parameter'));
@@ -137,8 +135,8 @@ svcRequest.prototype.getSpendKeys = function (params) {
   
 svcRequest.prototype.getMnemonicSeed = function (params) {
     return new Promise((resolve, reject) => {
-        params = params || {}
-        params.address = params.address || ''
+        params = params || {};
+        params.address = params.address || '';
   
         if (params.address.length === 0) return reject(new Error('Missing address parameter'));
   
@@ -165,20 +163,20 @@ svcRequest.prototype.getBackupKeys = function (params) {
             address: params.address
         };
 
-        var backupKeys = {}
+        var backupKeys = {};
 
         this.getViewKey().then((vkres) => {
             backupKeys.viewSecretKey = vkres.viewSecretKey;
             return vkres;
             //return Object.assign(vkres);
-        }).then((vk) => {
+        }).then(() => {
             this.getSpendKeys(req_params).then((vsres) => {
                 backupKeys.spendSecretKey = vsres.spendSecretKey;
                 return vsres;
             }).catch((err) => {
                 return reject(err);
             });
-        }).then( (vkvs) => {
+        }).then( () => {
             this.getMnemonicSeed(req_params).then( (mres) => {
                 backupKeys.mnemonicSeed = mres.mnemonicSeed;
                 return resolve(backupKeys);
@@ -215,7 +213,7 @@ svcRequest.prototype.getTransactions = function (params) {
 // send single transaction
 svcRequest.prototype.sendTransaction = function (params) {
     return new Promise((resolve, reject) => {
-        params = params || {}
+        params = params || {};
         params.amount = params.amount || false;
         params.address = params.address || false;
         //params.transfers = params.transfers || false;
@@ -252,7 +250,7 @@ svcRequest.prototype.reset = function (params) {
         let req_params = {};
         if(params.scanHeight && params.scanHeight > 1){
             
-            req_params = { scanHeight: params.scanHeight}
+            req_params = { scanHeight: params.scanHeight};
         }
 
         //if(params.viewSecretKey) req_params.viewSecretKey = params.viewSecretKey;
@@ -277,7 +275,7 @@ svcRequest.prototype.estimateFusion = function(params){
             return reject(err);
         });
     });
-}
+};
 
 svcRequest.prototype.sendFusionTransaction = function(params){
     return new Promise((resolve, reject) => {
@@ -290,18 +288,18 @@ svcRequest.prototype.sendFusionTransaction = function(params){
             return reject(err);
         });
     });
-}
+};
 
 svcRequest.prototype.createIntegratedAddress = function(params){
     return new Promise((resolve, reject) => {
         params = params || {};
-        if(!params.address || !params.paymentId) return reject(new Error('Address and Payment Id parameters are required'))
+        if(!params.address || !params.paymentId) return reject(new Error('Address and Payment Id parameters are required'));
         this._sendRequest('createIntegratedAddress', params).then((result) => {
             return resolve(result);
         }).catch((err)=> {
             return reject(err);
         });
     });
-}
+};
   
 module.exports = svcRequest;

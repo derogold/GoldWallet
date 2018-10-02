@@ -1,9 +1,10 @@
+/* globals iqwerty */
 const {webFrame, remote} = require('electron');
 const Store = require('electron-store');
-const settings = new Store({name: 'Settings'});
 const gutils = require('./gutils');
-const brwin = remote.getCurrentWindow();
 const gSession = require('./gsessions');
+const brwin = remote.getCurrentWindow();
+const settings = new Store({name: 'Settings'});
 const wlsession = new gSession();
 
 /* sync progress ui */
@@ -32,9 +33,9 @@ function triggerTxRefresh(){
 
 function updateSyncProgres(data){
     const iconSync = document.getElementById('navbar-icon-sync');
-    let blockCount = data['displayBlockCount'];
-    let knownBlockCount = data['displayKnownBlockCount'];
-    let blockSyncPercent = data['syncPercent'];
+    let blockCount = data.displayBlockCount;
+    let knownBlockCount = data.displayKnownBlockCount;
+    let blockSyncPercent = data.syncPercent;
     let statusText = '';
 
     // restore/reset
@@ -78,11 +79,11 @@ function updateSyncProgres(data){
         // sync sess flags
         wlsession.set('syncStarted', true);
         statusText = `${blockCount}/${knownBlockCount}` ;
-        if(blockCount+1 >= knownBlockCount && knownBlockCount != 0) {
+        if(blockCount+1 >= knownBlockCount && knownBlockCount !== 0) {
             // info bar class
             syncDiv.classList = 'synced';
             // status text
-            statusText = `SYNCED ${statusText}`
+            statusText = `SYNCED ${statusText}`;
             syncInfoBar.textContent = statusText;
             // status icon 
             iconSync.setAttribute('data-icon', 'check');
@@ -168,10 +169,11 @@ function updateTransactions(result){
     let txListNew = [];
 
     Array.from(blockItems).forEach((block) => {
-        block.transactions.map((tx, index) => {
+        block.transactions.map((tx) => {
             if(tx.amount !== 0 && !gutils.objInArray(txlistExisting, tx, 'transactionHash')){
                 tx.amount = (tx.amount/100).toFixed(2);
-                tx.timeStr = tx.timeStr = new Date(tx.timestamp * 1000).toDateString();
+                tx.timeStr = new Date(tx.timestamp*1000).toUTCString();
+                //tx.timeStr = tx.timeStr = new Date(tx.timestamp * 1000).toDateString();
                 tx.fee = (tx.fee/100).toFixed(2);
                 tx.paymentId = tx.paymentId.length ? tx.paymentId : '-';
                 tx.txType = (tx.amount > 0 ? 'in' : 'out');
@@ -198,11 +200,10 @@ function updateTransactions(result){
     wlsession.set('txLen', txList.length);
     wlsession.set('txNew', txListNew);
 
-    // date to compare
     let currentDate = new Date();
-    currentDate = `${currentDate.getUTCFullYear()}-${currentDate.getUTCMonth()+1}-${currentDate.getUTCDate()}`
+    currentDate = `${currentDate.getUTCFullYear()}-${currentDate.getUTCMonth()+1}-${currentDate.getUTCDate()}`;
     let lastTxDate = new Date(newLastTimestamp*1000);
-    lastTxDate = `${lastTxDate.getUTCFullYear()}-${lastTxDate.getUTCMonth()+1}-${lastTxDate.getUTCDate()}`
+    lastTxDate = `${lastTxDate.getUTCFullYear()}-${lastTxDate.getUTCMonth()+1}-${lastTxDate.getUTCDate()}`;
 
     // amount to check
     let rememberedLastHash = settings.get('last_notification', '');
@@ -232,7 +233,7 @@ function updateTransactions(result){
             if(!brwin.isVisible()) brwin.show();
             if(brwin.isMinimized()) brwin.restore();
             if(!brwin.isFocused()) brwin.focus();
-        }
+        };
     }
 }
 
@@ -255,7 +256,7 @@ function showFeeWarning(fee){
 
     gutils.innerHTML(dialog, htmlStr);
     let dialogEnd = document.getElementById('dialog-end');
-    dialogEnd.addEventListener('click', (event) => {
+    dialogEnd.addEventListener('click', () => {
         try{
             dialog.classList.remove('dialog-warning');
             document.getElementById('main-dialog').close();
@@ -293,7 +294,7 @@ function updateQr(address){
     }
 }
 
-function resetFormState(initiator){
+function resetFormState(){
     const allFormInputs = document.querySelectorAll('.section input,.section textarea');
     if(!allFormInputs) return;
 
@@ -354,7 +355,7 @@ function updateUiState(msg){
                     'padding': '4px 6px','left': '3px','right':'auto','border-radius': '0px'
                 }},
                 settings: {duration: 5000}
-            }
+            };
             if(msg.data) notif = msg.data;
             iqwerty.toast.Toast(notif, toastOpts);
             break;

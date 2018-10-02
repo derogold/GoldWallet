@@ -46,7 +46,7 @@ function doInit(){
         service_host: settings.get('service_host'),
         service_port: settings.get('service_port'),
         service_password: settings.get('service_password')
-    }
+    };
     the_service = new svcRequest(cfg);
 }
 
@@ -61,7 +61,7 @@ function startService(filePath, password, scanHeight, onError, onSuccess) {
     let directory = path.dirname(filePath);
 
     // test exec
-    const ptest = execFile(
+    execFile(
         settings.get('service_bin'), [
             '--rpc-password', settings.get('service_password'),
             '-w', path.join(directory, file),
@@ -69,6 +69,7 @@ function startService(filePath, password, scanHeight, onError, onSuccess) {
             '--log-level', 0,
             '--address'
         ], (error, stdout, stderr) => {
+            if(stderr) log.error(stderr);
             if(error){
                 log.debug(error.message);
                 onError(ERROR_WALLETLAUNCH);
@@ -125,44 +126,45 @@ function doRunService(filePath, password, scanHeight, onError, onSuccess) {
 
     /* The process has been spawned, now we check if its running */
     var TEST_OK = false;
-    if (isRunning()) {
-        function testConnection(retry) {
-            the_service.getAddress().then((address) => {
-                if(!TEST_OK){
-                    wlsession.set('loadedWalletAddress', address);
-                    wlsession.set('serviceReady', true);
-                    // start the worker here?
-                    startWorker();
-                    uiUpdater.updateUiState({ //move this to event listener
-                        type: 'addressUpdated',
-                        data: address
-                    });
-                    wlsession.set('connectedNode', `${settings.get('daemon_host')}:${settings.get('daemon_port')}`);
-                    onSuccess(walletFile, scanHeight);
-                    TEST_OK = true;
-                }
-                return true;
-            }).catch((err) => {
-                if(retry >= 12 && !TEST_OK){
-                    onError(err);
-                    return false;
-                }else{
-                    setTimeout(function(){
-                        let nextTry = retry+1;
-                        log.debug(`retrying testconn (${nextTry})`);
-                        testConnection(nextTry);
-                    },2000);
-                }
-            });
-        }
-
-        setTimeout(function(){
-            testConnection(0);
-        }, 5000);
-    } else {
+    if(!isRunning()){
         log.debug('turtle-service not running');
         if(onError) onError(ERROR_WALLETLAUNCH);
+        return;
     }
+
+    function testConnection(retry) {
+        the_service.getAddress().then((address) => {
+            if(!TEST_OK){
+                wlsession.set('loadedWalletAddress', address);
+                wlsession.set('serviceReady', true);
+                // start the worker here?
+                startWorker();
+                uiUpdater.updateUiState({ //move this to event listener
+                    type: 'addressUpdated',
+                    data: address
+                });
+                wlsession.set('connectedNode', `${settings.get('daemon_host')}:${settings.get('daemon_port')}`);
+                onSuccess(walletFile, scanHeight);
+                TEST_OK = true;
+            }
+            return true;
+        }).catch((err) => {
+            if(retry >= 12 && !TEST_OK){
+                onError(err);
+                return false;
+            }else{
+                setTimeout(function(){
+                    let nextTry = retry+1;
+                    log.debug(`retrying testconn (${nextTry})`);
+                    testConnection(nextTry);
+                },2000);
+            }
+        });
+    }
+
+    setTimeout(function(){
+        testConnection(0);
+    }, 5000);
 }
 
 function startWorker(){
@@ -191,7 +193,7 @@ function startWorker(){
             service_password: settings.get('service_password')
         },
         debug: SERVICE_LOG_DEBUG
-    }
+    };
 
     the_cworker.send(cfgData);
 
@@ -237,7 +239,7 @@ function stopService(dokill) {
                     resolve(true);
                 }catch(err){
                     log.debug(`SIGTERM failed: ${err.message}`);
-                    try{serviceProcess.kill('SIGKILL')}catch(e){}
+                    try{serviceProcess.kill('SIGKILL');}catch(e){}
                     resetGlobals();
                     resolve(false);
                 }
@@ -271,7 +273,7 @@ function getNodeFee(){
         });
         return theFee;
     }).catch((err) => {
-        log.debug('failed to get node fee');
+        log.debug(`failed to get node fee: ${err.message}`);
     });
 }
 
@@ -283,7 +285,7 @@ function resetFromHeight(scanHeight){
     log.debug(`resetting from height ${scanHeight}`);
     the_service.reset(reset_params).then( () => {
         return true;
-    }).catch((err) => {
+    }).catch(() => {
         return true;
     });
 }
@@ -318,6 +320,8 @@ function createWallet (walletFile, password){
               '--rpc-password', settings.get('service_password')
             ],
             (error, stdout, stderr) => {
+                if(stdout) log.debug(stdout);
+                if(stderr) log.error(stderr);
                 if (error) {
                     log.error(`Failed to create wallet: ${error.message}`);
                     return reject(new Error(ERROR_WALLET_CREATE));
@@ -351,6 +355,8 @@ function importFromKey(walletFile, password, viewKey, spendKey, scanHeight) {
             settings.get('service_bin'),
             walletArgs,
             (error, stdout, stderr) => {
+                if(stdout) log.debug(stdout);
+                if(stderr) log.error(stderr);
                 if (error) {
                     log.debug(`Failed to import key: ${error.message}`);
                     return reject(new Error(ERROR_WALLET_IMPORT));
@@ -385,6 +391,9 @@ function importFromSeed(walletFile, password, mnemonicSeed, scanHeight) {
             settings.get('service_bin'),
             walletArgs,
             (error, stdout, stderr) => {
+                if(stdout) log.debug(stdout);
+                if(stderr) log.error(stderr);
+
                 if (error) {
                     log.debug(`Error importing seed: ${error.message}`);
                     return reject(new Error(ERROR_WALLET_IMPORT));
@@ -403,7 +412,7 @@ function genIntegratedAddress(paymentId, address){
     return new Promise((resolve, reject) => {
         address = address || wlsession.get('loadedWalletAddress');
         the_service.createIntegratedAddress({address: address, paymentId: paymentId}).then((result) =>{
-            return resolve(result)
+            return resolve(result);
         }).catch((err)=>{
             return reject(err);
         });
@@ -448,11 +457,11 @@ let fusionTx = (() => {
                 return reject(new Error(err));
             });
         });
-    }
+    };
     let sendTx = (threshold, iter) => {
         return new Promise((resolve, reject) => {
             iter = iter || 0;
-            if(iter >= maxTxIter) return resolve(txhash); // stop at max iter
+            if(iter >= maxTxIter) return resolve(txHash); // stop at max iter
             console.log('send fusion tx, iteration: ', iter);
             // keep sending fusion tx till it hit IOOR or reaching max iter 
             the_service.sendFusionTransaction({threshold: threshold}).then((resp)=> {
@@ -467,7 +476,7 @@ let fusionTx = (() => {
                 return reject(new Error(err));
             });
         });
-    }
+    };
     return {
         optimize: ()=>{
             return new Promise((resolve, reject) => {
@@ -475,16 +484,16 @@ let fusionTx = (() => {
                     if(res > 0){
                         log.debug(`performing fusion tx, threshold: ${res}`);
                         return resolve(
-                            sendTx(res).then((txhash) => {
+                            sendTx(res).then(() => {
                                 return FUSION_DONE_MSG;
                             }).catch((err)=>{
                                 let msg = err.message.toLowerCase();
+                                let outMsg = FUSION_FAILED_MSG;
                                 switch(msg){
                                     case 'index is out of range':
-                                        outMsg = txhash.length >=1 ? FUSION_DONE_MSG : FUSION_SKIPPED_MSG;
+                                        outMsg = txHash.length >=1 ? FUSION_DONE_MSG : FUSION_SKIPPED_MSG;
                                         break;
                                     default:
-                                        outMsg = FUSION_FAILED_MSG;
                                         break;
                                 }
                                 return outMsg;
@@ -497,9 +506,8 @@ let fusionTx = (() => {
                 });
             });
         }
-    }
+    };
 })();
-
 
 // misc
 function onSectionChanged(what){

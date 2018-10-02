@@ -87,5 +87,4 @@ gSession.prototype.destroy = function(){
     return sessionStorage.removeItem(this.sessKey);
 };
 
-
 module.exports = gSession;

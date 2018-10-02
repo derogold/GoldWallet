@@ -7,15 +7,21 @@
             <div class="div-input">
                 <div class="input-wrap">
                     <h4 class="text-spaced input-required">Select the wallet file</h4>
-                    <input type="text"  title="Required" required="required" data-selection="openFile" 
-                        data-targetinput="input-load-path" data-initial="recentWallet" readonly="readonly" 
-                        class="text-block path-input-button"  id="input-load-path" style="padding: 12px 8px;" tabindex="0" />
+                    <input type="text" required="required" data-selection="openFile" 
+                        data-targetinput="input-load-path" data-initial="recentWallet"
+                        readonly="readonly" class="text-block path-input-button"
+                        id="input-load-path" tabindex="0" 
+                        placeholder="Full path to the wallet file to be opened..."
+                        />
                     <button data-selection="openFile" data-targetinput="input-load-path" type="button" class="button-green path-input-button" id="button-load-browse" tabindex="2"><i class="fas fa-folder-open"></i></button>
                 </div>
 
                 <div class="input-wrap">
                     <h4 class="text-spaced input-required">Wallet password</h4>
-                    <input  title="Required" required="required" autofocus="true" tabindex="0" type="password" class="text-block" id="input-load-password" style="padding: 12px 8px;"></input>
+                    <input required="required" autofocus="true" tabindex="0" type="password"
+                        class="text-block" id="input-load-password" 
+                        placeholder="Password to open this wallet..."
+                        />
                 </div>
                 
                 <div class="input-wrap">

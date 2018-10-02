@@ -1,33 +1,33 @@
-const {clipboard, remote, ipcRenderer, shell} = require('electron');
-const fs = require('fs');
-const Store = require('electron-store');
-const autoComplete = require('./extras/auto-complete');
-const gutils = require('./gutils');
-const svcmain = require('./svc_main.js');
-const settings = new Store({name: 'Settings'});
-const abook = new Store({ name: 'AddressBook', encryptionKey: ['79009fb00ca1b7130832a42d','e45142cf6c4b7f33','3fe6fba5'].join('')});
-const Menu = remote.Menu;
+/*jshint bitwise: false*/
+/* globals iqwerty */
+/* globals List */
 const os = require('os');
 const path = require('path');
+const fs = require('fs');
+const {clipboard, remote, ipcRenderer, shell} = require('electron');
+const Store = require('electron-store');
 const Mousetrap = require('./extras/mousetrap.min.js');
+const autoComplete = require('./extras/auto-complete');
+const gutils = require('./gutils.js');
+const gSession = require('./gsessions.js');
+const svcmain = require('./svc_main.js');
 
-
-const gSession = require('./gsessions');
+const Menu = remote.Menu;
+const settings = new Store({ name: 'Settings' });
+const abook = new Store({ name: 'AddressBook', encryptionKey: ['79009fb00ca1b7130832a42d', 'e45142cf6c4b7f33', '3fe6fba5'].join('') });
 const wlsession = new gSession();
+const win = remote.getCurrentWindow();
 
-let win = remote.getCurrentWindow();
-
-const WS_VERSION = settings.get('version','unknown');
+const WS_VERSION = settings.get('version', 'unknown');
 const DEFAULT_WALLET_PATH = remote.app.getPath('documents');
+
 let WALLET_OPEN_IN_PROGRESS = false;
 let FUSION_IN_PROGRESS = false;
+let TXLIST_OBJ = null;
+let COMPLETION_PUBNODES;
+let COMPLETION_ADDRBOOK;
 
-// some obj vars
-var TXLIST_OBJ = null;
-var COMPLETION_PUBNODES;
-var COMPLETION_ADDRBOOK;
-
-/**  dom elements variables; **/
+/*  dom elements vars; */
 // main section link
 let sectionButtons;
 // generics
@@ -44,6 +44,7 @@ let settingsInputMinToTray;
 let settingsInputCloseToTray;
 let settingsButtonSave;
 let settingsDaemonHostFormHelp;
+let settingsDaemonPortFormHelp;
 // overview page
 let overviewWalletAddress;
 let overviewWalletCloseButton;
@@ -72,18 +73,17 @@ let sendInputAmount;
 let sendInputPaymentId;
 let sendInputFee;
 let sendButtonSend;
-let maxSendFormHelp;
 let sendMaxAmount;
 let sendOptimize;
 // create wallet
 let overviewButtonCreate;
 let walletCreateInputPath;
-//let walletCreateInputFilename;
+// let walletCreateInputFilename;
 let walletCreateInputPassword;
 // import wallet keys
 let importKeyButtonImport;
 let importKeyInputPath;
-//let importKeyInputFilename;
+// let importKeyInputFilename;
 let importKeyInputPassword;
 let importKeyInputViewKey;
 let importKeyInputSpendKey;
@@ -101,7 +101,6 @@ let txButtonSortAmount;
 let txButtonSortDate;
 let txInputUpdated;
 let txInputNotify;
-
 // misc
 let thtml;
 let dmswitch;
@@ -163,7 +162,7 @@ function populateElementVars(){
     sendInputPaymentId = document.getElementById('input-send-payid');
     sendInputFee = document.getElementById('input-send-fee');
     sendButtonSend = document.getElementById('button-send-send');
-    maxSendFormHelp = document.getElementById('sendFormHelp');
+    // maxSendFormHelp = document.getElementById('sendFormHelp');
     sendMaxAmount = document.getElementById('sendMaxAmount');
     sendOptimize = document.getElementById('button-send-optimize');
     // create wallet
@@ -213,7 +212,9 @@ function showToast(msg, duration, force){
     duration = duration || 1800;
     force = force || false;
     let datoaste = document.getElementById('datoaste');
-    if(datoaste && force) datoaste.parentNode.removeChild(datoaste);
+    if(datoaste && force) {
+        datoaste.parentNode.removeChild(datoaste);
+    }
     
     //if(datoaste) return;
 
@@ -222,7 +223,7 @@ function showToast(msg, duration, force){
             'padding': '4px 6px','left': '3px','right':'auto','border-radius': '0px'
         }},
         settings: {duration: duration}
-    }
+    };
 
     let openedDialog = document.querySelector('dialog[open]');
     if(openedDialog){
@@ -232,8 +233,6 @@ function showToast(msg, duration, force){
         },duration+100);
     }
     iqwerty.toast.Toast(msg, toastOpts);
-        
-    
 }
 
 // utility: dark mode
@@ -262,38 +261,38 @@ let keybindingTpl = `<div class="transaction-panel">
 <tbody>
 <tr>
     <th scope="col"><kbd>Ctrl</kbd>+<kbd>Home</kbd></th>
-    <td>Switch to <strong>overview/welcome</strong> section</td>
+    <td>Switch to <strong>overview/welcome</strong> screen</td>
 </tr> 
 <tr>
     <th scope="col"><kbd>Ctrl</kbd>+<kbd>Tab</kbd></th>
-    <td>Switch to <strong>next section</strong></td>
+    <td>Switch to <strong>next screen</strong></td>
 </tr>
 <tr>
 <th scope="col"><kbd>Ctrl</kbd>+<kbd>n</kbd></th>
-<td>Switch to <strong>Create new wallet</strong> section</td></tr>
+<td>Switch to <strong>Create new wallet</strong> screen</td></tr>
 <tr>
     <th scope="col"><kbd>Ctrl</kbd>+<kbd>o</kbd></th>
-    <td>Switch to <strong>Open a wallet</strong> section</td>
+    <td>Switch to <strong>Open a wallet</strong> screen</td>
 </tr>
 <tr>
     <th scope="col"><kbd>Ctrl</kbd>+<kbd>i</kbd></th>
-    <td>Switch to <strong>Import wallet from private keys</strong> section</td>
+    <td>Switch to <strong>Import wallet from private keys</strong> screen</td>
 </tr>
 <tr>
     <th scope="col"><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>i</kbd></th>
-    <td>Switch to <strong>Import wallet from mnemonic seed</strong> section</td>
+    <td>Switch to <strong>Import wallet from mnemonic seed</strong> screen</td>
 </tr> 
 <tr>
     <th scope="col"><kbd>Ctrl</kbd>+<kbd>e</kbd></th>
-    <td>Switch to <strong>Export private keys/seed</strong> section (when wallet opened)</td>
+    <td>Switch to <strong>Export private keys/seed</strong> screen (when wallet opened)</td>
 </tr> 
 <tr>
     <th scope="col"><kbd>Ctrl</kbd>+<kbd>t</kbd></th>
-    <td>Switch to <strong>Transactions</strong> section (when wallet opened)</td>
+    <td>Switch to <strong>Transactions</strong> screen (when wallet opened)</td>
 </tr> 
 <tr>
     <th scope="col"><kbd>Ctrl</kbd>+<kbd>s</kbd></th>
-    <td>Switch to <strong>Send/Transfer</strong> section (when wallet opened)</td>
+    <td>Switch to <strong>Send/Transfer</strong> screen (when wallet opened)</td>
 </tr> 
 <tr>
     <th scope="col"><kbd>Ctrl</kbd>+<kbd>\\</kbd></th>
@@ -301,11 +300,11 @@ let keybindingTpl = `<div class="transaction-panel">
 </tr>
 <tr>
     <th scope="col"><kbd>Ctrl</kbd>+<kbd>/</kbd></th>
-    <td>Display show shortcut key information (this dialog)</td>
+    <td>Display shortcut key information (this dialog)</td>
 </tr>
 <tr>
     <th scope="col"><kbd>Esc</kbd></th>
-    <td>Close any opened dialog</td>
+    <td>Close any opened dialog (like this dialog)</td>
 </tr> 
 </tbody>
 </table>
@@ -343,11 +342,11 @@ function showIntegratedAddressForm(){
     <h4>Generate Integrated Address:</h4>
     <div class="input-wrap">
     <label>Wallet Address</label>
-    <textarea id="genInputAddress" class="default-textarea" placeholder="Put any valid TRTL address..">${ownAddress}</textarea>
+    <textarea id="genInputAddress" class="default-textarea" placeholder="Required, put any valid TRTL address..">${ownAddress}</textarea>
     </div>
     <div class="input-wrap">
     <label>Payment Id (<a id="makePaymentId" class="wallet-tool inline-tool" title="generate random payment id...">generate</a>)</label>
-    <input id="genInputPaymentId" type="text" required="required" class="text-block" placeholder="Put your own payment ID, or click generate to get random ID" />
+    <input id="genInputPaymentId" type="text" required="required" class="text-block" placeholder="Required, enter a valid payment ID, or click generate to get random ID" />
     </div>
     <div class="input-wrap">
     <textarea data-cplabel="Integrated address" placeholder="Fill the form &amp; click generate, integrated address will appear here..." rows="3" id="genOutputIntegratedAddress" class="default-textarea ctcl" readonly="readonly"></textarea>
@@ -383,7 +382,7 @@ function switchTab(){
     let skippedSections = [];
     if(!isServiceReady){
         skippedSections = ['section-send', 'section-transactions'];
-        if(nextSection == 'section-overview') nextSection = 'section-welcome';
+        if(nextSection === 'section-overview') nextSection = 'section-welcome';
     }
 
     while(skippedSections.indexOf(nextSection) >=0){
@@ -417,7 +416,6 @@ function changeSection(sectionId, isSettingRedir) {
         showToast('Wallet optimization in progress, please wait');
         return;
     }
-
 
     let finalTarget = targetSection;
     let toastMsg = '';
@@ -502,7 +500,7 @@ function initNodeCompletion(){
             term = term.toLowerCase();
             var choices = nodeChoices;
             var matches = [];
-            for (i=0; i<choices.length; i++){
+            for (var i=0; i<choices.length; i++){
                 let phost = choices[i].split(':')[0];
                 if (~choices[i].toLowerCase().indexOf(term) && phost.length > term.length){
                     matches.push(choices[i]);
@@ -510,7 +508,7 @@ function initNodeCompletion(){
             }
             suggest(matches);
         },
-        onSelect: function(e, term, item){
+        onSelect: function(e, term){
             settingsInputDaemonAddress.value = term.split(':')[0];
             settingsInputDaemonPort.value = term.split(':')[1];
             settingsInputDaemonAddress.dispatchEvent(new Event('blur'));
@@ -539,7 +537,7 @@ function initSettingVal(values){
     // if custom node, save it
     let mynode = `${settings.get('daemon_host')}:${settings.get('daemon_port')}`;
     let pnodes = settings.get('pubnodes_data');
-    if(!settings.has('pubnodes_custom')) settings.set('pubnodes_custom', new Array());
+    if(!settings.has('pubnodes_custom')) settings.set('pubnodes_custom', []);
     let cnodes = settings.get('pubnodes_custom');
     if(pnodes.indexOf(mynode) === -1 && cnodes.indexOf(mynode) === -1){
         cnodes.push(mynode);
@@ -569,7 +567,7 @@ function initAddressCompletion(){
             term = term.toLowerCase();
             var choices = nodeAddress;
             var matches = [];
-            for (i=0; i<choices.length; i++)
+            for (var i=0; i<choices.length; i++)
                 if (~choices[i].toLowerCase().indexOf(term)) matches.push(choices[i]);
             suggest(matches);
         },
@@ -675,7 +673,7 @@ function showInitialPage(){
         changeSection('section-welcome');
     }
 
-    versionInfo = document.getElementById('walletShellVersion');
+    let versionInfo = document.getElementById('walletShellVersion');
     if(versionInfo) versionInfo.innerHTML = WS_VERSION;
 }
 
@@ -719,7 +717,7 @@ function handleSettings(){
             daemon_port: daemonPortValue,
             tray_minimize: settingsInputMinToTray.checked,
             tray_close: settingsInputCloseToTray.checked
-        }
+        };
         initSettingVal(vals);
         formMessageReset();
         initNodeCompletion();
@@ -732,7 +730,7 @@ function handleSettings(){
 function handleAddressBook(){
     function listAddressBook(force){
         force = force || false;
-        let currentLength = document.querySelectorAll('.addressbook-item:not([data-hash="fake-hash"])').length
+        let currentLength = document.querySelectorAll('.addressbook-item:not([data-hash="fake-hash"])').length;
         let abookLength =abook.size;
         let perPage = 9;
     
@@ -770,7 +768,7 @@ function handleAddressBook(){
         addressList.remove('hash', 'fake-hash');
     }
 
-    function displayAddressBookEntry(event){
+    function displayAddressBookEntry(){
         let dialog = document.getElementById('ab-dialog');
         if(dialog.hasAttribute('open')) dialog.close();
         let tpl = `
@@ -803,14 +801,14 @@ function handleAddressBook(){
         // get new dialog
         dialog = document.getElementById('ab-dialog');
         dialog.showModal();
-        document.getElementById('button-addressbook-panel-close').addEventListener('click', (event) => {
+        document.getElementById('button-addressbook-panel-close').addEventListener('click', () => {
              let abdialog = document.getElementById('ab-dialog');
              abdialog.close();
              gutils.clearChild(abdialog);
          });
      
          let deleteBtn = document.getElementById('button-addressbook-panel-delete');
-         deleteBtn.addEventListener('click', (event) => {
+         deleteBtn.addEventListener('click', () => {
              let tardel = this.dataset.nameval;
              let tarhash = this.dataset.hash;
              if(!confirm(`Are you sure you want to delete ${tardel} from the address book?`)){
@@ -828,7 +826,7 @@ function handleAddressBook(){
          });
      
          let editBtn = document.getElementById('button-addressbook-panel-edit');
-         editBtn.addEventListener('click', (event)=>{
+         editBtn.addEventListener('click', ()=>{
              let origHash = this.dataset.hash;
              let entry = abook.get(origHash);
              if(!entry){
@@ -870,7 +868,7 @@ function handleAddressBook(){
         setAbPaymentIdState(val);
     });
 
-    addressBookButtonSave.addEventListener('click', (event) => {
+    addressBookButtonSave.addEventListener('click', () => {
         formMessageReset();
         let nameValue = addressBookInputName.value ? addressBookInputName.value.trim() : '';
         let walletValue = addressBookInputWallet.value ? addressBookInputWallet.value.trim() : '';
@@ -955,7 +953,7 @@ function handleWalletOpen(){
         }
     }
 
-    walletOpenButtonOpen.addEventListener('click', (event) => {
+    walletOpenButtonOpen.addEventListener('click', () => {
         formMessageReset();
         if(!walletOpenInputPath.value){
             formMessageSet('load','error', "Invalid wallet file path");
@@ -972,10 +970,11 @@ function handleWalletOpen(){
             return false;
         }
 
-        function onSuccess(theWallet, scanHeight){
+        //function onSuccess(theWallet, scanHeight){
+        function onSuccess(){
             walletOpenInputPath.value = settings.get('recentWallet');
             overviewWalletAddress.value = wlsession.get('loadedWalletAddress');
-            let thefee = svcmain.getNodeFee();
+            svcmain.getNodeFee();
             WALLET_OPEN_IN_PROGRESS = false;
             changeSection('section-overview');
             setTimeout(()=>{
@@ -998,14 +997,13 @@ function handleWalletOpen(){
             WALLET_OPEN_IN_PROGRESS = true;
             settings.set('recentWallet', walletFile);
             formMessageSet('load','warning', "Accessing wallet...<br><progress></progress>");
-            svcmain.stopService(true).then((v) => {
+            svcmain.stopService(true).then(() => {
                 formMessageSet('load','warning', "Starting wallet service...<br><progress></progress>");
                 setTimeout(() => {
                     formMessageSet('load','warning', "Opening wallet, please be patient...<br><progress></progress>");
                     svcmain.startService(walletFile, walletPass, scanHeight, onError, onSuccess);
-                },1200);
-            }).catch((err) => {
-                console.log(err);
+                },800);
+            }).catch(() => {
                 formMessageSet('load','error', "Unable to start service");
                 WALLET_OPEN_IN_PROGRESS = false;
                 setOpenButtonsState(0);
@@ -1028,7 +1026,7 @@ function handleWalletClose(){
         dialog.showModal();
         // save + SIGTERMed wallet daemon
         svcmain.stopWorker();
-        svcmain.stopService(true).then((k) => {
+        svcmain.stopService(true).then(() => {
             setTimeout(function(){
                 // cleare form err msg
                 formMessageReset();
@@ -1069,7 +1067,7 @@ function handleWalletClose(){
 }
 
 function handleWalletCreate(){
-    overviewButtonCreate.addEventListener('click', (event) => {
+    overviewButtonCreate.addEventListener('click', () => {
         formMessageReset();
         let filePathValue = walletCreateInputPath.value ? walletCreateInputPath.value.trim() : '';
         let passwordValue =  walletCreateInputPassword.value ? walletCreateInputPassword.value.trim() : '';
@@ -1090,7 +1088,7 @@ function handleWalletCreate(){
                     // for now, backup instead of delete, just to be save
                     let ts = new Date().getTime();
                     let backfn = `${finalPath}.bak${ts}`;
-                    fs.renameSync(finalPath, backfn);;
+                    fs.renameSync(finalPath, backfn);
                     //fs.unlinkSync(finalPath);
                 }catch(err){
                    formMessageSet('create','error', `Unable to overwrite existing file, please enter new wallet file path`);
@@ -1119,7 +1117,7 @@ function handleWalletCreate(){
 }
 
 function handleWalletImportKeys(){
-    importKeyButtonImport.addEventListener('click', (event) => {
+    importKeyButtonImport.addEventListener('click', () => {
         formMessageReset();
         let filePathValue = importKeyInputPath.value ? importKeyInputPath.value.trim() : '';
         let passwordValue =  importKeyInputPassword.value ? importKeyInputPassword.value.trim() : '';
@@ -1164,7 +1162,7 @@ function handleWalletImportKeys(){
                     // for now, backup instead of delete, just to be save
                     let ts = new Date().getTime();
                     let backfn = `${finalPath}.bak${ts}`;
-                    fs.renameSync(finalPath, backfn);;
+                    fs.renameSync(finalPath, backfn);
                     //fs.unlinkSync(finalPath);
                 }catch(err){
                 formMessageSet('import','error', `Unable to overwrite existing file, please enter new wallet file path`);
@@ -1180,7 +1178,6 @@ function handleWalletImportKeys(){
                 scanHeightValue
             ).then((walletFile) => {
                 settings.set('recentWallet', walletFile);
-                settings.set('recentWalletDir', walletDir);
                 walletOpenInputPath.value = walletFile;
                 changeSection('section-overview-load');
                 showToast('Wallet has been imported, you can now open your wallet!', 12000);
@@ -1197,13 +1194,13 @@ function handleWalletImportKeys(){
 }
 
 function handleWalletImportSeed(){
-    importSeedButtonImport.addEventListener('click', (event) => {
+    importSeedButtonImport.addEventListener('click', () => {
         formMessageReset();
 
         let filePathValue = importSeedInputPath.value ? importSeedInputPath.value.trim() : '';
         let passwordValue =  importSeedInputPassword.value ? importSeedInputPassword.value.trim() : '';
         let seedValue = importSeedInputMnemonic.value ? importSeedInputMnemonic.value.trim() : '';
-        let scanHeightValue = importKeyInputScanHeight.value ? parseInt(importKeyInputScanHeight.value,10) : -1;
+        let scanHeightValue = importSeedInputScanHeight.value ? parseInt(importSeedInputScanHeight.value,10) : -1;
         // validate path
         gutils.validateWalletPath(filePathValue, DEFAULT_WALLET_PATH).then((finalPath)=>{
             // validate password
@@ -1230,7 +1227,7 @@ function handleWalletImportSeed(){
                     // for now, backup instead of delete, just to be save
                     let ts = new Date().getTime();
                     let backfn = `${finalPath}.bak${ts}`;
-                    fs.renameSync(finalPath, backfn);;
+                    fs.renameSync(finalPath, backfn);
                     //fs.unlinkSync(finalPath);
                 }catch(err){
                    formMessageSet('import-seed','error', `Unable to overwrite existing file, please enter new wallet file path`);
@@ -1249,31 +1246,31 @@ function handleWalletImportSeed(){
                 changeSection('section-overview-load');
                 showToast('Wallet has been imported, you can now open your wallet!', 12000);
             }).catch((err) => {
-                formMessageSet('import-seed', 'error',err);
+                formMessageSet('import-seed', 'error', err);
                 return;
             });
 
         }).catch((err)=>{
-            formMessageSet('import-seed', 'error',err.message);
+            formMessageSet('import-seed', 'error', err.message);
             return;
-        })
+        });
     });
 }
 
 function handleWalletExport(){
-    overviewShowKeyButton.addEventListener('click', (event) => {
+    overviewShowKeyButton.addEventListener('click', () => {
         formMessageReset();
         if(!overviewWalletAddress.value) return;
         svcmain.getSecretKeys(overviewWalletAddress.value).then((keys) => {
             showkeyInputViewKey.value = keys.viewSecretKey;
             showkeyInputSpendKey.value = keys.spendSecretKey;
             showkeyInputSeed.value = keys.mnemonicSeed;
-        }).catch((err) => {
+        }).catch(() => {
             formMessageSet('secret','error', "Failed to get key, please try again in a few seconds");
         });
     });
 
-    showkeyButtonExportKey.addEventListener('click', (event) => {
+    showkeyButtonExportKey.addEventListener('click', () => {
         formMessageReset();
         let filename = remote.dialog.showSaveDialog({
             title: "Export keys to file...",
@@ -1293,7 +1290,7 @@ function handleWalletExport(){
                 }catch(err){
                     formMessageSet('secret','error', "Failed to save your keys, please check that you have write permission to the file");
                 }
-            }).catch((err) => {
+            }).catch(() => {
                 formMessageSet('secret','error', "Failed to get keys, please try again in a few seconds");
             });
         }
@@ -1327,7 +1324,7 @@ function handleSendTransfer(){
     });
 
 
-    sendButtonSend.addEventListener('click', (event) => {
+    sendButtonSend.addEventListener('click', () => {
         formMessageReset();
         function precision(a) {
             if (!isFinite(a)) return 0;
@@ -1407,9 +1404,9 @@ function handleSendTransfer(){
 
         let tx = {
             address: recAddress,
-            fee: fee,
-            amount: amount
-        }
+            fee: parseInt(fee,10),
+            amount: parseInt(amount,10)
+        };
         if(recPayId.length) tx.paymentId = recPayId;
         let tpl = `
             <div class="div-transaction-panel">
@@ -1450,7 +1447,7 @@ function handleSendTransfer(){
             formMessageSet('send', 'warning', 'Sending transaction, please wait...<br><progress></progress>');
             svcmain.sendTransaction(tx).then((result) => {
                 formMessageReset();
-                let okMsg = `Transaction sent!<br>Tx. hash: ${result.transactionHash}.<br>Your balance may appear incorrect while transaction not fully confirmed.`
+                let okMsg = `Transaction sent!<br>Tx. hash: ${result.transactionHash}.<br>Your balance may appear incorrect while transaction not fully confirmed.`;
                 formMessageSet('send', 'success', okMsg);
                 // check if it's new address, if so save it
                 let newId = gutils.b2sSum(recAddress + recPayId);
@@ -1469,14 +1466,13 @@ function handleSendTransfer(){
                 sendInputPaymentId.value = '';
                 sendInputAmount.value = '';
             }).catch((err) => {
-                formMessageReset();
-                formMessageSet('send','error','Failed to send transaction, check that you have enough balance to transfer and paying fees<br>Error code: <small>' + err) + '</small>';
+                formMessageSet('send', 'error', `Failed to send transaction:<br><small>${err}</small>`);
             });
             gutils.clearChild(md);
         });
     });
 
-    sendOptimize.addEventListener('click', (event)=>{
+    sendOptimize.addEventListener('click', () => {
         if(!wlsession.get('synchronized', false)){
             showToast('Synchronization is in progress, please wait.');
             return;
@@ -1535,13 +1531,13 @@ function handleTransactions(){
                             <tr><th scope="col">Timestamp</th>
                                 <td data-cplabel="Tx. date" class="tctcl">${tx.dataset.timestamp} (${txdate})</td></tr>
                             <tr><th scope="col">Block Index</th>
-                                <td>${tx.dataset.blockindex}</td></tr>
+                                <td data-cplabel="Tx. block index" class="tctcl">${tx.dataset.blockindex}</td></tr>
                             <tr><th scope="col">Is Base?</th>
                                 <td>${tx.dataset.isbase}</td></tr>
+                            <tr><th scope="col">Extra</th>
+                                <td data-cplabel="Tx. extra" class="tctcl">${tx.dataset.extra}</td></tr>
                             <tr><th scope="col">Unlock Time</th>
                                 <td>${tx.dataset.unlocktime}</td></tr>
-                            <tr><th scope="col">Extra</th>
-                                <td>${tx.dataset.extra}</td></tr>
                         </tbody>
                     </table> 
                 </div>
@@ -1609,16 +1605,16 @@ function handleTransactions(){
         }
     }
 
-    // listen to tx pudate
+    // listen to tx update
     txInputUpdated.addEventListener('change', (event) => {
-        updated = parseInt(event.target.value, 10) === 1;
+        let updated = parseInt(event.target.value, 10) === 1;
         if(!updated) return;
         txInputUpdated.value = 0;
         listTransactions();
     });
-    // listen to tx notify click
+    // listen to tx notify
     txInputNotify.addEventListener('change', (event)=>{
-        notify = parseInt(event.target.value, 10) === 1;
+        let notify = parseInt(event.target.value, 10) === 1;
         if(!notify) return;
         txInputNotify.value = 0; // reset
         changeSection('section-transactions');
@@ -1674,9 +1670,9 @@ function initHandlers(){
     });
 
     // main section link handler
-    for(var i=0; i < sectionButtons.length; i++){
-        let target = sectionButtons[i].dataset.section;
-        sectionButtons[i].addEventListener('click', (event) => {
+    for(var ei=0; ei < sectionButtons.length; ei++){
+        sectionButtons[ei].addEventListener('click', (event) => {
+            let target = event.currentTarget.dataset.section;
             changeSection(target);
         }, false);
     }
@@ -1705,7 +1701,7 @@ function initHandlers(){
     });
 
     // overview page address ctc
-    overviewWalletAddress.addEventListener('click', function(event){
+    overviewWalletAddress.addEventListener('click', function(){
         if(!this.value) return;
         let wv = this.value;
         let clipInfo = document.getElementById('form-help-wallet-address');
@@ -1723,17 +1719,17 @@ function initHandlers(){
     });
 
     //genpaymentid+integAddress
-    overviewPaymentIdGen.addEventListener('click', (event)=>{
+    overviewPaymentIdGen.addEventListener('click', ()=>{
         genPaymentId(false);
     });
 
-    gutils.liveEvent('#makePaymentId', 'click', (event) => {
+    gutils.liveEvent('#makePaymentId', 'click', () => {
         let payId = genPaymentId(true);
         document.getElementById('genInputPaymentId').value = payId;
     });
 
     overviewIntegratedAddressGen.addEventListener('click', showIntegratedAddressForm);
-    gutils.liveEvent('#doGenIntegratedAddr', 'click', (event) => {
+    gutils.liveEvent('#doGenIntegratedAddr', 'click', () => {
         formMessageReset();
         let genInputAddress = document.getElementById('genInputAddress');
         let genInputPaymentId = document.getElementById('genInputPaymentId');
@@ -1776,7 +1772,7 @@ function initHandlers(){
         let targetprop =  genericBrowseButton[i].dataset.selection;
         let targetFileObj = genericBrowseButton[i].dataset.fileobj;
         
-        genericBrowseButton[i].addEventListener('click', (event) => {
+        genericBrowseButton[i].addEventListener('click', () => {
             var targetinput = document.getElementById(targetInputId);
             let objectName = (targetFileObj ? targetFileObj : 'file');
             let recentDir = settings.get('recentWalletDir','');
@@ -1784,9 +1780,9 @@ function initHandlers(){
                 let saveOpts = {
                     title: `Select directory to store your ${objectName}, and give it a filename.`,
                     buttonLabel: 'OK'
-                }
+                };
                 if(recentDir.length) saveOpts.defaultPath = recentDir;
-                remote.dialog.showSaveDialog(saveOpts, (file, bookmark)=>{
+                remote.dialog.showSaveDialog(saveOpts, (file)=>{
                     if (file) targetinput.value = file;
                 });
             }else{
@@ -1798,17 +1794,17 @@ function initHandlers(){
     }
 
     // generic dialog closer
-    gutils.liveEvent('.dialog-close-default','click', (event) =>{
+    gutils.liveEvent('.dialog-close-default','click', (event) => {
         let el = event.target;
         if(el.dataset.target){
-            tel = document.querySelector(el.dataset.target);
+            let tel = document.querySelector(el.dataset.target);
             tel.close();
         }
     });
 
     // try to respons to enter
-    for(var i=0;i<genericEnterableInputs.length;i++){
-        let el = genericEnterableInputs[i];
+    for(var oi=0;oi<genericEnterableInputs.length;oi++){
+        let el = genericEnterableInputs[oi];
         el.addEventListener('keyup', (e) => {  
             if(e.key === 'Enter'){
                 let section = el.closest('.section');
@@ -1818,20 +1814,37 @@ function initHandlers(){
         });
     }
 
+    let tp = document.querySelectorAll('.togpass');
+    for(var xi=0; xi<tp.length; xi++){
+        tp[xi].addEventListener('click', function(e){
+            let targetId = e.currentTarget.dataset.pf;
+            if(!targetId) return;
+            let target = document.getElementById(targetId);
+            if(!target) return;
+            if(target.type === "password"){
+                target.type = 'text';
+                e.currentTarget.firstChild.dataset.icon = 'eye-slash';
+            }else{
+                target.type = 'password';
+                e.currentTarget.firstChild.dataset.icon = 'eye';
+            }
+        });
+    }
+
     // allow paste by mouse
     const pasteMenu = Menu.buildFromTemplate([
         { label: 'Paste', role: 'paste'}
     ]);
 
-    for(var i=0;i<genericEditableInputs.length;i++){
-        let el = genericEditableInputs[i];
+    for(var ui=0;ui<genericEditableInputs.length;ui++){
+        let el = genericEditableInputs[ui];
         el.addEventListener('contextmenu', (e) => {
             e.preventDefault();
             pasteMenu.popup(remote.getCurrentWindow());
         }, false);
     }
 
-    dmswitch.addEventListener('click', (event)=>{
+    dmswitch.addEventListener('click', ()=>{
         let tmode = thtml.classList.contains('dark') ? '' : 'dark';
         setDarkMode(tmode);
     });
@@ -1865,7 +1878,7 @@ function initKeyBindings(){
     let walletOpened;
     // switch tab: ctrl+tab
     Mousetrap.bind(['ctrl+tab','command+tab'], switchTab);
-    Mousetrap.bind(['ctrl+o','command+o'], (e) => {
+    Mousetrap.bind(['ctrl+o','command+o'], () => {
         walletOpened = wlsession.get('serviceReady') || false;
         if(walletOpened){
             showToast('Please close current wallet before opening another wallet!');
@@ -1874,13 +1887,13 @@ function initKeyBindings(){
         return changeSection('section-overview-load');
     });
     // display/export private keys: ctrl+e
-    Mousetrap.bind(['ctrl+e','command+e'],(e) => {
+    Mousetrap.bind(['ctrl+e','command+e'],() => {
         walletOpened = wlsession.get('serviceReady') || false;
         if(!walletOpened) return;
         return changeSection('section-overview-show');
     });
     // create new wallet: ctrl+n
-    Mousetrap.bind(['ctrl+n','command+n'], (e)=> {
+    Mousetrap.bind(['ctrl+n','command+n'], ()=> {
         walletOpened = wlsession.get('serviceReady') || false;
         if(walletOpened){
             showToast('Please close current wallet before creating/importing new wallet');
@@ -1889,7 +1902,7 @@ function initKeyBindings(){
         return changeSection('section-overview-create');
     });
     // import from keys: ctrl+i
-    Mousetrap.bind(['ctrl+i','command+i'],(e) => {
+    Mousetrap.bind(['ctrl+i','command+i'],() => {
         walletOpened = wlsession.get('serviceReady') || false;
         if(walletOpened){
             showToast('Please close current wallet before creating/importing new wallet');
@@ -1898,7 +1911,7 @@ function initKeyBindings(){
         return changeSection('section-overview-import-key');
     });
     // tx page: ctrl+t
-    Mousetrap.bind(['ctrl+t','command+t'],(e) => {
+    Mousetrap.bind(['ctrl+t','command+t'],() => {
         walletOpened = wlsession.get('serviceReady') || false;
         if(!walletOpened){
             showToast('Please open your wallet to view your transactions');
@@ -1907,7 +1920,7 @@ function initKeyBindings(){
         return changeSection('section-transactions');
     });
     // send tx: ctrl+s
-    Mousetrap.bind(['ctrl+s','command+s'],(e) => {
+    Mousetrap.bind(['ctrl+s','command+s'],() => {
         walletOpened = wlsession.get('serviceReady') || false;
         if(!walletOpened){
             showToast('Please open your wallet to make a transfer');
@@ -1916,7 +1929,7 @@ function initKeyBindings(){
         return changeSection('section-send');
     });
     // import from mnemonic seed: ctrl+shift+i
-    Mousetrap.bind(['ctrl+shift+i','command+shift+i'], (e) => {
+    Mousetrap.bind(['ctrl+shift+i','command+shift+i'], () => {
         walletOpened = wlsession.get('serviceReady') || false;
         if(walletOpened){
             showToast('Please close current wallet before creating/importing new wallet');
@@ -1926,24 +1939,24 @@ function initKeyBindings(){
     });
 
     // back home
-    Mousetrap.bind(['ctrl+home','command+home'], (e)=>{
+    Mousetrap.bind(['ctrl+home','command+home'], ()=>{
         let section = walletOpened ? 'section-overview' : 'section-welcome';
         return changeSection(section);
     });
 
     // show key binding
-    Mousetrap.bind(['ctrl+/','command+/'], (e) => {
+    Mousetrap.bind(['ctrl+/','command+/'], () => {
         let openedDialog = document.querySelector('dialog[open]');
         if(openedDialog) return openedDialog.close();
         return showKeyBindings();
     });
 
-    Mousetrap.bind('esc', (e) => {
+    Mousetrap.bind('esc', () => {
         let openedDialog = document.querySelector('dialog[open]');
         if(openedDialog) return openedDialog.close();
     });
 
-    Mousetrap.bind([`ctrl+\\`,`command+\\`], (e)=>{
+    Mousetrap.bind([`ctrl+\\`,`command+\\`], ()=>{
         setDarkMode(!document.documentElement.classList.contains('dark'));
     });
 }
@@ -1953,27 +1966,28 @@ document.addEventListener('DOMContentLoaded', () => {
     initHandlers();
     showInitialPage();
     initKeyBindings();
-}, false)
+}, false);
 
 
 // ipc listeners
-ipcRenderer.on('cleanup', (event, message) => {
+//ipcRenderer.on('cleanup', (event, message) => {
+ipcRenderer.on('cleanup', () => {
     if(!win.isVisible()) win.show();
     if(win.isMinimized()) win.restore();
 
     win.focus();
 
     var dialog = document.getElementById('main-dialog');
-    htmlText = 'Terminating WalletShell...';
+    let htmlText = 'Terminating WalletShell...';
     if(wlsession.get('loadedWalletAddress') !== ''){
-        var htmlText = 'Saving &amp; closing your wallet...';
+        htmlText = 'Saving &amp; closing your wallet...';
     }
 
     let htmlStr = `<div class="div-save-main" style="text-align: center;padding:1rem;"><i class="fas fa-spinner fa-pulse"></i><span style="padding:0px 10px;">${htmlText}</span></div>`;
     dialog.innerHTML = htmlStr;
     dialog.showModal();
     try{ svcmain.stopWorker();}catch(e){}
-    svcmain.stopService().then((k) => {
+    svcmain.stopService().then(() => {
         setTimeout(function(){
             dialog.innerHTML = 'Good bye!';
             win.close();

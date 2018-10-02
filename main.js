@@ -39,11 +39,11 @@ const DEFAULT_SETTINGS = {
     pubnodes_custom: ['127.0.0.1:11898'],
     tray_minimize: false,
     tray_close: false
-}
+};
 const DEFAULT_SIZE = {
-    width: (platform == 'win32' ? 840 : 800),
+    width: (platform === 'win32' ? 840 : 800),
     height: 690
-}
+};
 
 app.prompExit = true;
 app.prompShown = false;
@@ -76,7 +76,7 @@ function createWindow () {
         // maximizable: false,
         // minimizable: true,
         // resizable: false
-    }
+    };
 
     win = splash.initSplashScreen({
         windowOpts: winOpts,
@@ -105,7 +105,20 @@ function createWindow () {
     tray.setToolTip(DEFAULT_TRAY_TIP);
     tray.setContextMenu(contextMenu);
     tray.on('click', () => {
-        win.isVisible() ? win.hide() : win.show();
+        if(settings.get('tray_minimize', false)){
+            if(win.isVisible()){
+                win.hide();
+            }else{
+                win.show();
+            }
+        }else{
+            if(win.isMinimized()){
+                win.restore();
+            }else{
+                win.minimize();
+            }
+        }
+        
     });
 
     win.on('show', () => {
@@ -160,7 +173,7 @@ function createWindow () {
         //win.show();
         win.setTitle(DEFAULT_TITLE);
         tray.setToolTip(DEFAULT_TRAY_TIP);
-    })
+    });
 
     win.on('close', (e) => {
         if(settings.get('tray_close') && !app.needToExit){
@@ -196,14 +209,14 @@ function createWindow () {
     win.setMenu(null);
 
     // misc handler
-    win.webContents.on('crashed', (event, killed) => { 
+    win.webContents.on('crashed', () => { 
         // todo: prompt to restart
         log.debug('webcontent was crashed');
     });
 
-    win.on('unresponsive', (even) => {
+    win.on('unresponsive', () => {
         // todo: prompt to restart
-        log.debug('webcontent is unresponsive')
+        log.debug('webcontent is unresponsive');
     });
 }
 
@@ -256,7 +269,7 @@ function initSettings(){
 }
 
 const silock = app.requestSingleInstanceLock();
-app.on('second-instance', (commandLine, workingDirectory) => {
+app.on('second-instance', () => {
     if (win) {
         if (!win.isVisible()) win.show();
         if (win.isMinimized()) win.restore();
@@ -285,7 +298,7 @@ app.on('ready', () => {
 
     let today = new Date();
     let last_checked = new Date(settings.get('pubnodes_date'));
-    diff_d = parseInt((today-last_checked)/(1000*60*60*24),10);
+    let diff_d = parseInt((today-last_checked)/(1000*60*60*24),10);
     if(diff_d >= 1){
         log.info('Performing daily public-node list update.');
         doNodeListUpdate();
