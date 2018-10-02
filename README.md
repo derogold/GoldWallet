@@ -23,6 +23,8 @@ This wallet contains the basic functions required to manage your TurtleCoin wall
   * Display transaction detail
   * Incoming Transaction notification
   * Send TurtleCoin to single recipient address, allow to set payment id and custom fee. Provides address lookup from addressbook.
+  * Perform wallet optimization by creating fusion transaction 
+  * Provides utility to generate payment id and integrated address
 * Address book
   * Add/Edit/Delete address entry (label/name, address and payment id)
   * Listing/sorting/searching existing entries
@@ -34,7 +36,7 @@ This wallet contains the basic functions required to manage your TurtleCoin wall
   * Provides setting to use system tray (on closing/minimizing wallet)
   * Provides list of public nodes, fetch/updated daily from turtlecoin-nodes-json repo. Display order of public nodes will be shuffled on every access to settings page, to give relatively fair opportunity for node operators to be on top of the list
   * Custom node address that is not on the list will be added/remembered for future use
-  * Dark/Night Mode
+  * Theme: Day & Night Mode
   * [Keyboard shortcuts](docs/shortcut.md)
 
 

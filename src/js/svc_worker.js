@@ -1,7 +1,8 @@
 const log = require('electron-log');
 const svcRequest = require('./svc_request.js');
 
-DEBUG=false;
+
+let DEBUG=false;
 log.transports.file.maxSize = 5 * 1024 * 1024;
 log.transports.console.level = 'debug';
 log.transports.file.level = 'debug';
@@ -35,13 +36,13 @@ function checkBlockUpdate(){
         if(conFailed){
             logDebug('Known block count returned 1, mark connection as broken');
             if(lastConStatus !== conFailed){
-                fakeStatus = {
+                let fakeStatus = {
                     blockCount: -200,
                     knownBlockCount: -200,
                     displayBlockCount: -200,
                     displayKnownBlockCount: -200,
                     syncPercent: -200
-                }
+                };
                 process.send({
                     type: 'blockUpdated',
                     data: fakeStatus
@@ -92,14 +93,14 @@ function checkBlockUpdate(){
 
         // don't check if we can't get any block
         if(LAST_BLOCK_COUNT <= 1) return;
+
         // don't check tx if block count not updated
         if(!txcheck && TX_CHECK_STARTED){
             logDebug(`SKIPPED: tx check`);
             return;
         }
-        
+
         checkTransactionsUpdate();
-        LAST_BLOCK_COUNT_LOCAL = LAST_BLOCK_COUNT;
 
     }).catch((err) => {
         logDebug(`FAILED: checkBlockUpdate, ${err.message}`);
@@ -131,7 +132,7 @@ function checkTransactionsUpdate(){
                     needCountMargin = true;
                 }
 
-                let startIndexWithMargin = (startIndex == 1 ? 1 : (startIndex-blockMargin));
+                let startIndexWithMargin = (startIndex === 1 ? 1 : (startIndex-blockMargin));
                 let searchCountWithMargin = needCountMargin ?  searchCount+blockMargin : searchCount;
                 let trx_args = {
                     firstBlockIndex: startIndexWithMargin,
@@ -186,7 +187,7 @@ function workOnTasks(){
             saveWallet();
             SAVE_COUNTER = 0;
         }
-        SAVE_COUNTER++
+        SAVE_COUNTER++;
     }, CHECK_INTERVAL);
 }
 
@@ -243,7 +244,7 @@ process.on('uncaughtException', function (err) {
     process.exit(1);
 });
 
-process.on('disconnect', () => function(err){
+process.on('disconnect', () => function(){
     logDebug(`worker disconnected`);
     process.exit(1);
 });
