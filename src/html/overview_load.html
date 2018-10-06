@@ -13,7 +13,7 @@
                         id="input-load-path" tabindex="0" 
                         placeholder="Full path to the wallet file to be opened..."
                         />
-                    <button data-selection="openFile" data-targetinput="input-load-path" type="button" class="button-green path-input-button" id="button-load-browse" tabindex="2"><i class="fas fa-folder-open"></i></button>
+                    <button data-selection="openFile" data-targetinput="input-load-path" type="button" class="button-green path-input-button notabindex" id="button-load-browse" tabindex="2"><i class="fas fa-folder-open"></i></button>
                 </div>
 
                 <div class="input-wrap">
@@ -22,6 +22,7 @@
                         class="text-block" id="input-load-password" 
                         placeholder="Password to open this wallet..."
                         />
+                        <button tabindex="-1" class="togpass notabindex" data-pf="input-load-password"><i class="fas fa-eye"></i></button>
                 </div>
                 
                 <div class="input-wrap">

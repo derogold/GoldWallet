@@ -467,11 +467,9 @@ let fusionTx = (() => {
             the_service.sendFusionTransaction({threshold: threshold}).then((resp)=> {
                 txHash.push(resp.transactionHash);
                 iter+=1;
-                setTimeout(()=>{
-                    return resolve(sendTx(threshold, iter).then((resp)=>{
-                        return resp;
-                    }));
-                },100);
+                return resolve(sendTx(threshold, iter).then((resp)=>{
+                    return resp;
+                }));
             }).catch((err)=>{
                 return reject(new Error(err));
             });
@@ -481,26 +479,24 @@ let fusionTx = (() => {
         optimize: ()=>{
             return new Promise((resolve, reject) => {
                 getMinThreshold().then((res)=>{
-                    if(res > 0){
-                        log.debug(`performing fusion tx, threshold: ${res}`);
-                        return resolve(
-                            sendTx(res).then(() => {
-                                return FUSION_DONE_MSG;
-                            }).catch((err)=>{
-                                let msg = err.message.toLowerCase();
-                                let outMsg = FUSION_FAILED_MSG;
-                                switch(msg){
-                                    case 'index is out of range':
-                                        outMsg = txHash.length >=1 ? FUSION_DONE_MSG : FUSION_SKIPPED_MSG;
-                                        break;
-                                    default:
-                                        break;
-                                }
-                                return outMsg;
-                            })
-                        );
-                    }
-                    return resolve(FUSION_SKIPPED_MSG); // fusionReadyCount is 0
+                    if(res <= 0 )  return resolve(FUSION_SKIPPED_MSG); // fusionReadyCount is 0
+                    log.debug(`performing fusion tx, threshold: ${res}`);
+                    return resolve(
+                        sendTx(res).then(() => {
+                            return FUSION_DONE_MSG;
+                        }).catch((err)=>{
+                            let msg = err.message.toLowerCase();
+                            let outMsg = FUSION_FAILED_MSG;
+                            switch(msg){
+                                case 'index is out of range':
+                                    outMsg = txHash.length >=1 ? FUSION_DONE_MSG : FUSION_SKIPPED_MSG;
+                                    break;
+                                default:
+                                    break;
+                            }
+                            return outMsg;
+                        })
+                    );
                 }).catch((err)=>{
                     return reject((err.message));
                 });
@@ -509,7 +505,23 @@ let fusionTx = (() => {
     };
 })();
 
-// misc
+
+function netStateChanged(state){
+    if(!the_cworker) return;
+    if(state === 0){
+        //pause worker
+        the_cworker.send({
+            type: 'pause',
+            data: null
+        });
+    }else{
+        //resume worker
+        the_cworker.send({
+            type: 'resume',
+            data: null
+        });
+    }
+}
 function onSectionChanged(what){
     handleWorkerUpdate({
         type: 'sectionChanged',
@@ -529,6 +541,7 @@ module.exports = {
     isRunning,
     startWorker,
     stopWorker,
+    netStateChanged,
     resetFromHeight,
     getNodeFee,
     getSecretKeys,

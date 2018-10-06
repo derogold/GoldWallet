@@ -18,6 +18,7 @@ var TX_LAST_COUNT = 0;
 var TX_CHECK_STARTED = false;
 var STATE_CONNECTED = true;
 var STATE_SAVING = false;
+var STATE_PAUSED = false;
 
 var taskWorker = null;
 
@@ -181,6 +182,8 @@ function saveWallet(){
 
 function workOnTasks(){
     taskWorker = setInterval(() => {
+        if(STATE_PAUSED) return;
+
         logDebug("== TASK WORKER STARTED ==");
         checkBlockUpdate();
         if(SAVE_COUNTER > 8){
@@ -222,6 +225,35 @@ process.on('message', (msg) => {
             // scheduled tasks
             logDebug(`Scheduled tasks will be start in 5s, recurring every: ${CHECK_INTERVAL/1000}s`);
             setTimeout(workOnTasks, 5000);
+            break;
+        case 'pause':
+            if(STATE_PAUSED) return;
+            logDebug('Worker will be suspended');
+            process.send({
+                type: 'blockUpdated',
+                data: {
+                    blockCount: -50,
+                    knownBlockCount: -50,
+                    displayBlockCount: -50,
+                    displayKnownBlockCount: -50,
+                    syncPercent: -50
+                }
+            });
+            STATE_PAUSED = true;
+            break;
+        case 'resume':
+            logDebug('Worker will be resumed');
+            STATE_PAUSED = false;
+            process.send({
+                type: 'blockUpdated',
+                data: {
+                    blockCount: -10,
+                    knownBlockCount: -10,
+                    displayBlockCount: -10,
+                    displayKnownBlockCount: -10,
+                    syncPercent: -10
+                }
+            });
             break;
         case 'stop':
             if(taskWorker === undefined || taskWorker === null){

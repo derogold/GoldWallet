@@ -3,6 +3,7 @@ const {webFrame, remote} = require('electron');
 const Store = require('electron-store');
 const gutils = require('./gutils');
 const gSession = require('./gsessions');
+
 const brwin = remote.getCurrentWindow();
 const settings = new Store({name: 'Settings'});
 const wlsession = new gSession();
@@ -12,7 +13,11 @@ const syncDiv = document.getElementById('navbar-div-sync');
 const syncInfoBar = document.getElementById('navbar-text-sync');
 const connInfoDiv = document.getElementById('conn-info');
 
-/* web frame cache clearing interval */
+const SYNC_STATUS_NET_CONNECTED = -10;
+const SYNC_STATUS_NET_DISCONNECTED = -50;
+const SYNC_STATUS_IDLE = -100;
+const SYNC_STATUS_NODE_ERROR = -200;
+
 const WFCLEAR_INTERVAL = 5;
 let WFCLEAR_TICK = 0;
 
@@ -38,8 +43,43 @@ function updateSyncProgres(data){
     let blockSyncPercent = data.syncPercent;
     let statusText = '';
 
-    // restore/reset
-    if(knownBlockCount === -100){
+    if(knownBlockCount === SYNC_STATUS_NET_CONNECTED){
+        // sync status text
+        statusText = 'RESUMING WALLET SYNC...';
+        syncInfoBar.innerHTML = statusText;
+        // sync info bar class
+        syncDiv.className = 'syncing';
+        // sync status icon
+        iconSync.setAttribute('data-icon', 'sync');
+        iconSync.classList.add('fa-spin');
+        // connection status
+        connInfoDiv.innerHTML = 'Connection restored, resuming sync process...';
+        connInfoDiv.classList.remove('empty');
+        connInfoDiv.classList.remove('conn-warning');
+
+        // sync sess flags
+        wlsession.set('syncStarted', false);
+        wlsession.set('synchronized', false);
+        brwin.setProgressBar(-1);
+    }else if(knownBlockCount === SYNC_STATUS_NET_DISCONNECTED){
+        // sync status text
+        statusText = 'PAUSED, NETWORK DISCONNECTED';
+        syncInfoBar.innerHTML = statusText;
+        // sync info bar class
+        syncDiv.className = '';
+        // sync status icon
+        iconSync.setAttribute('data-icon', 'ban');
+        iconSync.classList.remove('fa-spin');
+        // connection status
+        connInfoDiv.innerHTML = 'Synchronization paused, please check your network connection!';
+        connInfoDiv.classList.remove('empty');
+        connInfoDiv.classList.add('conn-warning');
+
+        // sync sess flags
+        wlsession.set('syncStarted', false);
+        wlsession.set('synchronized', false);
+        brwin.setProgressBar(-1);
+    }else if(knownBlockCount === SYNC_STATUS_IDLE){
         // sync status text
         statusText = 'IDLE';
         syncInfoBar.innerHTML = statusText;
@@ -50,31 +90,34 @@ function updateSyncProgres(data){
         iconSync.classList.remove('fa-spin');
         // connection status
         connInfoDiv.classList.remove('conn-warning');
-        connInfoDiv.classList.add('hidden');
+        connInfoDiv.classList.add('empty');
         connInfoDiv.textContent = '';
+        
         
         // sync sess flags
         wlsession.set('syncStarted', false);
         wlsession.set('synchronized', false);
+        brwin.setProgressBar(-1);
         // reset wintitle
         setWinTitle();
         // no node connected
         wlsession.set('connectedNode', '');
-    }else if(knownBlockCount === -200){
+    }else if(knownBlockCount === SYNC_STATUS_NODE_ERROR){
         // not connected
         // status info bar class
         syncDiv.className = 'failed';
         // sync status text
-        statusText = 'NOT CONNECTED';
+        statusText = 'NODE ERROR';
         syncInfoBar.textContent = statusText;
         //sync status icon
         iconSync.setAttribute('data-icon', 'times');
         iconSync.classList.remove('fa-spin');
         // connection status
-        connInfoDiv.classList.remove('hidden');
-        connInfoDiv.classList.add('conn-warning');
         connInfoDiv.innerHTML = 'Connection failed, try switching to another Node in settings page, close and reopen your wallet';
+        connInfoDiv.classList.remove('empty');
+        connInfoDiv.classList.add('conn-warning');
         wlsession.set('connectedNode', '');
+        brwin.setProgressBar(-1);
     }else{
         // sync sess flags
         wlsession.set('syncStarted', true);
@@ -90,6 +133,7 @@ function updateSyncProgres(data){
             iconSync.classList.remove('fa-spin');
             // sync status sess flag
             wlsession.set('synchronized', true);
+            brwin.setProgressBar(-1);
          } else {
              // info bar class
             syncDiv.className = 'syncing';
@@ -101,6 +145,8 @@ function updateSyncProgres(data){
             iconSync.classList.add('fa-spin');
             // sync status sess flag
             wlsession.set('synchronized', false);
+            let taskbarProgress = +(parseFloat(blockSyncPercent)/100).toFixed(2);
+            brwin.setProgressBar(taskbarProgress);
         }
         
         let connStatusText = `Connected to: <strong>${wlsession.get('connectedNode')}</strong>`;
@@ -108,9 +154,9 @@ function updateSyncProgres(data){
         if(connNodeFee >=1 ){
             connStatusText += ` | Node fee: <strong>${connNodeFee} TRTL</strong>`;
         }
-        connInfoDiv.classList.remove('conn-warning');
-        connInfoDiv.classList.remove('hidden');
         connInfoDiv.innerHTML = connStatusText;
+        connInfoDiv.classList.remove('conn-warning');
+        connInfoDiv.classList.remove('empty');
     }
 
     if(WFCLEAR_TICK === 0 || WFCLEAR_TICK === WFCLEAR_INTERVAL){
@@ -206,18 +252,14 @@ function updateTransactions(result){
     lastTxDate = `${lastTxDate.getUTCFullYear()}-${lastTxDate.getUTCMonth()+1}-${lastTxDate.getUTCDate()}`;
 
     // amount to check
+    triggerTxRefresh();
+
     let rememberedLastHash = settings.get('last_notification', '');
     let notify = true;
-
-    if(lastTxDate !== currentDate){
-        notify = false;
-    }else if(newTxAmount < 0){
-        notify = false;
-    }else if(rememberedLastHash === newLastHash){
+    if(lastTxDate !== currentDate || (newTxAmount < 0) || rememberedLastHash === newLastHash ){
         notify = false;
     }
-
-    triggerTxRefresh();
+    
     if(notify){
         settings.set('last_notification', newLastHash);
         let notiOptions = {
@@ -312,13 +354,12 @@ function resetFormState(){
         }
     }
 
-    const connInfo = document.getElementById('conn-info');
     const settingsBackBtn = document.getElementById('button-settings-back');
     if(wlsession.get('serviceReady')){
-        connInfo.classList.remove('hidden');
+        connInfoDiv.classList.remove('empty');
         settingsBackBtn.dataset.section = 'section-welcome';
     }else{
-        connInfo.classList.add('hidden');
+        connInfoDiv.classList.add('empty');
         settingsBackBtn.dataset.section = 'section-overview';
     }
 }

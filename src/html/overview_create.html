@@ -12,7 +12,7 @@
                         readonly="readonly" class="text-block path-input-button" id="input-create-path" 
                         placeholder="Required, full path to store this wallet..."
                         />
-                    <button  data-fileobj="wallet file" data-selection="saveFile"  data-targetinput="input-create-path" type="button" class="button-green path-input-button" id="button-create-browse"><i class="fas fa-folder-open"></i></button>
+                    <button  data-fileobj="wallet file" data-selection="saveFile"  data-targetinput="input-create-path" type="button" class="button-green path-input-button notabindex" id="button-create-browse"><i class="fas fa-folder-open"></i></button>
                 </div>
                 <div class="input-wrap">
                     <h4 class="text-spaced input-required">Set password to open this wallet</h4>
@@ -20,7 +20,7 @@
                         id="input-create-password" 
                         placeholder="Required, set a password to open your new wallet..."
                         />
-                    <button tabindex="0" class="togpass" data-pf="input-create-password"><i class="fas fa-eye"></i></button>
+                    <button tabindex="-1" class="togpass notabindex" data-pf="input-create-password"><i class="fas fa-eye"></i></button>
                 </div>
                 <div class="div-create-messages input-wrap">
                     <span class="form-ew form-msg text-spaced-error" id="text-create-error"></span>
