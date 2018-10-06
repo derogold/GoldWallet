@@ -1,8 +1,8 @@
 /* misc default styles */
 * {
     box-sizing: border-box;
-    -webkit-font-smoothing: antialiased;
     user-select: none;
+    -webkit-font-smoothing: antialiased;    
 }
 
 ::-webkit-scrollbar {width: 10px;}
@@ -33,7 +33,7 @@ html{
 }
 
 html::before{
-    background: linear-gradient(90deg, #00803b, #3ca74e 50%, #008e47);
+/*     background: linear-gradient(90deg, #00803b, #3ca74e 50%, #008e47); */
     content: '';
     display: block;
     height: 100%;
@@ -43,7 +43,7 @@ html::before{
     opacity: 0;
     width: 100%;
     z-index: -100;
-    transition: opacity 0.45s;
+    transition: opacity 0.4s linear;
 }
 
 html, body{
@@ -60,6 +60,7 @@ body {
     background-position: 50% 55%;
     background-size: 25%;
     background-repeat: no-repeat;
+    z-index:1;
 }
 
 @keyframes fade {
@@ -328,9 +329,6 @@ span.form-msg{
 
 /* Sections */
 .section {
-/*     transition: visibility 0s .12s linear , opacity .2s ease-in-out, transform .2s; */
-/*     transition: opacity .3s ease-in-out, transform .2s; */
-    transition: opacity .2s cubic-bezier(0.4, 0, 1, 1);
     width:100%;
     height:100%;
     flex-basis:100%;
@@ -342,8 +340,6 @@ span.form-msg{
     user-select: none;
     max-width:1280px;
     margin:0 auto;
-/*     transform: scaleX(0.75); */
-/*     transform: scale3d(0.8,0.8,0.8); */
 }
     
 .section.is-shown {
@@ -351,7 +347,6 @@ span.form-msg{
     pointer-events: auto;
     opacity:1;
     visibility:visible;
-/*     transform: scaleX(1.0); */
 }
 
 .section-contents{
@@ -391,6 +386,7 @@ text-align: center;
     grid-auto-rows: 45px;
     column-gap: 8px;
     row-gap: 1rem;
+    max-width: 1028px;
 }
 
 .welcome-buttons button:nth-child(1){
@@ -602,17 +598,24 @@ h4.input-required:after{
 
 #sendMaxAmount{
     cursor: pointer;
-    display: inline-block;
+    display: block;
     padding-left: 12px;
     font-size: 0.82rem;
     text-align: right;
     font-style: normal;
     float: right;
-    display: inline-block;
-    color: #fefefe;
     margin: 0.2rem 0 0 0;
-    text-decoration: underline;
+    /* text-decoration: underline; */
     color: #fffb00;
+    position: relative;
+    right: 10px;
+    text-transform: uppercase;
+}
+#sendMaxAmount:hover{
+    text-decoration:underline;
+}
+#sendMaxAmount:focus{
+    outline:none;
 }
 
 .help-hl{
@@ -748,6 +751,11 @@ span.form-help-qr.hidden{
     position: absolute;
     width: 100%;
     z-index: 9999;
+    /* anyar */
+    opacity: 1.0;
+    transition: opacity .2s;
+    height: 30px;
+    
 }
 .status-node-info.conn-warning{
     background: rgba(255, 0, 0, 0.7);
@@ -755,6 +763,11 @@ span.form-help-qr.hidden{
 #status-node-addr, #status-node-fee{
     font-weight: 600;
     color: #fff;
+}
+.empty{
+    background: transparent;
+    opacity: 0;
+    z-index: -1;
 }
 
 .path-input {
@@ -1375,4 +1388,11 @@ a.external{
     border-radius: 3px;
     margin-top: 0.5rem;
     display: inline-block;
+}
+
+@media (min-width: 1280px){
+    .section{
+/*         border-left: 1px solid #cccccc69;
+        border-right: 1px solid #cccccc69; */
+    }
 }

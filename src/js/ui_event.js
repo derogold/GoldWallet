@@ -108,7 +108,7 @@ let kswitch;
 
 function populateElementVars(){
     // misc
-    thtml = document.querySelector('html');    
+    thtml = document.documentElement;
     dmswitch = document.getElementById('tswitch');
     kswitch = document.getElementById('kswitch');
     firstTab = document.querySelector('.navbar-button');
@@ -399,7 +399,7 @@ function changeSection(sectionId, isSettingRedir) {
         return;
     }
     formMessageReset();
-    isSettingRedir = isSettingRedir || false;
+    isSettingRedir = isSettingRedir === true ? true : false;
     let targetSection = sectionId.trim();
     let untoast = false;
     if(targetSection === 'section-welcome'){
@@ -431,7 +431,6 @@ function changeSection(sectionId, isSettingRedir) {
         showToast("Please wait until syncing process completed!");
         return;
     }else{
-        // re-randomize public node selection
         if(targetSection === 'section-settings'){           
             let defaultText = 'Type first few character(s) and select from public node list, or type to your own node address';
             if(isServiceReady){
@@ -444,6 +443,7 @@ function changeSection(sectionId, isSettingRedir) {
                 settingsInputDaemonPort.removeAttribute('disabled');
                 settingsDaemonHostFormHelp.innerHTML = defaultText;
                 settingsDaemonPortFormHelp.innerHTML = '';
+                // re-randomize public node selection
                 initNodeCompletion();
             }
         }
@@ -454,7 +454,6 @@ function changeSection(sectionId, isSettingRedir) {
     let section = document.getElementById(finalTarget);
     if(section.classList.contains('is-shown')){
         if(toastMsg.length && !isSettingRedir && !untoast) showToast(toastMsg);
-        section.dispatchEvent(new Event('click')); // make it focusable
         return; // don't do anything if section unchanged
     }
 
@@ -614,7 +613,6 @@ function formMessageSet(target, status, txt){
 function insertSampleAddresses(){
     let flag = 'addressBookFirstUse';
     if(!settings.get(flag, true)) return;
-
     const sampleData = [
         { name: 'labaylabay rixombea',
           address: 'TRTLv1A26ngXApin33p1JsSE9Yf6REj97Xruz15D4JtSg1wuqYTmsPj5Geu2kHtBzD8TCsfd5dbdYRsrhNXMGyvtJ61AoYqLXVS',
@@ -663,8 +661,7 @@ function showInitialPage(){
     formMessageReset();
     initSettingVal(); // initial settings value
     initNodeCompletion(); // initial public node completion list
-    initAddressCompletion(); // initiate address book completion list
-    insertSampleAddresses(); // sample address book
+    initAddressCompletion();
 
     if(!settings.has('firstRun') || settings.get('firstRun') !== 0){
         changeSection('section-settings');
@@ -723,13 +720,14 @@ function handleSettings(){
         initNodeCompletion();
         let goTo = wlsession.get('loadedWalletAddress').length ? 'section-overview' : 'section-welcome';
         changeSection(goTo, true);
-        showToast('Settings has been updated.',10000);
+        showToast('Settings has been updated.',8000);
     });
 }
 
 function handleAddressBook(){
     function listAddressBook(force){
         force = force || false;
+        insertSampleAddresses();
         let currentLength = document.querySelectorAll('.addressbook-item:not([data-hash="fake-hash"])').length;
         let abookLength =abook.size;
         let perPage = 9;
@@ -933,7 +931,6 @@ function handleAddressBook(){
         changeSection('section-addressbook');
         showToast('Address book entry has been saved.');
     });
-
     // entry detail
     gutils.liveEvent('.addressbook-item','click',displayAddressBookEntry);
     listAddressBook();
@@ -1414,10 +1411,10 @@ function handleSendTransfer(){
                 <div class="transferDetail">
                     <p>Please confirm that you have everything entered correctly.</p>
                     <dl>
-                        <dt>Recipient address:</dt>
-                        <dd>${tx.address}</dd>
-                        <dt>Payment ID:</dt>
-                        <dd>${recPayId.length ? recPayId : 'N/A'}</dd>
+                        <dt class="dt-ib">Recipient address:</dt>
+                        <dd class="dd-ib">${tx.address}</dd>
+                        <dt class="${recPayId.length ? 'dt-ib' : 'hidden'}">Payment ID:</dt>
+                        <dd class="${recPayId.length ? 'dd-ib' : 'hidden'}">${recPayId.length ? recPayId : 'N/A'}</dd>
                         <dt class="dt-ib">Amount:</dt>
                         <dd class="dd-ib">${rAmount} TRTL</dd>
                         <dt class="dt-ib">Transaction Fee:</dt>
@@ -1655,12 +1652,26 @@ function handleTransactions(){
     txButtonRefresh.addEventListener('click', listTransactions);
 }
 
+function handleNetworkChange(){
+    window.addEventListener('online', () => {
+        let connectedNode = wlsession.get('connectedNode');
+        if(!connectedNode.length || connectedNode.startsWith('127.0.0.1')) return;
+        svcmain.netStateChanged(1);
+    });
+    window.addEventListener('offline',  () => {
+        let connectedNode = wlsession.get('connectedNode');
+        if(!connectedNode.length || connectedNode.startsWith('127.0.0.1')) return;
+        svcmain.netStateChanged(0);
+    });
+}
 // event handlers
 function initHandlers(){
     initSectionTemplates();
     let darkStart = settings.get('darkmode', false);
     setDarkMode(darkStart);
     
+    // netstatus
+    handleNetworkChange();
 
     //external link handler
     gutils.liveEvent('a.external', 'click', (event) => {
@@ -1671,10 +1682,8 @@ function initHandlers(){
 
     // main section link handler
     for(var ei=0; ei < sectionButtons.length; ei++){
-        sectionButtons[ei].addEventListener('click', (event) => {
-            let target = event.currentTarget.dataset.section;
-            changeSection(target);
-        }, false);
+        let target = sectionButtons[ei].dataset.section;
+        sectionButtons[ei].addEventListener('click', changeSection.bind(this, target), false);
     }
 
     // inputs click to copy handlers
@@ -1725,9 +1734,10 @@ function initHandlers(){
 
     gutils.liveEvent('#makePaymentId', 'click', () => {
         let payId = genPaymentId(true);
+        let iaf = document.getElementById('genOutputIntegratedAddress');
         document.getElementById('genInputPaymentId').value = payId;
+        iaf.value = '';
     });
-
     overviewIntegratedAddressGen.addEventListener('click', showIntegratedAddressForm);
     gutils.liveEvent('#doGenIntegratedAddr', 'click', () => {
         formMessageReset();
@@ -1752,7 +1762,6 @@ function initHandlers(){
             return;
         }
         if(!gutils.validatePaymentId(pid)){
-            console.log(pid);
             formMessageSet('gia','error', 'Invalid Payment ID');
             return;
         }
@@ -1766,31 +1775,41 @@ function initHandlers(){
         });
     });
 
+    function handleBrowseButton(args){
+        if(!args) return;
+        let dialogType = args.dialogType;
+        let targetName = (args.targetName ? args.targetName : 'file');
+        let targetInput = args.targetInput;
+        let recentDir = settings.get('recentWalletDir', remote.app.getPath('documents'));
+        let dialogOpts = {
+            defaultPath: recentDir
+        };
+
+        if(dialogType === 'saveFile') {
+            dialogOpts.title = `Select directory to store your ${targetName}, and give it a filename.`;
+            dialogOpts.buttonLabel = 'OK';
+            
+            remote.dialog.showSaveDialog(dialogOpts, (file) => {
+                if (file) targetInput.value = file;
+            });
+        } else{
+            dialogOpts.properties = [dialogType];
+
+            remote.dialog.showOpenDialog(dialogOpts, (files) => {
+                if (files) targetInput.value = files[0];
+            });
+        }
+    }
+
     // generic browse path btn event
     for (var i = 0; i < genericBrowseButton.length; i++) {
         let targetInputId = genericBrowseButton[i].dataset.targetinput;
-        let targetprop =  genericBrowseButton[i].dataset.selection;
-        let targetFileObj = genericBrowseButton[i].dataset.fileobj;
-        
-        genericBrowseButton[i].addEventListener('click', () => {
-            var targetinput = document.getElementById(targetInputId);
-            let objectName = (targetFileObj ? targetFileObj : 'file');
-            let recentDir = settings.get('recentWalletDir','');
-            if(targetprop === 'saveFile'){
-                let saveOpts = {
-                    title: `Select directory to store your ${objectName}, and give it a filename.`,
-                    buttonLabel: 'OK'
-                };
-                if(recentDir.length) saveOpts.defaultPath = recentDir;
-                remote.dialog.showSaveDialog(saveOpts, (file)=>{
-                    if (file) targetinput.value = file;
-                });
-            }else{
-                remote.dialog.showOpenDialog({properties: [targetprop]}, function (files) {
-                    if (files) targetinput.value = files[0];
-                });
-            }
-        });
+        let args = {
+            dialogType: genericBrowseButton[i].dataset.selection,
+            targetName: genericBrowseButton[i].dataset.fileobj ? genericBrowseButton[i].dataset.fileobj : '',
+            targetInput: document.getElementById(targetInputId)
+        };
+        genericBrowseButton[i].addEventListener('click', handleBrowseButton.bind(this, args));
     }
 
     // generic dialog closer
@@ -1801,17 +1820,23 @@ function initHandlers(){
             tel.close();
         }
     });
+    var enterHandler;
+    function handleFormEnter(el){
+        if(enterHandler) clearTimeout(enterHandler);
 
-    // try to respons to enter
-    for(var oi=0;oi<genericEnterableInputs.length;oi++){
-        let el = genericEnterableInputs[oi];
-        el.addEventListener('keyup', (e) => {  
-            if(e.key === 'Enter'){
+        let key = this.event.key;
+        enterHandler = setTimeout(()=>{
+            if(key === 'Enter'){
                 let section = el.closest('.section');
-                let target = section.querySelector('button:not(.path-input-button)');
+                let target = section.querySelector('button:not(.notabindex)');
                 if(target) target.dispatchEvent(new Event('click'));
             }
-        });
+        },400);
+    }
+
+    for(var oi=0;oi<genericEnterableInputs.length;oi++){
+        let el = genericEnterableInputs[oi];
+        el.addEventListener('keyup', handleFormEnter.bind(this, el));
     }
 
     let tp = document.querySelectorAll('.togpass');
@@ -1844,13 +1869,14 @@ function initHandlers(){
         }, false);
     }
 
-    dmswitch.addEventListener('click', ()=>{
+    dmswitch.addEventListener('click', () => {
         let tmode = thtml.classList.contains('dark') ? '' : 'dark';
         setDarkMode(tmode);
     });
 
     kswitch.addEventListener('click', showKeyBindings);
-  
+    
+    //handleNetworkChange();
 
     // settings handlers
     handleSettings();
@@ -1885,6 +1911,14 @@ function initKeyBindings(){
             return;
         }
         return changeSection('section-overview-load');
+    });
+    Mousetrap.bind(['ctrl+x','command+x'], () => {
+        walletOpened = wlsession.get('serviceReady') || false;
+        if(!walletOpened){
+            showToast('No wallet is currently opened');
+            return;
+        }
+        overviewWalletCloseButton.dispatchEvent(new Event('click'));
     });
     // display/export private keys: ctrl+e
     Mousetrap.bind(['ctrl+e','command+e'],() => {

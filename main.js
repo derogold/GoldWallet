@@ -1,5 +1,6 @@
 const {app, dialog, Tray, Menu} = require('electron');
 const path = require('path');
+const fs = require('fs');
 const url = require('url');
 const https = require('https');
 const platform = require('os').platform();
@@ -9,7 +10,8 @@ const settings = new Store({name: 'Settings'});
 const log = require('electron-log');
 const splash = require('@trodi/electron-splashscreen');
 
-const IS_DEBUG = (process.argv[1] === 'debug' || process.argv[2] === 'debug');
+const IS_DEV  = (process.argv[1] === 'dev' || process.argv[2] === 'dev');
+const IS_DEBUG = IS_DEV || process.argv[1] === 'debug' || process.argv[2] === 'debug';
 const LOG_LEVEL = IS_DEBUG ? 'debug' : 'warn';
 
 log.transports.console.level = LOG_LEVEL;
@@ -38,11 +40,12 @@ const DEFAULT_SETTINGS = {
     pubnodes_data: FALLBACK_NODES,
     pubnodes_custom: ['127.0.0.1:11898'],
     tray_minimize: false,
-    tray_close: false
+    tray_close: false,
+    darkmode: true
 };
 const DEFAULT_SIZE = {
-    width: (platform === 'win32' ? 840 : 800),
-    height: 690
+    width: 840,
+    height: 680
 };
 
 app.prompExit = true;
@@ -54,6 +57,7 @@ log.info(`Starting WalletShell ${WALLETSHELL_VERSION}`);
 
 let trayIcon = path.join(__dirname,'src/assets/tray.png');
 let trayIconHide = path.join(__dirname,'src/assets/trayon.png');
+
 let win;
 let tray;
 
@@ -72,10 +76,7 @@ function createWindow () {
         minHeight: DEFAULT_SIZE.height,
         show: false,
         backgroundColor: bgColor,
-        center: true
-        // maximizable: false,
-        // minimizable: true,
-        // resizable: false
+        center: true,
     };
 
     win = splash.initSplashScreen({
@@ -114,6 +115,7 @@ function createWindow () {
         }else{
             if(win.isMinimized()){
                 win.restore();
+                win.focus();
             }else{
                 win.minimize();
             }
@@ -166,7 +168,7 @@ function createWindow () {
     }));
 
     // open devtools
-    if(IS_DEBUG ) win.webContents.openDevTools();
+    if(IS_DEV ) win.webContents.openDevTools();
 
     // show windosw
     win.once('ready-to-show', () => {
@@ -259,6 +261,25 @@ function doNodeListUpdate(){
     });
 }
 
+function serviceBinCheck(){
+    if(settings.has('firstRun')) return;
+    if(!DEFAULT_SERVICE_BIN.startsWith('/tmp')) return;
+
+    log.warn(`AppImage env, copying service bin file`);
+    let targetPath = path.join(app.getPath('userData'), SERVICE_FILENAME);
+    //log.debug('target Path: ' + targetPath);
+
+    fs.copyFile(DEFAULT_SERVICE_BIN, targetPath, (err) => {
+        if (err){
+            log.error(err);
+        }else{
+            settings.set('service_bin', targetPath);
+        }
+        //log.warn(`TurtleService copied to ${targetPath}`);
+        //settings.set('service_bin', targetPath);
+    });
+}
+
 function initSettings(){
     Object.keys(DEFAULT_SETTINGS).forEach((k) => {
         if(!settings.has(k) || settings.get(k) === null){
@@ -266,6 +287,7 @@ function initSettings(){
         }
     });
     settings.set('version', WALLETSHELL_VERSION);
+    serviceBinCheck();
 }
 
 const silock = app.requestSingleInstanceLock();
@@ -281,7 +303,7 @@ if (!silock) app.quit();
 app.on('ready', () => {
     initSettings();
 
-    if(IS_DEBUG) log.warn('Running in debug mode');
+    if(IS_DEV || IS_DEBUG) log.warn(`Running in ${IS_DEV ? 'dev' : 'debug'} mode`);
 
     global.wsession = {
         debug: IS_DEBUG
@@ -292,8 +314,8 @@ app.on('ready', () => {
     // target center pos of primary display
     let eScreen = require('electron').screen;
     let primaryDisp = eScreen.getPrimaryDisplay();
-    let tx = (primaryDisp.workAreaSize.width - DEFAULT_SIZE.width)/2;
-    let ty = (primaryDisp.workAreaSize.height - (DEFAULT_SIZE.height))/2;
+    let tx = Math.ceil((primaryDisp.workAreaSize.width - DEFAULT_SIZE.width)/2);
+    let ty = Math.ceil((primaryDisp.workAreaSize.height - (DEFAULT_SIZE.height))/2);
     win.setPosition(tx, ty);
 
     let today = new Date();

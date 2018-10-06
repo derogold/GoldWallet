@@ -29,6 +29,8 @@ html.dark::before{
     opacity: 1.0;
 }
 
+
+
 .dark body{
     background-image: url(../assets/walletshell_logo_dm.png);
     color: #e8e8e8;
