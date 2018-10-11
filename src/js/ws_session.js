@@ -3,14 +3,15 @@ const Store = require('electron-store');
 const settings = new Store({name: 'Settings'});
 
 const DEFAULT_TITLE = 'WalletShell TurtleCoin Wallet';
+const SESSION_KEY = 'wlshell';
 
 // TODO: this is the only thing left as global
 const IS_DEBUG = remote.getGlobal('wsession').debug;
 
-var gSession = function(){
-    if (!(this instanceof gSession)) return new gSession();
+var WalletShellSession = function(){
+    if (!(this instanceof WalletShellSession)) return new WalletShellSession();
 
-    this.sessKey = 'wlshell';
+    this.sessKey = SESSION_KEY;
     this.eventName = 'sessionUpdated';
     this.sessDefault = {
         loadedWalletAddress: '',
@@ -41,7 +42,7 @@ var gSession = function(){
     }
 };
 
-gSession.prototype.get = function(key){
+WalletShellSession.prototype.get = function(key){
     key = key || false;
     if(!key){
         return JSON.parse(sessionStorage.getItem(this.sessKey)) || this.sessDefault;
@@ -54,14 +55,14 @@ gSession.prototype.get = function(key){
     return JSON.parse(sessionStorage.getItem(this.sessKey))[key];
 };
 
-gSession.prototype.getDefault = function(key){
+WalletShellSession.prototype.getDefault = function(key){
     if(!key){
         return this.sessDefault;
     }
     return this.sessDefault[key];
 };
 
-gSession.prototype.set = function(key, val){
+WalletShellSession.prototype.set = function(key, val){
     if(!this.sessDefault.hasOwnProperty(key)){
         throw new Error(`Invalid session key: ${key}`);
     }
@@ -71,7 +72,7 @@ gSession.prototype.set = function(key, val){
     return sessionStorage.setItem(this.sessKey, JSON.stringify(sessData));
 };
 
-gSession.prototype.reset = function(key){
+WalletShellSession.prototype.reset = function(key){
     if(key){
         if(!this.sessDefault.hasOwnProperty(key)){
             throw new Error('Invalid session key');
@@ -83,8 +84,8 @@ gSession.prototype.reset = function(key){
     return sessionStorage.setItem(this.sessKey, JSON.stringify(this.sessDefault));
 };
 
-gSession.prototype.destroy = function(){
+WalletShellSession.prototype.destroy = function(){
     return sessionStorage.removeItem(this.sessKey);
 };
 
-module.exports = gSession;
+module.exports = WalletShellSession;
