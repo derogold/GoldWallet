@@ -195,7 +195,7 @@ WalletShellManager.prototype._spawnService = function(walletFile, password, onEr
     }
 
     let TEST_OK = false;
-    let MAX_CHECK = 32;
+    let MAX_CHECK = 48;
     function testConnection(retry){
         wsm.serviceApi.getAddress().then((address) => {
             log.debug('Got an address, connection ok!');
@@ -238,7 +238,7 @@ WalletShellManager.prototype._spawnService = function(walletFile, password, onEr
 
     setTimeout(function(){
         testConnection(0);
-    }, 8000);
+    }, 10000);
 };
 
 WalletShellManager.prototype.stopService = function(){

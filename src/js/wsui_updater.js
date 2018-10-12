@@ -208,9 +208,19 @@ function updateBalance(data){
 }
 
 function updateTransactions(result){
-    const blockItems = result.items;
-    if(!blockItems.length) return;
     let txlistExisting = wsession.get('txList');
+    
+
+    const blockItems = result.items;
+
+    if(!txlistExisting.length && !blockItems.length){
+        document.getElementById('transaction-export').classList.add('hidden');
+    }else{
+        document.getElementById('transaction-export').classList.remove('hidden');
+    }
+
+    if(!blockItems.length) return;
+    
     let txListNew = [];
 
     Array.from(blockItems).forEach((block) => {

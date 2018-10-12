@@ -103,6 +103,7 @@ let txButtonSortAmount;
 let txButtonSortDate;
 let txInputUpdated;
 let txInputNotify;
+let txButtonExport;
 // misc
 let thtml;
 let dmswitch;
@@ -194,7 +195,7 @@ function populateElementVars(){
     txButtonSortDate = document.getElementById('txSortTime');
     txInputUpdated = document.getElementById('transaction-updated');
     txInputNotify = document.getElementById('transaction-notify');
-    
+    txButtonExport = document.getElementById('transaction-export');
 }
 
 // inject sections tpl
@@ -1619,6 +1620,115 @@ function handleTransactions(){
             txButtonSortDate.dataset.dir = 'desc';
         }
     }
+
+    function exportAsCsv(mode){
+        if(wsession.get('txLen') <= 0) return;
+
+        formMessageReset();
+        mode = mode || 'all';
+        let recentDir = settings.get('recentWalletDir', remote.app.getPath('documents'));
+        let filename = remote.dialog.showSaveDialog({
+            title: "Export transactions as scv...",
+            defaultPath: recentDir,
+            filters: [
+                { name: 'CSV files', extensions: ['csv'] }
+              ]
+        });
+        if(!filename) return;
+
+        const createCsvWriter  = require('csv-writer').createObjectCsvWriter;
+        const csvWriter = createCsvWriter({
+            path: filename,
+            header: [
+                {id: 'timeStr', title: 'Time'},
+                {id: 'amount', title: 'Amount'},
+                {id: 'paymentId', title: 'PaymentId'},
+                {id: 'transactionHash', title: 'Transaction Hash'},
+                {id: 'fee', title: 'Transaction Fee'},
+                {id: 'extra', title: 'Extra Data'},
+                {id: 'blockIndex', title: 'Block Height'}
+            ]
+        });
+        let rawTxList = wsession.get('txList');
+        let txlist = rawTxList.map((obj) => {
+            return {
+                timeStr: obj.timeStr,
+                amount: obj.amount,
+                paymentId: obj.paymentId,
+                transactionHash: obj.transactionHash,
+                fee: obj.fee,
+                extra: obj.extra,
+                blockIndex: obj.blockIndex,
+                txType: obj.txType
+            };
+        });
+
+        let dialog = document.getElementById('ab-dialog');
+        switch(mode){
+            case 'in':
+                let txin = txlist.filter( (obj) => {return obj.txType === "in";});
+                if(!txin.length){
+                    showToast('Transaction export failed, incoming transactions not available!');
+                    if(dialog.hasAttribute('open')) dialog.close();
+                    return;
+                }
+
+                csvWriter.writeRecords(txin).then(()=>{
+                    if(dialog.hasAttribute('open')) dialog.close();
+                    showToast(`Transaction list exported to ${filename}`);
+                }).catch((err) => {
+                    if(dialog.hasAttribute('open')) dialog.close();
+                    showToast(`Transaction export failed, ${err.message}`);
+                });
+                break;
+            case 'out':
+                let txout = txlist.filter( (obj) => {return obj.txType === "out";});
+                if(!txout.length){
+                    showToast('Transaction export failed, outgoing transactions not available!');
+                    if(dialog.hasAttribute('open')) dialog.close();
+                    return;
+                }
+
+                csvWriter.writeRecords(txout).then(()=>{
+                    if(dialog.hasAttribute('open')) dialog.close();
+                    showToast(`Transaction list exported to ${filename}`);
+                }).catch((err) => {
+                    if(dialog.hasAttribute('open')) dialog.close();
+                    showToast(`Transaction export failed, ${err.message}`);
+                });
+                break;
+            default:
+                csvWriter.writeRecords(txlist).then(()=>{
+                    if(dialog.hasAttribute('open')) dialog.close();
+                    showToast(`Transaction list exported to ${filename}`);
+                }).catch((err) => {
+                    if(dialog.hasAttribute('open')) dialog.close();
+                    showToast(`Transaction export failed, ${err.message}`);
+                });
+                break;
+        }
+    }
+
+    wsutil.liveEvent('button.export-txtype', 'click', (event) => {
+        let txtype = event.target.dataset.txtype || 'all';
+        return exportAsCsv(txtype);
+    });
+
+    txButtonExport.addEventListener('click', () => {
+        let dialogTpl = `<div class="transaction-panel">
+            <h4>Export Transactions to CSV:</h4>
+            <div class="div-panel-buttons">
+                <button data-txtype="all" type="button" class="button-green export-txtype">All Transfers</button>
+                <button data-txtype="in" type="button" class="button-green export-txtype">Incoming Transfers</button>
+                <button data-txtype="out" type="button" class="button-green export-txtype">Outgoing Transfers</button>
+                <button data-target="#ab-dialog" type="button" class="button-gray dialog-close-default">Cancel</button>
+            </div>
+        `;
+        let dialog = document.getElementById('ab-dialog');
+        if(dialog.hasAttribute('open')) dialog.close();
+        dialog.innerHTML = dialogTpl;
+        dialog.showModal();
+    });
 
     // listen to tx update
     txInputUpdated.addEventListener('change', (event) => {

@@ -26,6 +26,9 @@ class WalletShellApi {
             request({
                 uri: `http://${s_host}:${s_port}/json_rpc`,
                 method: 'POST',
+                headers: {
+                    Connection: 'keep-alive',
+                },
                 body: data,
                 json: true,
                 timeout: timeout

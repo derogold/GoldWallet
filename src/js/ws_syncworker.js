@@ -19,6 +19,9 @@ var TX_SKIPPED_COUNT = 0;
 var STATE_CONNECTED = true;
 var STATE_SAVING = false;
 var STATE_PAUSED = false;
+var STATE_PENDING_SAVE = false;
+var PENDING_SAVE_SKIP_COUNTER = 0;
+var PENDING_SAVE_SKIP_MAX = 5;
 
 var wsapi = null;
 var taskWorker = null;
@@ -37,9 +40,17 @@ function initApi(cfg){
 
 function checkBlockUpdate(){
     if(!SERVICE_CFG || STATE_SAVING || wsapi === null ) return;
+    if(STATE_PENDING_SAVE && (PENDING_SAVE_SKIP_COUNTER < PENDING_SAVE_SKIP_MAX)){
+        PENDING_SAVE_SKIP_COUNTER += 1;
+        logDebug('checkBlockUpdate: there is pending saveWallet, delaying block update check');
+        return;
+    }
+
+    PENDING_SAVE_SKIP_COUNTER = 0;
     logDebug('checkBlockUpdate: fetching block update');
     //let svc = new WalletShellApi(SERVICE_CFG);
     wsapi.getStatus().then((blockStatus) => {
+        STATE_PENDING_SAVE = false;
         let lastConStatus = STATE_CONNECTED;
         let conFailed  = parseInt(blockStatus.knownBlockCount, 10) === 1;
         if(conFailed){
@@ -80,7 +91,7 @@ function checkBlockUpdate(){
         let dispKnownBlockCount = (knownBlockCount-1);
         let dispBlockCount = (blockCount > dispKnownBlockCount ? dispKnownBlockCount : blockCount);
         let syncPercent = ((dispBlockCount / dispKnownBlockCount) * 100);
-        if(syncPercent <=0 || syncPercent >= 99.99){
+        if(syncPercent <=0 || syncPercent >= 99.995){
             syncPercent = 100;
         }else{
             syncPercent = syncPercent.toFixed(2);
@@ -106,7 +117,7 @@ function checkBlockUpdate(){
         checkTransactionsUpdate();
 
     }).catch((err) => {
-        logDebug(`FAILED: checkBlockUpdate, ${err.message}`);
+        logDebug(`checkBlockUpdate: FAILED, ${err.message}`);
         return false;
     });
 }
@@ -114,7 +125,10 @@ function checkBlockUpdate(){
 //var TX_CHECK_COUNTER = 0;
 function checkTransactionsUpdate(){
     if(!SERVICE_CFG || STATE_SAVING || wsapi === null ) return;
+
+
     wsapi.getBalance().then((balance)=> {
+            STATE_PENDING_SAVE = false;
             process.send({
                 type: 'balanceUpdated',
                 data: balance
@@ -167,14 +181,20 @@ function delayReleaseSaveState(){
 
 function saveWallet(){
     if(!SERVICE_CFG) return;
+    if(STATE_PENDING_SAVE){
+        logDebug('saveWallet: skipped, last save operation still pending');
+        return;
+    }
     STATE_SAVING = true;
     logDebug(`saveWallet: trying to save wallet`);
     setTimeout(() => {
         wsapi.save().then(()=> {
             logDebug(`saveWallet: OK`);
             STATE_SAVING = false;
+            STATE_PENDING_SAVE = false;
             return true;
         }).catch((err)=>{
+            STATE_PENDING_SAVE = true;
             logDebug(`saveWallet: FAILED, ${err.message}`);
             delayReleaseSaveState();
             return false;

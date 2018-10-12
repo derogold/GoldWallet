@@ -45,7 +45,7 @@ const DEFAULT_SETTINGS = {
 };
 const DEFAULT_SIZE = {
     width: 840,
-    height: 640
+    height: 680
 };
 
 app.prompExit = true;
