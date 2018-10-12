@@ -1,12 +1,12 @@
 /* globals iqwerty */
 const {webFrame, remote} = require('electron');
 const Store = require('electron-store');
-const gutils = require('./gutils');
-const gSession = require('./gsessions');
+const wsutil = require('./ws_utils');
+const WalletShellSession = require('./ws_session');
 
 const brwin = remote.getCurrentWindow();
 const settings = new Store({name: 'Settings'});
-const wlsession = new gSession();
+const wsession = new WalletShellSession();
 
 /* sync progress ui */
 const syncDiv = document.getElementById('navbar-div-sync');
@@ -22,7 +22,7 @@ const WFCLEAR_INTERVAL = 5;
 let WFCLEAR_TICK = 0;
 
 function setWinTitle(title){
-    let defaultTitle = wlsession.get('defaultTitle');
+    let defaultTitle = wsession.get('defaultTitle');
     let newTitle = defaultTitle;
     if(title){
         newTitle = `${defaultTitle} ${title}`;
@@ -58,8 +58,8 @@ function updateSyncProgres(data){
         connInfoDiv.classList.remove('conn-warning');
 
         // sync sess flags
-        wlsession.set('syncStarted', false);
-        wlsession.set('synchronized', false);
+        wsession.set('syncStarted', false);
+        wsession.set('synchronized', false);
         brwin.setProgressBar(-1);
     }else if(knownBlockCount === SYNC_STATUS_NET_DISCONNECTED){
         // sync status text
@@ -76,8 +76,8 @@ function updateSyncProgres(data){
         connInfoDiv.classList.add('conn-warning');
 
         // sync sess flags
-        wlsession.set('syncStarted', false);
-        wlsession.set('synchronized', false);
+        wsession.set('syncStarted', false);
+        wsession.set('synchronized', false);
         brwin.setProgressBar(-1);
     }else if(knownBlockCount === SYNC_STATUS_IDLE){
         // sync status text
@@ -95,13 +95,13 @@ function updateSyncProgres(data){
         
         
         // sync sess flags
-        wlsession.set('syncStarted', false);
-        wlsession.set('synchronized', false);
+        wsession.set('syncStarted', false);
+        wsession.set('synchronized', false);
         brwin.setProgressBar(-1);
         // reset wintitle
         setWinTitle();
         // no node connected
-        wlsession.set('connectedNode', '');
+        wsession.set('connectedNode', '');
     }else if(knownBlockCount === SYNC_STATUS_NODE_ERROR){
         // not connected
         // status info bar class
@@ -116,11 +116,11 @@ function updateSyncProgres(data){
         connInfoDiv.innerHTML = 'Connection failed, try switching to another Node in settings page, close and reopen your wallet';
         connInfoDiv.classList.remove('empty');
         connInfoDiv.classList.add('conn-warning');
-        wlsession.set('connectedNode', '');
+        wsession.set('connectedNode', '');
         brwin.setProgressBar(-1);
     }else{
         // sync sess flags
-        wlsession.set('syncStarted', true);
+        wsession.set('syncStarted', true);
         statusText = `${blockCount}/${knownBlockCount}` ;
         if(blockCount+1 >= knownBlockCount && knownBlockCount !== 0) {
             // info bar class
@@ -132,7 +132,7 @@ function updateSyncProgres(data){
             iconSync.setAttribute('data-icon', 'check');
             iconSync.classList.remove('fa-spin');
             // sync status sess flag
-            wlsession.set('synchronized', true);
+            wsession.set('synchronized', true);
             brwin.setProgressBar(-1);
          } else {
              // info bar class
@@ -144,15 +144,15 @@ function updateSyncProgres(data){
             iconSync.setAttribute('data-icon', 'sync');
             iconSync.classList.add('fa-spin');
             // sync status sess flag
-            wlsession.set('synchronized', false);
+            wsession.set('synchronized', false);
             let taskbarProgress = +(parseFloat(blockSyncPercent)/100).toFixed(2);
             brwin.setProgressBar(taskbarProgress);
         }
         
-        let connStatusText = `Connected to: <strong>${wlsession.get('connectedNode')}</strong>`;
-        let connNodeFee = parseInt(wlsession.get('nodeFee'), 10);
-        if(connNodeFee >=1 ){
-            connStatusText += ` | Node fee: <strong>${connNodeFee} TRTL</strong>`;
+        let connStatusText = `Connected to: <strong>${wsession.get('connectedNode')}</strong>`;
+        let connNodeFee = wsession.get('nodeFee');
+        if(connNodeFee > 0 ){
+            connStatusText += ` | Node fee: <strong>${connNodeFee.toFixed(2)} TRTL</strong>`;
         }
         connInfoDiv.innerHTML = connStatusText;
         connInfoDiv.classList.remove('conn-warning');
@@ -182,8 +182,8 @@ function updateBalance(data){
         maxSendFormHelp.innerHTML = "You don't have any funds to be sent.";
         sendMaxAmount.dataset.maxsend = 0;
         sendMaxAmount.classList.add('hidden');
-        wlsession.set('walletUnlockedBalance', 0);
-        wlsession.set('walletLockedBalance', 0);
+        wsession.set('walletUnlockedBalance', 0);
+        wsession.set('walletLockedBalance', 0);
         if(availableBalance < 0) return;
     }
 
@@ -191,32 +191,41 @@ function updateBalance(data){
     let bLocked = (data.lockedAmount / 100).toFixed(2);
     balanceAvailableField.innerHTML = bUnlocked;
     balanceLockedField.innerHTML = bLocked;
-    wlsession.set('walletUnlockedBalance', bUnlocked);
-    wlsession.set('walletLockedBalance', bLocked);
+    wsession.set('walletUnlockedBalance', bUnlocked);
+    wsession.set('walletLockedBalance', bLocked);
     let walletFile = require('path').basename(settings.get('recentWallet'));
     let wintitle = `(${walletFile}) - ${bUnlocked} TRTL`;
     setWinTitle(wintitle);
     
     if(availableBalance > 0){
-        let maxSend = (bUnlocked - (wlsession.get('nodeFee')+0.10)).toFixed(2);
+        let maxSend = (bUnlocked - (wsession.get('nodeFee')+0.10)).toFixed(2);
         inputSendAmountField.setAttribute('max',maxSend);
         inputSendAmountField.removeAttribute('disabled');
         maxSendFormHelp.innerHTML = `Max. amount is ${maxSend}`;
         sendMaxAmount.dataset.maxsend = maxSend;
         sendMaxAmount.classList.remove('hidden');
     }
-    
 }
 
 function updateTransactions(result){
+    let txlistExisting = wsession.get('txList');
+    
+
     const blockItems = result.items;
+
+    if(!txlistExisting.length && !blockItems.length){
+        document.getElementById('transaction-export').classList.add('hidden');
+    }else{
+        document.getElementById('transaction-export').classList.remove('hidden');
+    }
+
     if(!blockItems.length) return;
-    let txlistExisting = wlsession.get('txList');
+    
     let txListNew = [];
 
     Array.from(blockItems).forEach((block) => {
         block.transactions.map((tx) => {
-            if(tx.amount !== 0 && !gutils.objInArray(txlistExisting, tx, 'transactionHash')){
+            if(tx.amount !== 0 && !wsutil.objInArray(txlistExisting, tx, 'transactionHash')){
                 tx.amount = (tx.amount/100).toFixed(2);
                 tx.timeStr = new Date(tx.timestamp*1000).toUTCString();
                 //tx.timeStr = tx.timeStr = new Date(tx.timestamp * 1000).toDateString();
@@ -239,12 +248,12 @@ function updateTransactions(result){
     let newTxAmount = latestTx.amount;
 
     // store it
-    wlsession.set('txLastHash',newLastHash);
-    wlsession.set('txLastTimestamp', newLastTimestamp);
+    wsession.set('txLastHash',newLastHash);
+    wsession.set('txLastTimestamp', newLastTimestamp);
     let txList = txListNew.concat(txlistExisting);
-    wlsession.set('txList', txList);
-    wlsession.set('txLen', txList.length);
-    wlsession.set('txNew', txListNew);
+    wsession.set('txList', txList);
+    wsession.set('txLen', txList.length);
+    wsession.set('txNew', txListNew);
 
     let currentDate = new Date();
     currentDate = `${currentDate.getUTCFullYear()}-${currentDate.getUTCMonth()+1}-${currentDate.getUTCDate()}`;
@@ -280,23 +289,24 @@ function updateTransactions(result){
 }
 
 function showFeeWarning(fee){
+    fee = fee || 0;
+    let nodeFee = parseFloat(fee);
+    if(nodeFee <= 0) return;
+
     let dialog = document.getElementById('main-dialog');
     if(dialog.hasAttribute('open')) return;
 
     dialog.classList.add('dialog-warning');
-    fee = fee || 0;
-    if(fee <=0) return;
-
     let htmlStr = `
-        <h5>Fee Warning (${settings.get('daemon_host')}:${settings.get('daemon_port')})</h5>
-        <p>You are connected to a public node that charges a fee to send transactions.<p>
-        <p>The fee for sending transactions is: <strong>${fee} TRTL </strong>.<br>
+        <h5>Fee Info</h5>
+        <p>You are connected to a public node (${settings.get('daemon_host')}:${settings.get('daemon_port')}) that charges a fee to send transactions.<p>
+        <p>The fee for sending transactions is: <strong>${fee.toFixed(2)} TRTL </strong>.<br>
             If you don't want to pay the node fee, please close your wallet, and update your settings to use different public node or your own node.
         </p>
         <p style="text-align:center;margin-top: 1.25rem;"><button  type="button" class="form-bt button-green" id="dialog-end">OK, I Understand</button></p>
     `;
 
-    gutils.innerHTML(dialog, htmlStr);
+    wsutil.innerHTML(dialog, htmlStr);
     let dialogEnd = document.getElementById('dialog-end');
     dialogEnd.addEventListener('click', () => {
         try{
@@ -307,7 +317,7 @@ function showFeeWarning(fee){
     dialog = document.getElementById('main-dialog');
     dialog.showModal();
     dialog.addEventListener('close', function(){
-        gutils.clearChild(dialog);
+        wsutil.clearChild(dialog);
     });
 }
 
@@ -317,13 +327,13 @@ function updateQr(address){
         return;
     }
 
-    let walletHash = gutils.b2sSum(address);
-    wlsession.set('walletHash', walletHash);
+    let walletHash = wsutil.b2sSum(address);
+    wsession.set('walletHash', walletHash);
     
     let oldImg = document.getElementById('qr-gen-img');
     if(oldImg) oldImg.remove();
 
-    let qr_base64 = gutils.genQrDataUrl(address);
+    let qr_base64 = wsutil.genQrDataUrl(address);
     if(qr_base64.length){
         let qrBox = document.getElementById('div-w-qr');
         let qrImg = document.createElement("img");
@@ -355,7 +365,7 @@ function resetFormState(){
     }
 
     const settingsBackBtn = document.getElementById('button-settings-back');
-    if(wlsession.get('serviceReady')){
+    if(wsession.get('serviceReady')){
         connInfoDiv.classList.remove('empty');
         settingsBackBtn.dataset.section = 'section-welcome';
     }else{
@@ -378,10 +388,7 @@ function updateUiState(msg){
             updateTransactions(msg.data);
             break;
         case 'nodeFeeUpdated':
-            let nodeFee = parseInt(msg.data,10);
-            if(nodeFee >= 1){
-                showFeeWarning(msg.data);
-            }
+            showFeeWarning(msg.data);
             break;
         case 'addressUpdated':
             updateQr(msg.data);
@@ -405,4 +412,5 @@ function updateUiState(msg){
             break;
     }
 }
+
 module.exports = {updateUiState};

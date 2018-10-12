@@ -104,13 +104,13 @@ exports.genQrDataUrl = (inputStr) => {
 
 exports.validateTRTLAddress = (address) => {
     if(!address) return false;
-    let re = new RegExp(/^TRTL(?=\w*$)(?:.{95}|.{183})$/g);
+    let re = new RegExp(/^TRTL(?=[aA-zZ0-9]*$)(?:.{95}|.{183})$/g);
     return re.test(address);
 };
 
 exports.validatePaymentId = (paymentId) => {
     if(!paymentId) return true; // true allow empty
-    let re = new RegExp(/^(\w{64})$/g);
+    let re = new RegExp(/^([aA-zZ0-9]{64})$/g);
     return re.test(paymentId);
 };
 
@@ -119,13 +119,13 @@ exports.validateSecretKey = (key) => {
         console.log('emmpty key');
         return false;
     }
-    let re = new RegExp(/^\w{64}$/g);
+    let re = new RegExp(/^[aA-zZ0-9]{64}$/g);
     return re.test(key);
 };
 
 exports.validateMnemonic = (seed) => {
     if(!seed) return false;
-    let re = new RegExp(/^\w+(?!.*  )[a-zA-Z0-9 ]*$/g);
+    let re = new RegExp(/^[aA-zZ]+(?!.*  )[a-zA-Z0-9 ]*$/g);
     if(!re.test(seed)) return false;
     if(seed.split(' ').length !== 25) return false;
     return true;

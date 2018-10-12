@@ -18,7 +18,7 @@ log.transports.console.level = LOG_LEVEL;
 log.transports.file.level = LOG_LEVEL;
 log.transports.file.maxSize = 5 * 1024 * 1024;
 
-const WALLETSHELL_VERSION = app.getVersion() || '0.3.2';
+const WALLETSHELL_VERSION = app.getVersion() || '0.3.4';
 const SERVICE_FILENAME =  (platform === 'win32' ? 'turtle-service.exe' : 'turtle-service' );
 const SERVICE_OSDIR = (platform === 'win32' ? 'win' : (platform === 'darwin' ? 'osx' : 'lin'));
 const DEFAULT_SERVICE_BIN = path.join(process.resourcesPath,'bin', SERVICE_OSDIR, SERVICE_FILENAME);
@@ -99,7 +99,7 @@ function createWindow () {
             }
         }
     ]);
-    
+
     tray = new Tray(trayIcon);
     tray.setPressedImage(trayIconHide);
     tray.setTitle(DEFAULT_TITLE);
@@ -262,7 +262,7 @@ function doNodeListUpdate(){
 }
 
 function serviceBinCheck(){
-    if(settings.has('firstRun')) return;
+    //if(settings.has('firstRun')) return;
     if(!DEFAULT_SERVICE_BIN.startsWith('/tmp')) return;
 
     log.warn(`AppImage env, copying service bin file`);
@@ -274,6 +274,7 @@ function serviceBinCheck(){
             log.error(err);
         }else{
             settings.set('service_bin', targetPath);
+            log.debug(`turtle-service copied to ${targetPath}`);
         }
         //log.warn(`TurtleService copied to ${targetPath}`);
         //settings.set('service_bin', targetPath);
@@ -308,15 +309,6 @@ app.on('ready', () => {
     global.wsession = {
         debug: IS_DEBUG
     };
-    
-    createWindow();
-
-    // target center pos of primary display
-    let eScreen = require('electron').screen;
-    let primaryDisp = eScreen.getPrimaryDisplay();
-    let tx = Math.ceil((primaryDisp.workAreaSize.width - DEFAULT_SIZE.width)/2);
-    let ty = Math.ceil((primaryDisp.workAreaSize.height - (DEFAULT_SIZE.height))/2);
-    win.setPosition(tx, ty);
 
     let today = new Date();
     let last_checked = new Date(settings.get('pubnodes_date'));
@@ -328,6 +320,17 @@ app.on('ready', () => {
         log.info('Public node list up to date, skipping update');
         storeNodeList(false); // from local cache
     }
+    
+    createWindow();
+
+    // target center pos of primary display
+    let eScreen = require('electron').screen;
+    let primaryDisp = eScreen.getPrimaryDisplay();
+    let tx = Math.ceil((primaryDisp.workAreaSize.width - DEFAULT_SIZE.width)/2);
+    let ty = Math.ceil((primaryDisp.workAreaSize.height - (DEFAULT_SIZE.height))/2);
+    if(tx > 0 && ty > 0) win.setPosition(tx, ty);
+
+    
 });
 
 // Quit when all windows are closed.

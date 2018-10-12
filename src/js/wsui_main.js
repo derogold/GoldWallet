@@ -8,15 +8,17 @@ const {clipboard, remote, ipcRenderer, shell} = require('electron');
 const Store = require('electron-store');
 const Mousetrap = require('./extras/mousetrap.min.js');
 const autoComplete = require('./extras/auto-complete');
-const gutils = require('./gutils.js');
-const gSession = require('./gsessions.js');
-const svcmain = require('./svc_main.js');
+const wsutil = require('./ws_utils');
+const WalletShellSession = require('./ws_session');
+const WalletShellManager = require('./ws_manager');
 
-const Menu = remote.Menu;
+const wsmanager = new WalletShellManager();
+const wsession = new WalletShellSession();
 const settings = new Store({ name: 'Settings' });
 const abook = new Store({ name: 'AddressBook', encryptionKey: ['79009fb00ca1b7130832a42d', 'e45142cf6c4b7f33', '3fe6fba5'].join('') });
-const wlsession = new gSession();
+
 const win = remote.getCurrentWindow();
+const Menu = remote.Menu;
 
 const WS_VERSION = settings.get('version', 'unknown');
 const DEFAULT_WALLET_PATH = remote.app.getPath('documents');
@@ -101,6 +103,7 @@ let txButtonSortAmount;
 let txButtonSortDate;
 let txInputUpdated;
 let txInputNotify;
+let txButtonExport;
 // misc
 let thtml;
 let dmswitch;
@@ -192,7 +195,7 @@ function populateElementVars(){
     txButtonSortDate = document.getElementById('txSortTime');
     txInputUpdated = document.getElementById('transaction-updated');
     txInputNotify = document.getElementById('transaction-notify');
-    
+    txButtonExport = document.getElementById('transaction-export');
 }
 
 // inject sections tpl
@@ -335,7 +338,7 @@ function genPaymentId(ret){
 
 function showIntegratedAddressForm(){
     let dialog = document.getElementById('ab-dialog');
-    let ownAddress = wlsession.get('loadedWalletAddress');
+    let ownAddress = wsession.get('loadedWalletAddress');
     if(dialog.hasAttribute('open')) dialog.close();
 
     let iaform = `<div class="transaction-panel">
@@ -375,7 +378,7 @@ function switchTab(){
         showToast('Opening wallet in progress, please wait...');
         return;
     }
-    let isServiceReady = wlsession.get('serviceReady') || false;
+    let isServiceReady = wsession.get('serviceReady') || false;
     let activeTab = document.querySelector('.btn-active');
     let nextTab = activeTab.nextElementSibling || firstTab;
     let nextSection = nextTab.dataset.section.trim();
@@ -407,8 +410,8 @@ function changeSection(sectionId, isSettingRedir) {
         untoast = true;
     }
 
-    let isSynced = wlsession.get('synchronized') || false;
-    let isServiceReady = wlsession.get('serviceReady') || false;
+    let isSynced = wsession.get('synchronized') || false;
+    let isServiceReady = wsession.get('serviceReady') || false;
     let needServiceReady = ['section-transactions', 'section-send', 'section-overview'];
     let needServiceStopped = 'section-welcome';
     let needSynced = ['section-send'];
@@ -476,7 +479,11 @@ function changeSection(sectionId, isSettingRedir) {
     // notify section was changed
     let currentButton = document.querySelector(`button[data-section="${finalButtonTarget}"]`);
     if(currentButton){
-        svcmain.onSectionChanged(currentButton.getAttribute('id'));
+        //wsmanager.onSectionChanged(currentButton.getAttribute('id'));
+        wsmanager.notifyUpdate({
+            type: 'sectionChanged',
+            data: currentButton.getAttribute('id')
+        });
     }
 }
 
@@ -488,7 +495,7 @@ function initNodeCompletion(){
         if(COMPLETION_PUBNODES) COMPLETION_PUBNODES.destroy();
     }catch(e){}
 
-    let publicNodes = settings.has('pubnodes_custom') ? gutils.arrShuffle(settings.get('pubnodes_data')) : [];
+    let publicNodes = settings.has('pubnodes_custom') ? wsutil.arrShuffle(settings.get('pubnodes_data')) : [];
     let nodeChoices = settings.get('pubnodes_custom').concat(publicNodes);
 
 
@@ -590,7 +597,7 @@ function formMessageReset(){
     if(!genericFormMessage.length) return;
     for(var i=0; i < genericFormMessage.length;i++){
         genericFormMessage[i].classList.add('hidden');
-        gutils.clearChild(genericFormMessage[i]);
+        wsutil.clearChild(genericFormMessage[i]);
     }
 }
 
@@ -605,7 +612,7 @@ function formMessageSet(target, status, txt){
     
     if(the_el){
         the_el.classList.remove('hidden');
-        gutils.innerHTML(the_el, txt);
+        wsutil.innerHTML(the_el, txt);
     }
 }
 
@@ -614,7 +621,7 @@ function insertSampleAddresses(){
     let flag = 'addressBookFirstUse';
     if(!settings.get(flag, true)) return;
     const sampleData = [
-        { name: 'labaylabay rixombea',
+        { name: 'labaylabay',
           address: 'TRTLv1A26ngXApin33p1JsSE9Yf6REj97Xruz15D4JtSg1wuqYTmsPj5Geu2kHtBzD8TCsfd5dbdYRsrhNXMGyvtJ61AoYqLXVS',
           paymentId: 'DF794857BC4587ECEC911AF6A6AB02513FEA524EC5B98DA8702FAC92195A94B2', 
         },
@@ -629,8 +636,8 @@ function insertSampleAddresses(){
     ];
 
     sampleData.forEach((item) => {
-        let ahash = gutils.b2sSum(item.address + item.paymentId);
-        let aqr = gutils.genQrDataUrl(item.address);
+        let ahash = wsutil.b2sSum(item.address + item.paymentId);
+        let aqr = wsutil.genQrDataUrl(item.address);
         item.qrCode = aqr;
         abook.set(ahash, item);
     });
@@ -687,7 +694,7 @@ function handleSettings(){
             return false;
         }
 
-        if(!gutils.isRegularFileAndWritable(serviceBinValue)){
+        if(!wsutil.isRegularFileAndWritable(serviceBinValue)){
             formMessageSet('settings','error',`Unable to find turtle-service, please enter the correct path`);
             return false;
         }
@@ -718,7 +725,7 @@ function handleSettings(){
         initSettingVal(vals);
         formMessageReset();
         initNodeCompletion();
-        let goTo = wlsession.get('loadedWalletAddress').length ? 'section-overview' : 'section-welcome';
+        let goTo = wsession.get('loadedWalletAddress').length ? 'section-overview' : 'section-welcome';
         changeSection(goTo, true);
         showToast('Settings has been updated.',8000);
     });
@@ -795,14 +802,14 @@ function handleAddressBook(){
              </div>
         `;
      
-        gutils.innerHTML(dialog, tpl);
+        wsutil.innerHTML(dialog, tpl);
         // get new dialog
         dialog = document.getElementById('ab-dialog');
         dialog.showModal();
         document.getElementById('button-addressbook-panel-close').addEventListener('click', () => {
              let abdialog = document.getElementById('ab-dialog');
              abdialog.close();
-             gutils.clearChild(abdialog);
+             wsutil.clearChild(abdialog);
          });
      
          let deleteBtn = document.getElementById('button-addressbook-panel-delete');
@@ -815,7 +822,7 @@ function handleAddressBook(){
                  abook.delete(tarhash);
                  let abdialog = document.getElementById('ab-dialog');
                  abdialog.close();
-                 gutils.clearChild(abdialog);
+                 wsutil.clearChild(abdialog);
                  listAddressBook(true);
                  if(!document.getElementById('datoaste')){
                      iqwerty.toast.Toast("Address book entry was deleted.", {settings: {duration:1800}});
@@ -843,7 +850,7 @@ function handleAddressBook(){
              changeSection('section-addressbook-add');
              let axdialog = document.getElementById('ab-dialog');
              axdialog.close();
-             gutils.clearChild(axdialog);
+             wsutil.clearChild(axdialog);
          });
      }
 
@@ -878,13 +885,13 @@ function handleAddressBook(){
             return;
         }
 
-        if(!gutils.validateTRTLAddress(walletValue)){
+        if(!wsutil.validateTRTLAddress(walletValue)){
             formMessageSet('addressbook','error',"Invalid TurtleCoin address");
             return;
         }
         
         if( paymentIdValue.length){
-            if( !gutils.validatePaymentId(paymentIdValue) ){
+            if( !wsutil.validatePaymentId(paymentIdValue) ){
                 formMessageSet('addressbook','error',"Invalid Payment ID");
                 return;
             }
@@ -895,7 +902,7 @@ function handleAddressBook(){
         let entryName = nameValue.trim();
         let entryAddr = walletValue.trim();
         let entryPaymentId = paymentIdValue.trim();
-        let entryHash = gutils.b2sSum(entryAddr + entryPaymentId);
+        let entryHash = wsutil.b2sSum(entryAddr + entryPaymentId);
 
 
         if(abook.has(entryHash) && !isUpdate){
@@ -908,7 +915,7 @@ function handleAddressBook(){
                 name: entryName,
                 address: entryAddr,
                 paymentId: entryPaymentId,
-                qrCode: gutils.genQrDataUrl(entryAddr)
+                qrCode: wsutil.genQrDataUrl(entryAddr)
             });
             let oldHash = addressBookInputName.dataset.oldhash || '';
             let isNew = (oldHash.length && oldHash !== entryHash);
@@ -932,7 +939,7 @@ function handleAddressBook(){
         showToast('Address book entry has been saved.');
     });
     // entry detail
-    gutils.liveEvent('.addressbook-item','click',displayAddressBookEntry);
+    wsutil.liveEvent('.addressbook-item','click',displayAddressBookEntry);
     listAddressBook();
 }
 
@@ -970,8 +977,8 @@ function handleWalletOpen(){
         //function onSuccess(theWallet, scanHeight){
         function onSuccess(){
             walletOpenInputPath.value = settings.get('recentWallet');
-            overviewWalletAddress.value = wlsession.get('loadedWalletAddress');
-            svcmain.getNodeFee();
+            overviewWalletAddress.value = wsession.get('loadedWalletAddress');
+            wsmanager.getNodeFee();
             WALLET_OPEN_IN_PROGRESS = false;
             changeSection('section-overview');
             setTimeout(()=>{
@@ -979,9 +986,13 @@ function handleWalletOpen(){
             },300);
         }
 
+        function onDelay(msg){
+            formMessageSet('load','warning', `${msg}<br><progress></progress>`);
+        }
+
         let walletFile = walletOpenInputPath.value;
         let walletPass = walletOpenInputPassword.value;
-        let scanHeight = 0;
+
         fs.access(walletFile, fs.constants.R_OK, (err) => {
             if(err){
                 formMessageSet('load','error', "Invalid wallet file path");
@@ -994,13 +1005,14 @@ function handleWalletOpen(){
             WALLET_OPEN_IN_PROGRESS = true;
             settings.set('recentWallet', walletFile);
             formMessageSet('load','warning', "Accessing wallet...<br><progress></progress>");
-            svcmain.stopService(true).then(() => {
+            wsmanager.stopService().then(() => {
                 formMessageSet('load','warning', "Starting wallet service...<br><progress></progress>");
                 setTimeout(() => {
                     formMessageSet('load','warning', "Opening wallet, please be patient...<br><progress></progress>");
-                    svcmain.startService(walletFile, walletPass, scanHeight, onError, onSuccess);
+                    wsmanager.startService(walletFile, walletPass, onError, onSuccess, onDelay);
                 },800);
-            }).catch(() => {
+            }).catch((err) => {
+                console.log(err);
                 formMessageSet('load','error', "Unable to start service");
                 WALLET_OPEN_IN_PROGRESS = false;
                 setOpenButtonsState(0);
@@ -1017,13 +1029,12 @@ function handleWalletClose(){
 
         let dialog = document.getElementById('main-dialog');
         let htmlStr = '<div class="div-save-main" style="text-align: center;padding:1rem;"><i class="fas fa-spinner fa-pulse"></i><span style="padding:0px 10px;">Saving &amp; closing your wallet...</span></div>';
-        gutils.innerHTML(dialog, htmlStr);
+        wsutil.innerHTML(dialog, htmlStr);
 
         dialog = document.getElementById('main-dialog');
         dialog.showModal();
         // save + SIGTERMed wallet daemon
-        svcmain.stopWorker();
-        svcmain.stopService(true).then(() => {
+        wsmanager.stopService().then(() => {
             setTimeout(function(){
                 // cleare form err msg
                 formMessageReset();
@@ -1042,11 +1053,11 @@ function handleWalletClose(){
                         syncPercent: -100
                     }
                 };
-                svcmain.handleWorkerUpdate(resetdata);
+                wsmanager.notifyUpdate(resetdata);
                 dialog = document.getElementById('main-dialog');
                 if(dialog.hasAttribute('open')) dialog.close();
-                svcmain.resetGlobals();
-                gutils.clearChild(dialog);
+                wsmanager.resetState();
+                wsutil.clearChild(dialog);
                 try{
                     if(null !== TXLIST_OBJ){
                         TXLIST_OBJ.clear();
@@ -1058,6 +1069,7 @@ function handleWalletClose(){
                 setTxFiller(true);
             }, 1200);
         }).catch((err) => {
+            wsmanager.terminateService(true);
             console.log(err);
         });
     });
@@ -1070,7 +1082,7 @@ function handleWalletCreate(){
         let passwordValue =  walletCreateInputPassword.value ? walletCreateInputPassword.value.trim() : '';
 
         // validate path
-        gutils.validateWalletPath(filePathValue, DEFAULT_WALLET_PATH).then((finalPath)=>{
+        wsutil.validateWalletPath(filePathValue, DEFAULT_WALLET_PATH).then((finalPath)=>{
             // validate password
             if(!passwordValue.length){
                 formMessageSet('create','error', `Please enter a password, creating wallet without a password will not be supported!`);
@@ -1080,7 +1092,7 @@ function handleWalletCreate(){
             settings.set('recentWalletDir', path.dirname(finalPath));
 
             // user already confirm to overwrite
-            if(gutils.isRegularFileAndWritable(finalPath)){
+            if(wsutil.isRegularFileAndWritable(finalPath)){
                 try{
                     // for now, backup instead of delete, just to be save
                     let ts = new Date().getTime();
@@ -1094,7 +1106,7 @@ function handleWalletCreate(){
            }
 
             // create
-            svcmain.createWallet(
+            wsmanager.createWallet(
                 finalPath,
                 passwordValue
             ).then((walletFile) => {
@@ -1123,7 +1135,7 @@ function handleWalletImportKeys(){
         let scanHeightValue = importKeyInputScanHeight.value ? parseInt(importKeyInputScanHeight.value,10) : 1;
         
         // validate path
-        gutils.validateWalletPath(filePathValue, DEFAULT_WALLET_PATH).then((finalPath)=>{
+        wsutil.validateWalletPath(filePathValue, DEFAULT_WALLET_PATH).then((finalPath)=>{
             if(!passwordValue.length){
                 formMessageSet('import','error', `Please enter a password, creating wallet without a password will not be supported!`);
                 return;
@@ -1141,12 +1153,12 @@ function handleWalletImportKeys(){
                 return;
             }
     
-            if(!gutils.validateSecretKey(viewKeyValue)){
+            if(!wsutil.validateSecretKey(viewKeyValue)){
                 formMessageSet('import','error', 'Invalid view key!');
                 return;
             }
             // validate spendKey
-            if(!gutils.validateSecretKey(spendKeyValue)){
+            if(!wsutil.validateSecretKey(spendKeyValue)){
                 formMessageSet('import','error', 'Invalid spend key!');
                 return;
             }
@@ -1154,7 +1166,7 @@ function handleWalletImportKeys(){
             settings.set('recentWalletDir', path.dirname(finalPath));
 
             // user already confirm to overwrite
-            if(gutils.isRegularFileAndWritable(finalPath)){
+            if(wsutil.isRegularFileAndWritable(finalPath)){
                 try{
                     // for now, backup instead of delete, just to be save
                     let ts = new Date().getTime();
@@ -1166,8 +1178,7 @@ function handleWalletImportKeys(){
                 return;
                 }
             }
-
-            svcmain.importFromKey(
+            wsmanager.importFromKeys(
                 finalPath,// walletfile
                 passwordValue,
                 viewKeyValue,
@@ -1199,7 +1210,7 @@ function handleWalletImportSeed(){
         let seedValue = importSeedInputMnemonic.value ? importSeedInputMnemonic.value.trim() : '';
         let scanHeightValue = importSeedInputScanHeight.value ? parseInt(importSeedInputScanHeight.value,10) : -1;
         // validate path
-        gutils.validateWalletPath(filePathValue, DEFAULT_WALLET_PATH).then((finalPath)=>{
+        wsutil.validateWalletPath(filePathValue, DEFAULT_WALLET_PATH).then((finalPath)=>{
             // validate password
             if(!passwordValue.length){
                 formMessageSet('import-seed','error', `Please enter a password, creating wallet without a password will not be supported!`);
@@ -1211,7 +1222,7 @@ function handleWalletImportSeed(){
                 return;
             }
 
-            if(!gutils.validateMnemonic(seedValue)){
+            if(!wsutil.validateMnemonic(seedValue)){
                 formMessageSet('import-seed', 'error', 'Invalid mnemonic seed value!');
                 return;
             }
@@ -1219,7 +1230,7 @@ function handleWalletImportSeed(){
             settings.set('recentWalletDir', path.dirname(finalPath));
 
             // user already confirm to overwrite
-            if(gutils.isRegularFileAndWritable(finalPath)){
+            if(wsutil.isRegularFileAndWritable(finalPath)){
                 try{
                     // for now, backup instead of delete, just to be save
                     let ts = new Date().getTime();
@@ -1230,9 +1241,9 @@ function handleWalletImportSeed(){
                    formMessageSet('import-seed','error', `Unable to overwrite existing file, please enter new wallet file path`);
                    return;
                 }
-           }
+            }
 
-            svcmain.importFromSeed(
+            wsmanager.importFromSeed(
                 finalPath,
                 passwordValue,
                 seedValue,
@@ -1258,7 +1269,7 @@ function handleWalletExport(){
     overviewShowKeyButton.addEventListener('click', () => {
         formMessageReset();
         if(!overviewWalletAddress.value) return;
-        svcmain.getSecretKeys(overviewWalletAddress.value).then((keys) => {
+        wsmanager.getSecretKeys(overviewWalletAddress.value).then((keys) => {
             showkeyInputViewKey.value = keys.viewSecretKey;
             showkeyInputSpendKey.value = keys.spendSecretKey;
             showkeyInputSeed.value = keys.mnemonicSeed;
@@ -1276,8 +1287,8 @@ function handleWalletExport(){
               ]
         });
         if(filename){
-            svcmain.getSecretKeys(overviewWalletAddress.value).then((keys) => {
-                let textContent = `Wallet Address:${os.EOL}${wlsession.get('loadedWalletAddress')}${os.EOL}`;
+            wsmanager.getSecretKeys(overviewWalletAddress.value).then((keys) => {
+                let textContent = `Wallet Address:${os.EOL}${wsession.get('loadedWalletAddress')}${os.EOL}`;
                 textContent += `${os.EOL}View Secret Key:${os.EOL}${keys.viewSecretKey}${os.EOL}`;
                 textContent += `${os.EOL}Spend Secret Key:${os.EOL}${keys.spendSecretKey}${os.EOL}`;
                 textContent += `${os.EOL}Mnemonic Seed:${os.EOL}${keys.mnemonicSeed}${os.EOL}`;
@@ -1337,18 +1348,18 @@ function handleSendTransfer(){
 
         let tobeSent = 0;
 
-        if(!recAddress.length || !gutils.validateTRTLAddress(recAddress)){
+        if(!recAddress.length || !wsutil.validateTRTLAddress(recAddress)){
             formMessageSet('send','error','Sorry, invalid TRTL address');
             return;
         }
 
-        if(recAddress === wlsession.get('loadedWalletAddress')){
+        if(recAddress === wsession.get('loadedWalletAddress')){
             formMessageSet('send','error',"Sorry, can't send to your own address");
             return;
         }
 
         if(recPayId.length){
-            if(!gutils.validatePaymentId(recPayId)){
+            if(!wsutil.validatePaymentId(recPayId)){
                 formMessageSet('send','error','Sorry, invalid Payment ID');
                 return;
             }
@@ -1385,10 +1396,10 @@ function handleSendTransfer(){
         fee *= 100;
         
 
-        let nodeFee = wlsession.get('nodeFee') || 0;
+        let nodeFee = wsession.get('nodeFee') || 0;
         tobeSent = (tobeSent+nodeFee).toFixed(2);
 
-        const availableBalance = wlsession.get('walletUnlockedBalance') || (0).toFixed(2);
+        const availableBalance = wsession.get('walletUnlockedBalance') || (0).toFixed(2);
 
         if(parseFloat(tobeSent) > parseFloat(availableBalance)){
             formMessageSet(
@@ -1432,7 +1443,7 @@ function handleSendTransfer(){
             </div>`;
 
         let dialog = document.getElementById('tf-dialog');
-        gutils.innerHTML(dialog, tpl);
+        wsutil.innerHTML(dialog, tpl);
         dialog = document.getElementById('tf-dialog');
         dialog.showModal();
 
@@ -1442,12 +1453,12 @@ function handleSendTransfer(){
             let md = document.querySelector(event.target.dataset.target);
             md.close();
             formMessageSet('send', 'warning', 'Sending transaction, please wait...<br><progress></progress>');
-            svcmain.sendTransaction(tx).then((result) => {
+            wsmanager.sendTransaction(tx).then((result) => {
                 formMessageReset();
                 let okMsg = `Transaction sent!<br>Tx. hash: ${result.transactionHash}.<br>Your balance may appear incorrect while transaction not fully confirmed.`;
                 formMessageSet('send', 'success', okMsg);
                 // check if it's new address, if so save it
-                let newId = gutils.b2sSum(recAddress + recPayId);
+                let newId = wsutil.b2sSum(recAddress + recPayId);
                 if(!abook.has(newId)){
                     let now = new Date().toISOString();
                     let newName = `unnamed (${now.split('T')[0].replace(/-/g,'')}_${now.split('T')[1].split('.')[0].replace(/:/g,'')})`;
@@ -1455,7 +1466,7 @@ function handleSendTransfer(){
                         name: newName,
                         address: recAddress,
                         paymentId: recPayId,
-                        qrCode: gutils.genQrDataUrl(recAddress)
+                        qrCode: wsutil.genQrDataUrl(recAddress)
                     };
                     abook.set(newId,newBuddy);
                 }
@@ -1465,12 +1476,12 @@ function handleSendTransfer(){
             }).catch((err) => {
                 formMessageSet('send', 'error', `Failed to send transaction:<br><small>${err}</small>`);
             });
-            gutils.clearChild(md);
+            wsutil.clearChild(md);
         });
     });
 
     sendOptimize.addEventListener('click', () => {
-        if(!wlsession.get('synchronized', false)){
+        if(!wsession.get('synchronized', false)){
             showToast('Synchronization is in progress, please wait.');
             return;
         }
@@ -1478,11 +1489,19 @@ function handleSendTransfer(){
         if(!confirm('You are about to perform wallet optimization. This process may took a while to complete, are you sure?')) return;
         showToast('Optimization started, your balance may appear incorrect during the process', 3000);
         FUSION_IN_PROGRESS = true;
-        svcmain.fusionTx.optimize().then((res) => {
-            showToast(res, 6000);
+        wsmanager.optimizeWallet().then( () => {
+            //console.log(res);
             FUSION_IN_PROGRESS = false;
+        }).catch(() => {
+            FUSION_IN_PROGRESS = false;
+            //console.log(err);
         });
         return;
+        // wsmanager.fusionTx.optimize().then((res) => {
+        //     showToast(res, 6000);
+        //     FUSION_IN_PROGRESS = false;
+        // });
+        // return;
     });
 }
 
@@ -1518,7 +1537,7 @@ function handleTransactions(){
                             <tr><th scope="col">Hash</th>
                                 <td data-cplabel="Tx. hash" class="tctcl">${tx.dataset.rawhash}</td></tr>
                             <tr><th scope="col">Address</th>
-                                <td data-cplabel="Address" class="tctcl">${wlsession.get('loadedWalletAddress')}</td></tr>
+                                <td data-cplabel="Address" class="tctcl">${wsession.get('loadedWalletAddress')}</td></tr>
                             <tr><th scope="col">Payment Id</th>
                                 <td data-cplabel="Payment ID" class="tctcl">${tx.dataset.rawpaymentid}</td></tr>
                             <tr><th scope="col">Amount</th>
@@ -1544,7 +1563,7 @@ function handleTransactions(){
             `;
 
         let dialog = document.getElementById('tx-dialog');
-        gutils.innerHTML(dialog, dialogTpl);
+        wsutil.innerHTML(dialog, dialogTpl);
         dialog = document.getElementById('tx-dialog');
         dialog.showModal();
     }
@@ -1566,12 +1585,12 @@ function handleTransactions(){
     }
 
     function listTransactions(){
-        if(wlsession.get('txLen') <= 0){
+        if(wsession.get('txLen') <= 0){
             setTxFiller(true);
             return;
         }
 
-        let txs = wlsession.get('txNew');
+        let txs = wsession.get('txNew');
         if(!txs.length) {
             if(TXLIST_OBJ === null || TXLIST_OBJ.size() <= 0) setTxFiller(true);
             return;
@@ -1602,6 +1621,115 @@ function handleTransactions(){
         }
     }
 
+    function exportAsCsv(mode){
+        if(wsession.get('txLen') <= 0) return;
+
+        formMessageReset();
+        mode = mode || 'all';
+        let recentDir = settings.get('recentWalletDir', remote.app.getPath('documents'));
+        let filename = remote.dialog.showSaveDialog({
+            title: "Export transactions as scv...",
+            defaultPath: recentDir,
+            filters: [
+                { name: 'CSV files', extensions: ['csv'] }
+              ]
+        });
+        if(!filename) return;
+
+        const createCsvWriter  = require('csv-writer').createObjectCsvWriter;
+        const csvWriter = createCsvWriter({
+            path: filename,
+            header: [
+                {id: 'timeStr', title: 'Time'},
+                {id: 'amount', title: 'Amount'},
+                {id: 'paymentId', title: 'PaymentId'},
+                {id: 'transactionHash', title: 'Transaction Hash'},
+                {id: 'fee', title: 'Transaction Fee'},
+                {id: 'extra', title: 'Extra Data'},
+                {id: 'blockIndex', title: 'Block Height'}
+            ]
+        });
+        let rawTxList = wsession.get('txList');
+        let txlist = rawTxList.map((obj) => {
+            return {
+                timeStr: obj.timeStr,
+                amount: obj.amount,
+                paymentId: obj.paymentId,
+                transactionHash: obj.transactionHash,
+                fee: obj.fee,
+                extra: obj.extra,
+                blockIndex: obj.blockIndex,
+                txType: obj.txType
+            };
+        });
+
+        let dialog = document.getElementById('ab-dialog');
+        switch(mode){
+            case 'in':
+                let txin = txlist.filter( (obj) => {return obj.txType === "in";});
+                if(!txin.length){
+                    showToast('Transaction export failed, incoming transactions not available!');
+                    if(dialog.hasAttribute('open')) dialog.close();
+                    return;
+                }
+
+                csvWriter.writeRecords(txin).then(()=>{
+                    if(dialog.hasAttribute('open')) dialog.close();
+                    showToast(`Transaction list exported to ${filename}`);
+                }).catch((err) => {
+                    if(dialog.hasAttribute('open')) dialog.close();
+                    showToast(`Transaction export failed, ${err.message}`);
+                });
+                break;
+            case 'out':
+                let txout = txlist.filter( (obj) => {return obj.txType === "out";});
+                if(!txout.length){
+                    showToast('Transaction export failed, outgoing transactions not available!');
+                    if(dialog.hasAttribute('open')) dialog.close();
+                    return;
+                }
+
+                csvWriter.writeRecords(txout).then(()=>{
+                    if(dialog.hasAttribute('open')) dialog.close();
+                    showToast(`Transaction list exported to ${filename}`);
+                }).catch((err) => {
+                    if(dialog.hasAttribute('open')) dialog.close();
+                    showToast(`Transaction export failed, ${err.message}`);
+                });
+                break;
+            default:
+                csvWriter.writeRecords(txlist).then(()=>{
+                    if(dialog.hasAttribute('open')) dialog.close();
+                    showToast(`Transaction list exported to ${filename}`);
+                }).catch((err) => {
+                    if(dialog.hasAttribute('open')) dialog.close();
+                    showToast(`Transaction export failed, ${err.message}`);
+                });
+                break;
+        }
+    }
+
+    wsutil.liveEvent('button.export-txtype', 'click', (event) => {
+        let txtype = event.target.dataset.txtype || 'all';
+        return exportAsCsv(txtype);
+    });
+
+    txButtonExport.addEventListener('click', () => {
+        let dialogTpl = `<div class="transaction-panel">
+            <h4>Export Transactions to CSV:</h4>
+            <div class="div-panel-buttons">
+                <button data-txtype="all" type="button" class="button-green export-txtype">All Transfers</button>
+                <button data-txtype="in" type="button" class="button-green export-txtype">Incoming Transfers</button>
+                <button data-txtype="out" type="button" class="button-green export-txtype">Outgoing Transfers</button>
+                <button data-target="#ab-dialog" type="button" class="button-gray dialog-close-default">Cancel</button>
+            </div>
+        `;
+        let dialog = document.getElementById('ab-dialog');
+        if(dialog.hasAttribute('open')) dialog.close();
+        dialog.innerHTML = dialogTpl;
+        dialog.showModal();
+    });
+
     // listen to tx update
     txInputUpdated.addEventListener('change', (event) => {
         let updated = parseInt(event.target.value, 10) === 1;
@@ -1618,7 +1746,7 @@ function handleTransactions(){
     });
 
     // tx detail
-    gutils.liveEvent('.txlist-item', 'click', (event) => {
+    wsutil.liveEvent('.txlist-item', 'click', (event) => {
         event.preventDefault();
         event.stopPropagation();
         return showTransaction(event.target);
@@ -1654,16 +1782,17 @@ function handleTransactions(){
 
 function handleNetworkChange(){
     window.addEventListener('online', () => {
-        let connectedNode = wlsession.get('connectedNode');
+        let connectedNode = wsession.get('connectedNode');
         if(!connectedNode.length || connectedNode.startsWith('127.0.0.1')) return;
-        svcmain.netStateChanged(1);
+        wsmanager.networkStateUpdate(1);
     });
     window.addEventListener('offline',  () => {
-        let connectedNode = wlsession.get('connectedNode');
+        let connectedNode = wsession.get('connectedNode');
         if(!connectedNode.length || connectedNode.startsWith('127.0.0.1')) return;
-        svcmain.netStateChanged(0);
+        wsmanager.networkStateUpdate(0);
     });
 }
+
 // event handlers
 function initHandlers(){
     initSectionTemplates();
@@ -1674,7 +1803,7 @@ function initHandlers(){
     handleNetworkChange();
 
     //external link handler
-    gutils.liveEvent('a.external', 'click', (event) => {
+    wsutil.liveEvent('a.external', 'click', (event) => {
         event.preventDefault();
         shell.openExternal(event.target.getAttribute('href'));
         return false;
@@ -1687,7 +1816,7 @@ function initHandlers(){
     }
 
     // inputs click to copy handlers
-    gutils.liveEvent('textarea.ctcl, input.ctcl', 'click', (event) => {
+    wsutil.liveEvent('textarea.ctcl, input.ctcl', 'click', (event) => {
         let el = event.target;
         let wv = el.value ? el.value.trim() : '';
         let cplabel = el.dataset.cplabel ? el.dataset.cplabel : '';
@@ -1698,12 +1827,12 @@ function initHandlers(){
         showToast(cpnotice);
     });
     // non-input elements ctc handlers
-    gutils.liveEvent('.tctcl', 'click', (event) => {
+    wsutil.liveEvent('.tctcl', 'click', (event) => {
         let el = event.target;
         let wv = el.textContent.trim();
         let cplabel = el.dataset.cplabel ? el.dataset.cplabel : '';
         let cpnotice = cplabel ? `${cplabel} copied to clipboard!` : 'Copied to clipboard';
-        gutils.selectText(el);
+        wsutil.selectText(el);
         if(!wv.length) return;
         clipboard.writeText(wv);
         showToast(cpnotice);
@@ -1732,14 +1861,14 @@ function initHandlers(){
         genPaymentId(false);
     });
 
-    gutils.liveEvent('#makePaymentId', 'click', () => {
+    wsutil.liveEvent('#makePaymentId', 'click', () => {
         let payId = genPaymentId(true);
         let iaf = document.getElementById('genOutputIntegratedAddress');
         document.getElementById('genInputPaymentId').value = payId;
         iaf.value = '';
     });
     overviewIntegratedAddressGen.addEventListener('click', showIntegratedAddressForm);
-    gutils.liveEvent('#doGenIntegratedAddr', 'click', () => {
+    wsutil.liveEvent('#doGenIntegratedAddr', 'click', () => {
         formMessageReset();
         let genInputAddress = document.getElementById('genInputAddress');
         let genInputPaymentId = document.getElementById('genInputPaymentId');
@@ -1752,7 +1881,7 @@ function initHandlers(){
             formMessageSet('gia','error', 'Address & Payment ID is required');
             return;
         }
-        if(!gutils.validateTRTLAddress(addr)){
+        if(!wsutil.validateTRTLAddress(addr)){
             formMessageSet('gia','error', 'Invalid TRTL address');
             return;
         }
@@ -1761,12 +1890,12 @@ function initHandlers(){
             formMessageSet('gia','error', 'Only standard TRTL address are supported');
             return;
         }
-        if(!gutils.validatePaymentId(pid)){
+        if(!wsutil.validatePaymentId(pid)){
             formMessageSet('gia','error', 'Invalid Payment ID');
             return;
         }
 
-        svcmain.genIntegratedAddress(pid, addr).then((res) => {
+        wsmanager.genIntegratedAddress(pid, addr).then((res) => {
             formMessageReset();
             outputField.value = res.integratedAddress;
             outputField.setAttribute('title', 'click to copy');
@@ -1813,7 +1942,7 @@ function initHandlers(){
     }
 
     // generic dialog closer
-    gutils.liveEvent('.dialog-close-default','click', (event) => {
+    wsutil.liveEvent('.dialog-close-default','click', (event) => {
         let el = event.target;
         if(el.dataset.target){
             let tel = document.querySelector(el.dataset.target);
@@ -1905,7 +2034,7 @@ function initKeyBindings(){
     // switch tab: ctrl+tab
     Mousetrap.bind(['ctrl+tab','command+tab'], switchTab);
     Mousetrap.bind(['ctrl+o','command+o'], () => {
-        walletOpened = wlsession.get('serviceReady') || false;
+        walletOpened = wsession.get('serviceReady') || false;
         if(walletOpened){
             showToast('Please close current wallet before opening another wallet!');
             return;
@@ -1913,7 +2042,7 @@ function initKeyBindings(){
         return changeSection('section-overview-load');
     });
     Mousetrap.bind(['ctrl+x','command+x'], () => {
-        walletOpened = wlsession.get('serviceReady') || false;
+        walletOpened = wsession.get('serviceReady') || false;
         if(!walletOpened){
             showToast('No wallet is currently opened');
             return;
@@ -1922,13 +2051,13 @@ function initKeyBindings(){
     });
     // display/export private keys: ctrl+e
     Mousetrap.bind(['ctrl+e','command+e'],() => {
-        walletOpened = wlsession.get('serviceReady') || false;
+        walletOpened = wsession.get('serviceReady') || false;
         if(!walletOpened) return;
         return changeSection('section-overview-show');
     });
     // create new wallet: ctrl+n
     Mousetrap.bind(['ctrl+n','command+n'], ()=> {
-        walletOpened = wlsession.get('serviceReady') || false;
+        walletOpened = wsession.get('serviceReady') || false;
         if(walletOpened){
             showToast('Please close current wallet before creating/importing new wallet');
             return;
@@ -1937,7 +2066,7 @@ function initKeyBindings(){
     });
     // import from keys: ctrl+i
     Mousetrap.bind(['ctrl+i','command+i'],() => {
-        walletOpened = wlsession.get('serviceReady') || false;
+        walletOpened = wsession.get('serviceReady') || false;
         if(walletOpened){
             showToast('Please close current wallet before creating/importing new wallet');
             return;
@@ -1946,7 +2075,7 @@ function initKeyBindings(){
     });
     // tx page: ctrl+t
     Mousetrap.bind(['ctrl+t','command+t'],() => {
-        walletOpened = wlsession.get('serviceReady') || false;
+        walletOpened = wsession.get('serviceReady') || false;
         if(!walletOpened){
             showToast('Please open your wallet to view your transactions');
             return;
@@ -1955,7 +2084,7 @@ function initKeyBindings(){
     });
     // send tx: ctrl+s
     Mousetrap.bind(['ctrl+s','command+s'],() => {
-        walletOpened = wlsession.get('serviceReady') || false;
+        walletOpened = wsession.get('serviceReady') || false;
         if(!walletOpened){
             showToast('Please open your wallet to make a transfer');
             return;
@@ -1964,7 +2093,7 @@ function initKeyBindings(){
     });
     // import from mnemonic seed: ctrl+shift+i
     Mousetrap.bind(['ctrl+shift+i','command+shift+i'], () => {
-        walletOpened = wlsession.get('serviceReady') || false;
+        walletOpened = wsession.get('serviceReady') || false;
         if(walletOpened){
             showToast('Please close current wallet before creating/importing new wallet');
             return;
@@ -2013,20 +2142,22 @@ ipcRenderer.on('cleanup', () => {
 
     var dialog = document.getElementById('main-dialog');
     let htmlText = 'Terminating WalletShell...';
-    if(wlsession.get('loadedWalletAddress') !== ''){
+    if(wsession.get('loadedWalletAddress') !== ''){
         htmlText = 'Saving &amp; closing your wallet...';
     }
 
     let htmlStr = `<div class="div-save-main" style="text-align: center;padding:1rem;"><i class="fas fa-spinner fa-pulse"></i><span style="padding:0px 10px;">${htmlText}</span></div>`;
     dialog.innerHTML = htmlStr;
     dialog.showModal();
-    try{ svcmain.stopWorker();}catch(e){}
-    svcmain.stopService().then(() => {
+    wsmanager.stopSyncWorker();
+    wsmanager.stopService().then(() => {
         setTimeout(function(){
             dialog.innerHTML = 'Good bye!';
+            wsmanager.terminateService(true);
             win.close();
         }, 1200);
     }).catch((err) => {
+        wsmanager.terminateService(true);
         win.close();
         console.log(err);
     });
