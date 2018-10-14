@@ -2132,7 +2132,6 @@ document.addEventListener('DOMContentLoaded', () => {
 }, false);
 
 
-// ipc listeners
 //ipcRenderer.on('cleanup', (event, message) => {
 ipcRenderer.on('cleanup', () => {
     if(!win.isVisible()) win.show();
