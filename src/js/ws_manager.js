@@ -1,4 +1,6 @@
 const path = require('path');
+const fs = require('fs');
+const os = require('os');
 const childProcess = require('child_process');
 const log = require('electron-log');
 const Store = require('electron-store');
@@ -37,6 +39,7 @@ var WalletShellManager = function(){
     this.serviceHost = settings.get('service_host');
     this.servicePort = settings.get('service_port');
     this.serviceArgsDefault = [ '--rpc-password', settings.get('service_password')];
+    this.walletConfigDefault = {'rpc-password': settings.get('service_password')};
     this.servicePid = null;
     this.serviceLastPid = null;
     this.serviceActiveArgs = [];
@@ -99,6 +102,24 @@ WalletShellManager.prototype.isRunning = function () {
     });
 };
 
+WalletShellManager.prototype._writeConfig = function(cfg){
+    let configFile = wsession.get('walletConfig');
+    if(!configFile) return '';
+
+    cfg = cfg || {};
+    if(!cfg) return '';
+
+    let configData = '';
+    Object.keys(cfg).map((k) => { configData += `${k}=${cfg[k]}${os.EOL}`;});
+    try{
+        fs.writeFileSync(configFile, configData);
+        return configFile;
+    }catch(err){
+        log.error(err);
+        return '';
+    }
+};
+
 WalletShellManager.prototype.startService = function(walletFile, password, onError, onSuccess, onDelay){
     this.init();
 
@@ -118,7 +139,7 @@ WalletShellManager.prototype.startService = function(walletFile, password, onErr
         '--log-level', 0,
         '--address'
     ]);
-    
+
     let wsm = this;
 
     childProcess.execFile(this.serviceBin, serviceArgs, (error, stdout, stderr) => {
@@ -163,6 +184,27 @@ WalletShellManager.prototype._spawnService = function(walletFile, password, onEr
     if(SERVICE_LOG_LEVEL > 0){
         serviceArgs.push('--log-file');
         serviceArgs.push(logFile);
+    }
+
+    let newConfig = {
+        'container-file': walletFile,
+        'container-password': password,
+        'enable-cors' : '*',
+        'daemon-address': this.daemonHost,
+        'daemon-port': this.daemonPort,
+        'log-level': SERVICE_LOG_LEVEL
+    };
+
+    if(SERVICE_LOG_LEVEL > 0){
+        newConfig['log-file'] = logFile;
+    }
+
+    let walletConfig = wsutil.mergeObj(this.walletConfigDefault, newConfig);
+    let configFile = this._writeConfig(walletConfig);
+    if(configFile){
+        serviceArgs = ['--config',configFile];
+    }else{
+        log.warn('Failed to create config file, fallback to cmd args ');
     }
 
     // if(scanHeight && scanHeight > 1024) walletArgs = walletArgs.concat(['--scan-height', scanHeight]);
@@ -294,8 +336,12 @@ WalletShellManager.prototype.terminateService = function(force) {
             }
         }
     }
+    
     this.serviceProcess = null;
     this.servicePid = null;
+    // remove wallet config
+    let configFile = wsession.get('walletConfig');
+    if(configFile) try{ fs.unlinkSync(configFile); }catch(e){}
 };
 
 WalletShellManager.prototype.startSyncWorker = function(){
@@ -366,10 +412,17 @@ WalletShellManager.prototype.stopSyncWorker = function(){
 
 WalletShellManager.prototype.getNodeFee = function(){
     let wsm = this;
+    
     this.serviceApi.getFeeInfo().then((res) => {
-        // store
-        let theFee = (res.amount / 100);
+        let theFee;
+        if(!res.amount || !res.address){
+            theFee = 0;
+        }else{
+            theFee = (res.amount / 100);
+        }
         wsession.set('nodeFee', theFee);
+        if(theFee <= 0) return theFee;
+        
         wsm.notifyUpdate({
             type: 'nodeFeeUpdated',
             data: theFee

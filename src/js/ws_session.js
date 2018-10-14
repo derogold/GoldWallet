@@ -1,3 +1,4 @@
+const path = require('path');
 const remote = require('electron').remote;
 const Store = require('electron-store');
 const settings = new Store({name: 'Settings'});
@@ -7,6 +8,7 @@ const SESSION_KEY = 'wlshell';
 
 // TODO: this is the only thing left as global
 const IS_DEBUG = remote.getGlobal('wsession').debug;
+const WALLET_CFG = path.join(remote.app.getPath('userData'), 'wconfig.txt');
 
 var WalletShellSession = function(){
     if (!(this instanceof WalletShellSession)) return new WalletShellSession();
@@ -18,6 +20,7 @@ var WalletShellSession = function(){
         walletHash: '',
         walletUnlockedBalance: 0,
         walletLockedBalance: 0,
+        walletConfig: WALLET_CFG,
         synchronized: false,
         syncStarted: false,
         serviceReady: false,

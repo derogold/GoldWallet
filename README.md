@@ -8,7 +8,7 @@ It is meant to be able to work on Windows, Linux and MacOS, however so far we've
 ![WalletShell Screens](https://raw.githubusercontent.com/rixombea/turtle-wallet-electron/wssx/sc/walletshell_ss.gif "WalletShell Screens")
 
 ### Features:
-This wallet contains the basic functions required to manage your TurtleCoin wallet:
+This wallet contains the basic functions required to manage your TurtleCoin assets:
 
 * Wallet creation
   * Create new wallet
@@ -55,13 +55,11 @@ If you don't trust the bundled `turtle-service` file, you can compare the sha256
 
 #### Windows:
 1. Download the latest installer here: https://github.com/turtlecoin//turtle-wallet-electron/releases
-
 2. Run the installer (`walletshell-<version>-win-setup.exe`) and follow the installation wizard.
 3. Launch WalletShell via start menu or desktop shortcut.
 
 #### GNU/Linux (AppImage):
 1. Download latest AppImage bundle here: https://github.com/turtlecoin//turtle-wallet-electron/releases
-
 2. Make it executable, either via GUI file manager or command line, e.g. `chmod +x walletshell-<version>-linux.AppImage`
 3. Run/execute the file, double click in file manager, or run via shell/command line. 
 
@@ -69,7 +67,6 @@ See: https://docs.appimage.org/user-guide/run-appimages.html
 
 #### GNU/Linux (tar.bz2 archive)
 1. Download latest archive here: https://github.com/turtlecoin//turtle-wallet-electron/releases
-
 2. Extract with file/archive manager of your choice.
 3. Run the executable binary (`walletshell-<version>/walletshell`)
 

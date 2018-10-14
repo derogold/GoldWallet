@@ -14,4 +14,5 @@
 | <kbd>Ctrl</kbd>+<kbd>t</kbd>                   | Switch to **Transactions** section |
 | <kbd>Ctrl</kbd>+<kbd>s</kbd>                   | Switch to **Send/Transfer** section |
 | <kbd>Ctrl</kbd>+<kbd>\\</kbd>                  | Toggle dark/night mode |
+| <kbd>Ctrl</kbd>+<kbd>/</kbd>                  | Display list of available shortcuts |
 | <kbd>Esc</kbd>                                 | Close any opened dialog |
