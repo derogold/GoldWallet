@@ -45,8 +45,8 @@ let settingsInputServiceBin;
 let settingsInputMinToTray;
 let settingsInputCloseToTray;
 let settingsButtonSave;
-let settingsDaemonHostFormHelp;
-let settingsDaemonPortFormHelp;
+//let settingsDaemonHostFormHelp;
+//let settingsDaemonPortFormHelp;
 // overview page
 let overviewWalletAddress;
 let overviewWalletCloseButton;
@@ -131,8 +131,8 @@ function populateElementVars(){
     settingsInputMinToTray = document.getElementById('checkbox-tray-minimize');
     settingsInputCloseToTray = document.getElementById('checkbox-tray-close');
     settingsButtonSave = document.getElementById('button-settings-save');
-    settingsDaemonHostFormHelp = document.getElementById('daemonHostFormHelp');
-    settingsDaemonPortFormHelp = document.getElementById('daemonPortFormHelp');
+    // settingsDaemonHostFormHelp = document.getElementById('daemonHostFormHelp');
+    // settingsDaemonPortFormHelp = document.getElementById('daemonPortFormHelp');
 
     // overview pages
     overviewWalletAddress = document.getElementById('wallet-address');
@@ -434,22 +434,25 @@ function changeSection(sectionId, isSettingRedir) {
         showToast("Please wait until syncing process completed!");
         return;
     }else{
-        if(targetSection === 'section-settings'){           
-            let defaultText = 'Type first few character(s) and select from public node list, or type to your own node address';
-            if(isServiceReady){
-                settingsInputDaemonAddress.setAttribute('disabled','disabled');
-                settingsInputDaemonPort.setAttribute('disabled','disabled');
-                settingsDaemonHostFormHelp.innerHTML = "Please close your current wallet if you want to update node setting";
-                settingsDaemonPortFormHelp.innerHTML = "Please close your current wallet if you want to update node setting";
-            }else{
-                settingsInputDaemonAddress.removeAttribute('disabled');
-                settingsInputDaemonPort.removeAttribute('disabled');
-                settingsDaemonHostFormHelp.innerHTML = defaultText;
-                settingsDaemonPortFormHelp.innerHTML = '';
-                // re-randomize public node selection
-                initNodeCompletion();
-            }
+        if(targetSection === 'section-overview-load'){
+            initNodeCompletion();
         }
+        // if(targetSection === 'section-settings'){           
+        //     let defaultText = 'Type first few character(s) and select from public node list, or type to your own node address';
+        //     if(isServiceReady){
+        //         settingsInputDaemonAddress.setAttribute('disabled','disabled');
+        //         settingsInputDaemonPort.setAttribute('disabled','disabled');
+        //         settingsDaemonHostFormHelp.innerHTML = "Please close your current wallet if you want to update node setting";
+        //         settingsDaemonPortFormHelp.innerHTML = "Please close your current wallet if you want to update node setting";
+        //     }else{
+        //         settingsInputDaemonAddress.removeAttribute('disabled');
+        //         settingsInputDaemonPort.removeAttribute('disabled');
+        //         settingsDaemonHostFormHelp.innerHTML = defaultText;
+        //         settingsDaemonPortFormHelp.innerHTML = '';
+        //         // re-randomize public node selection
+        //         initNodeCompletion();
+        //     }
+        // }
         finalTarget = targetSection;
         toastMsg = '';
     }
@@ -479,14 +482,12 @@ function changeSection(sectionId, isSettingRedir) {
     // notify section was changed
     let currentButton = document.querySelector(`button[data-section="${finalButtonTarget}"]`);
     if(currentButton){
-        //wsmanager.onSectionChanged(currentButton.getAttribute('id'));
         wsmanager.notifyUpdate({
             type: 'sectionChanged',
             data: currentButton.getAttribute('id')
         });
     }
 }
-
 
 // public nodes autocompletion
 function initNodeCompletion(){
@@ -686,10 +687,15 @@ function handleSettings(){
     settingsButtonSave.addEventListener('click', function(){
         formMessageReset();
         let serviceBinValue = settingsInputServiceBin.value ? settingsInputServiceBin.value.trim() : '';
-        let daemonHostValue = settingsInputDaemonAddress.value ? settingsInputDaemonAddress.value.trim() :'';
-        let daemonPortValue = settingsInputDaemonPort.value ? parseInt(settingsInputDaemonPort.value.trim(),10) : '';
+        //let daemonHostValue = settingsInputDaemonAddress.value ? settingsInputDaemonAddress.value.trim() :'';
+        //let daemonPortValue = settingsInputDaemonPort.value ? parseInt(settingsInputDaemonPort.value.trim(),10) : '';
         
-        if(!serviceBinValue.length || !daemonHostValue.length || !Number.isInteger(daemonPortValue)){
+        // if(!serviceBinValue.length || !daemonHostValue.length || !Number.isInteger(daemonPortValue)){
+        //     formMessageSet('settings','error',`Settings can't be saved, please enter correct values`);
+        //     return false;
+        // }
+
+        if(!serviceBinValue.length){
             formMessageSet('settings','error',`Settings can't be saved, please enter correct values`);
             return false;
         }
@@ -699,26 +705,27 @@ function handleSettings(){
             return false;
         }
         
-        let validHost = daemonHostValue === 'localhost' ? true : false;
-        if(require('net').isIP(daemonHostValue)) validHost = true;
-        if(!validHost){
-            let domRe = new RegExp(/([a-z])([a-z0-9]+\.)*[a-z0-9]+\.[a-z.]+/ig);
-            if(domRe.test(daemonHostValue)) validHost = true;
-        }
-        if(!validHost){
-            formMessageSet('settings','error',`Invalid daemon/node address!`);
-            return false;
-        }
+        // let validHost = daemonHostValue === 'localhost' ? true : false;
+        // if(require('net').isIP(daemonHostValue)) validHost = true;
+        // if(!validHost){
+        //     let domRe = new RegExp(/([a-z])([a-z0-9]+\.)*[a-z0-9]+\.[a-z.]+/ig);
+        //     if(domRe.test(daemonHostValue)) validHost = true;
+        // }
+        // if(!validHost){
+        //     formMessageSet('settings','error',`Invalid daemon/node address!`);
+        //     return false;
+        // }
 
-        if(daemonPortValue <=0){
-            formMessageSet('settings','error',`Invalid daemon/node port number!`);
-            return false;
-        }
-
+        // if(daemonPortValue <=0){
+        //     formMessageSet('settings','error',`Invalid daemon/node port number!`);
+        //     return false;
+        // }
+        
+        
         let vals = {
             service_bin: serviceBinValue,
-            daemon_host: daemonHostValue,
-            daemon_port: daemonPortValue,
+            daemon_host: settings.get('daemon_host'),
+            daemon_port: settings.get('daemon_port'),
             tray_minimize: settingsInputMinToTray.checked,
             tray_close: settingsInputCloseToTray.checked
         };
@@ -959,6 +966,42 @@ function handleWalletOpen(){
 
     walletOpenButtonOpen.addEventListener('click', () => {
         formMessageReset();
+        // node settings thingy
+        let daemonHostValue = settingsInputDaemonAddress.value ? settingsInputDaemonAddress.value.trim() :'';
+        let daemonPortValue = settingsInputDaemonPort.value ? parseInt(settingsInputDaemonPort.value.trim(),10) : '';
+
+        if(!daemonHostValue.length || !Number.isInteger(daemonPortValue)){
+            formMessageSet('load','error',`Please enter enter a valid daemon address & port`);
+            return false;
+        }
+
+        let validHost = daemonHostValue === 'localhost' ? true : false;
+        if(require('net').isIP(daemonHostValue)) validHost = true;
+        if(!validHost){
+            let domRe = new RegExp(/([a-z])([a-z0-9]+\.)*[a-z0-9]+\.[a-z.]+/ig);
+            if(domRe.test(daemonHostValue)) validHost = true;
+        }
+        if(!validHost){
+            formMessageSet('load','error',`Invalid daemon/node address!`);
+            return false;
+        }
+
+        if(daemonPortValue <=0){
+            formMessageSet('load','error',`Invalid daemon/node port number!`);
+            return false;
+        }
+
+        let settingVals = {
+            service_bin: settings.get('service_bin'),
+            daemon_host: daemonHostValue,
+            daemon_port: daemonPortValue,
+            tray_minimize: settings.get('tray_minimize'),
+            tray_close: settings.get('tray_close')
+        };
+        initSettingVal(settingVals);
+        initNodeCompletion();
+
+        // actually open wallet
         if(!walletOpenInputPath.value){
             formMessageSet('load','error', "Invalid wallet file path");
             WALLET_OPEN_IN_PROGRESS = false;
@@ -1496,12 +1539,7 @@ function handleSendTransfer(){
             FUSION_IN_PROGRESS = false;
             //console.log(err);
         });
-        return;
-        // wsmanager.fusionTx.optimize().then((res) => {
-        //     showToast(res, 6000);
-        //     FUSION_IN_PROGRESS = false;
-        // });
-        // return;
+        return; // just return, it will notify when its done.
     });
 }
 
@@ -2116,7 +2154,8 @@ function initKeyBindings(){
 
     Mousetrap.bind('esc', () => {
         let openedDialog = document.querySelector('dialog[open]');
-        if(openedDialog) return openedDialog.close();
+        if(!openedDialog) return;
+        return openedDialog.close();
     });
 
     Mousetrap.bind([`ctrl+\\`,`command+\\`], ()=>{
@@ -2131,8 +2170,6 @@ document.addEventListener('DOMContentLoaded', () => {
     initKeyBindings();
 }, false);
 
-
-//ipcRenderer.on('cleanup', (event, message) => {
 ipcRenderer.on('cleanup', () => {
     if(!win.isVisible()) win.show();
     if(win.isMinimized()) win.restore();

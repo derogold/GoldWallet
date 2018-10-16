@@ -69,6 +69,9 @@ WalletShellManager.prototype._getSettings = function(){
 
 WalletShellManager.prototype._reinitSession = function(){
     wsession.reset();
+    // remove wallet config
+    let configFile = wsession.get('walletConfig');
+    if(configFile) try{ fs.unlinkSync(configFile); }catch(e){}
     this.notifyUpdate({
         type: 'sectionChanged',
         data: 'reset-oy'
@@ -303,10 +306,10 @@ WalletShellManager.prototype.stopService = function(){
                 }
             }).catch((err) => {
                 log.debug(`Failed to save wallet: ${err.message}`);
-                wsm._reinitSession();
                 // try to wait for save to completed before force killing
                 setTimeout(()=>{
                     wsm.terminateService(true); // force kill
+                    wsm._reinitSession();
                     resolve(true);
                 },10000);
             });
@@ -339,9 +342,6 @@ WalletShellManager.prototype.terminateService = function(force) {
     
     this.serviceProcess = null;
     this.servicePid = null;
-    // remove wallet config
-    let configFile = wsession.get('walletConfig');
-    if(configFile) try{ fs.unlinkSync(configFile); }catch(e){}
 };
 
 WalletShellManager.prototype.startSyncWorker = function(){

@@ -1,11 +1,7 @@
-# WalletShell
+![WalletShell](docs/walletshell.png)  
+WalletShell is a GUI wallet for TurtleCoin.
 
-![WalletShell Logo](docs/walletshell.png)  
-This is a GUI wallet for TurtleCoin made using Electron, this means it's written in JavaScript, HTML and CSS. 
-
-It is meant to be able to work on Windows, Linux and MacOS, however so far we've only been able to test it on Linux &amp; Windows.
-
-![WalletShell Screens](https://raw.githubusercontent.com/rixombea/turtle-wallet-electron/wssx/sc/walletshell_ss.gif "WalletShell Screens")
+![WalletShell Screens](https://i.imgur.com/41Ujq0S.gif "WalletShell Screens")
 
 ### Features:
 This wallet contains the basic functions required to manage your TurtleCoin assets:
@@ -21,6 +17,7 @@ This wallet contains the basic functions required to manage your TurtleCoin asse
   * Export private keys/seed
   * Transactions listing/sorting/searching
   * Display transaction detail
+  * Export incoming, outgoing, or all transactions to csv file.
   * Incoming Transaction notification
   * Send TurtleCoin to single recipient address, allow to set payment id and custom fee. Provides address lookup from addressbook.
   * Perform wallet optimization by creating fusion transactions 
@@ -39,17 +36,15 @@ This wallet contains the basic functions required to manage your TurtleCoin asse
   * [Keyboard shortcuts](docs/shortcut.md)
 
 
-There are still plenty of room for improvements and features, so we will gladly accept help from anyone who is capable of lending a hand.
-
 ### Notes
 
 WalletShell relies on `turtle-service` to manage wallet container &amp; rpc communication.
 
-WalletShell release packaged includes ready to use `turtle-service` binary, which is unmodified copy TurtleCoin release archive.
+Release installer & packaged archived includes a ready to use `turtle-service` binary, which is unmodified copy TurtleCoin release archive.
 
-On first launch, WalletShell will try to detect location/path of bundled `turtle-service` binary, but if it's failed, you can set path to the `turtle-service` binary on the Settings tab.
+On first launch, WalletShell will try to detect location/path of bundled `turtle-service` binary, but if it's failed, you can manually set path to the `turtle-service` binary on the Settings screen.
 
-If you don't trust the bundled `turtle-service` file, you can compare the sha256 sum against one from the official release, or simply download and use the binary from official TurtleCoin release, which you can download here: https://github.com/turtlecoin/turtlecoin/releases. Then,  make sure to update your `turtle-service` path setting.
+If you don't trust the bundled `turtle-service` file, you can compare the checksum (sha256sum) against one from the official release, or simply download and use the binary from official TurtleCoin release, which is available here: https://github.com/turtlecoin/turtlecoin/releases. Then,  make sure to update your `turtle-service` path setting.
 
 ### Download &amp; Run WalletShell
 
@@ -115,6 +110,3 @@ $ npm run dist-mac
 ```
 
 Resulting packages or installer can be found inside `dist/` directory.
-
-### Screenshots
-![Walletshell](https://i.imgur.com/weENjm4.png)
