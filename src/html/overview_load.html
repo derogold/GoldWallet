@@ -24,6 +24,23 @@
                         />
                         <button tabindex="-1" class="togpass notabindex" data-pf="input-load-password"><i class="fas fa-eye"></i></button>
                 </div>
+                <div class="input-wrap">
+                    <div class="inline-block-div half-width" style="width:62%;">
+                        <h4 class="text-spaced input-required">Daemon or public node address (IP or hostname)</h4>
+                        <input tabindex="0" required="required" data-initial="daemon_host" 
+                            name="nodeAddress" class="text-block" id="input-settings-daemon-address" 
+                            placeholder="Required, hostname or IP address of the TurtleCoin daemon or public node..." />
+                        <span id="daemonHostFormHelp" class="form-help">Type first few character(s) and select from public node list, or type to your own node address.</span>
+                    </div>
+                    <div class="inline-block-div half-width half-width-end" style="width:33%;float:right;margin-right:1.4rem;">
+                        <h4 class="text-spaced input-required">Daemon/Node port</h4>
+                        <input tabindex="0" type="number" required="required" data-initial="daemon_port" 
+                            class="text-block" id="input-settings-daemon-port" 
+                            placeholder="Required, port number of the TurtleCoin daemon or public node..." 
+                            />
+                        <span  id="daemonPortFormHelp" class="form-help"></span>
+                    </div>
+                </div>
 
                 <!-- <div class="input-wrap">
                     <h4 class="text-spaced input-required">Daemon or public node address (&lt;IP_or_hostname&gt;:&lt;port_number&gt;)</h4>

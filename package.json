@@ -44,7 +44,8 @@
     "linux": {
       "artifactName": "${productName}-v${version}-${os}-${arch}.${ext}",
       "target": [
-        "AppImage"
+        "AppImage",
+        "tar.bz2"
       ],
       "maintainer": "rixombea (@labaylabay)",
       "category": "Office",
