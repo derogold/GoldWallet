@@ -235,30 +235,34 @@ function storeNodeList(pnodes){
 }
 
 function doNodeListUpdate(){
-    https.get(PUBLIC_NODES_URL, (res) => {
-        var result = '';
-        res.setEncoding('utf8');
+    try{
+        https.get(PUBLIC_NODES_URL, (res) => {
+            var result = '';
+            res.setEncoding('utf8');
 
-        res.on('data', (chunk) => {
-            result += chunk;
-        });
+            res.on('data', (chunk) => {
+                result += chunk;
+            });
 
-        res.on('end', () => {
-            try{
-                var pnodes = JSON.parse(result);
-                let today = new Date();
-                storeNodeList(pnodes);
-                log.debug('Public node list has been updated');
-                let mo = (today.getMonth()+1);
-                settings.set('pubnodes_date', `${today.getFullYear()}-${mo}-${today.getDate()}`);
-            }catch(e){
-                log.debug(`Failed to update public node list: ${e.message}`);
-                storeNodeList();
-            }
+            res.on('end', () => {
+                try{
+                    var pnodes = JSON.parse(result);
+                    let today = new Date();
+                    storeNodeList(pnodes);
+                    log.debug('Public node list has been updated');
+                    let mo = (today.getMonth()+1);
+                    settings.set('pubnodes_date', `${today.getFullYear()}-${mo}-${today.getDate()}`);
+                }catch(e){
+                    log.debug(`Failed to update public node list: ${e.message}`);
+                    storeNodeList();
+                }
+            });
+        }).on('error', (e) => {
+            log.debug(`Failed to update public-node list: ${e.message}`);
         });
-    }).on('error', (e) => {
-        log.debug(`Failed to update public node list: ${e.message}`);
-    });
+    }catch(e){
+        log.error(`Failed to update public-node list: ${e.code} - ${e.message}`);
+    }
 }
 
 function serviceBinCheck(){

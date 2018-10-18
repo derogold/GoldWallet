@@ -1047,8 +1047,10 @@ function handleWalletOpen(){
             setOpenButtonsState(1);
             WALLET_OPEN_IN_PROGRESS = true;
             settings.set('recentWallet', walletFile);
+            settings.set('recentWalletDir', path.dirname(walletFile));
             formMessageSet('load','warning', "Accessing wallet...<br><progress></progress>");
             wsmanager.stopService().then(() => {
+
                 formMessageSet('load','warning', "Starting wallet service...<br><progress></progress>");
                 setTimeout(() => {
                     formMessageSet('load','warning', "Opening wallet, please be patient...<br><progress></progress>");
