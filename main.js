@@ -9,6 +9,7 @@ const Store = require('electron-store');
 const settings = new Store({name: 'Settings'});
 const log = require('electron-log');
 const splash = require('@trodi/electron-splashscreen');
+const config = require('./src/js/ws_config');
 
 const IS_DEV  = (process.argv[1] === 'dev' || process.argv[2] === 'dev');
 const IS_DEBUG = IS_DEV || process.argv[1] === 'debug' || process.argv[2] === 'debug';
@@ -19,25 +20,18 @@ log.transports.file.level = LOG_LEVEL;
 log.transports.file.maxSize = 5 * 1024 * 1024;
 
 const WALLETSHELL_VERSION = app.getVersion() || '0.3.4';
-const SERVICE_FILENAME =  (platform === 'win32' ? 'turtle-service.exe' : 'turtle-service' );
+const SERVICE_FILENAME =  (platform === 'win32' ? `${config.walletServiceBinaryFilename}.exe` : config.walletServiceBinaryFilename );
 const SERVICE_OSDIR = (platform === 'win32' ? 'win' : (platform === 'darwin' ? 'osx' : 'lin'));
 const DEFAULT_SERVICE_BIN = path.join(process.resourcesPath,'bin', SERVICE_OSDIR, SERVICE_FILENAME);
-const DEFAULT_TITLE = 'WalletShell TurtleCoin Wallet';
-const DEFAULT_TRAY_TIP = 'Slow and steady wins the race!';
-const PUBLIC_NODES_URL = 'https://raw.githubusercontent.com/turtlecoin/turtlecoin-nodes-json/master/turtlecoin-nodes.json';
-const FALLBACK_NODES = [
-    'public.turtlenode.io:11898',
-    'public.turtlenode.net:11898',
-];
 const DEFAULT_SETTINGS = {
     service_bin: DEFAULT_SERVICE_BIN,
     service_host: '127.0.0.1',
-    service_port: 8070,
+    service_port: config.walletServiceRpcPort,
     service_password: crypto.randomBytes(32).toString('hex'),
-    daemon_host: 'public.turtlenode.io',
-    daemon_port: 11898,
+    daemon_host: config.remoteNodeDefaultHost,
+    daemon_port: config.daemonDefaultRpcPort,
     pubnodes_date: null,
-    pubnodes_data: FALLBACK_NODES,
+    pubnodes_data: config.remoteNodeListFallback,
     pubnodes_custom: ['127.0.0.1:11898'],
     tray_minimize: false,
     tray_close: false,
@@ -51,7 +45,7 @@ const DEFAULT_SIZE = {
 app.prompExit = true;
 app.prompShown = false;
 app.needToExit = false;
-app.setAppUserModelId('lol.turtlecoin.walletshell');
+app.setAppUserModelId(config.appId);
 
 log.info(`Starting WalletShell ${WALLETSHELL_VERSION}`);
 
@@ -67,7 +61,7 @@ function createWindow () {
     let bgColor = darkmode ? '#000000' : '#02853E';
 
     const winOpts = {
-        title: DEFAULT_TITLE,
+        title: `${config.appName} ${config.appDescription}`,
         icon: path.join(__dirname,'src/assets/walletshell_icon.png'),
         frame: true,
         width: DEFAULT_SIZE.width,
@@ -102,8 +96,8 @@ function createWindow () {
 
     tray = new Tray(trayIcon);
     tray.setPressedImage(trayIconHide);
-    tray.setTitle(DEFAULT_TITLE);
-    tray.setToolTip(DEFAULT_TRAY_TIP);
+    tray.setTitle(config.appName);
+    tray.setToolTip(config.appSlogan);
     tray.setContextMenu(contextMenu);
     tray.on('click', () => {
         if(settings.get('tray_minimize', false)){
@@ -135,7 +129,7 @@ function createWindow () {
             }
         ]);
         tray.setContextMenu(contextMenu);
-        tray.setToolTip(DEFAULT_TRAY_TIP);
+        tray.setToolTip(config.appSlogan);
     });
 
     win.on('hide', () => {
@@ -173,8 +167,8 @@ function createWindow () {
     // show windosw
     win.once('ready-to-show', () => {
         //win.show();
-        win.setTitle(DEFAULT_TITLE);
-        tray.setToolTip(DEFAULT_TRAY_TIP);
+        win.setTitle(`${config.appName} ${config.appDescription}`);
+        tray.setToolTip(config.appSlogan);
     });
 
     win.on('close', (e) => {
@@ -236,7 +230,7 @@ function storeNodeList(pnodes){
 
 function doNodeListUpdate(){
     try{
-        https.get(PUBLIC_NODES_URL, (res) => {
+        https.get(config.remoteNodeListUpdateUrl, (res) => {
             var result = '';
             res.setEncoding('utf8');
 
@@ -278,7 +272,7 @@ function serviceBinCheck(){
             log.error(err);
         }else{
             settings.set('service_bin', targetPath);
-            log.debug(`turtle-service copied to ${targetPath}`);
+            log.debug(`service binary copied to ${targetPath}`);
         }
         //log.warn(`TurtleService copied to ${targetPath}`);
         //settings.set('service_bin', targetPath);
@@ -314,15 +308,17 @@ app.on('ready', () => {
         debug: IS_DEBUG
     };
 
-    let today = new Date();
-    let last_checked = new Date(settings.get('pubnodes_date'));
-    let diff_d = parseInt((today-last_checked)/(1000*60*60*24),10);
-    if(diff_d >= 1){
-        log.info('Performing daily public-node list update.');
-        doNodeListUpdate();
-    }else{
-        log.info('Public node list up to date, skipping update');
-        storeNodeList(false); // from local cache
+    if(config.remoteNodeListUpdateUrl){
+        let today = new Date();
+        let last_checked = new Date(settings.get('pubnodes_date'));
+        let diff_d = parseInt((today-last_checked)/(1000*60*60*24),10);
+        if(diff_d >= 1){
+            log.info('Performing daily public-node list update.');
+            doNodeListUpdate();
+        }else{
+            log.info('Public node list up to date, skipping update');
+            storeNodeList(false); // from local cache
+        }
     }
     
     createWindow();

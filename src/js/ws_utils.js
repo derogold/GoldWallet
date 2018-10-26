@@ -3,6 +3,14 @@ const path = require('path');
 const crypto = require('crypto');
 const {nativeImage} = require('electron');
 const qr = require('qr-image');
+const config = require('./ws_config');
+
+
+const ADDRESS_REGEX_STR = `^${config.addressPrefix}(?=[aA-zZ0-9]*$)(?:.{${config.addressLength-config.addressPrefix.length}}|.{${config.integratedAddressLength-config.addressPrefix.length}})$`;
+const ADDRESS_REGEX = new RegExp(ADDRESS_REGEX_STR);
+const PAYMENT_ID_REGEX = new RegExp(/^([aA-zZ0-9]{64})$/);
+const SECRET_KEY_REGEX = new RegExp(/^[aA-zZ0-9]{64}$/);
+const MNEMONIC_SEED_REGEX = new RegExp(/^[aA-zZ]+(?!.*  )[a-zA-Z0-9 ]*$/);
 
 /***** * DOM util *****/
 exports.triggerEvent = (el, type) => {
@@ -102,33 +110,62 @@ exports.genQrDataUrl = (inputStr) => {
     return nImg.toDataURL();
 };
 
+let decimalAdjust = (type, value, exp) => {
+    if (typeof exp === 'undefined' || +exp === 0) {
+      return Math[type](value);
+    }
+    value = +value;
+    exp = +exp;
+    if (isNaN(value) || !(typeof exp === 'number' && exp % 1 === 0)) {
+      return NaN;
+    }
+    // Shift
+    value = value.toString().split('e');
+    value = Math[type](+(value[0] + 'e' + (value[1] ? (+value[1] - exp) : -exp)));
+    // Shift back
+    value = value.toString().split('e');
+    return +(value[0] + 'e' + (value[1] ? (+value[1] + exp) : exp));
+};
+
 exports.validateTRTLAddress = (address) => {
     if(!address) return false;
     let re = new RegExp(/^TRTL(?=[aA-zZ0-9]*$)(?:.{95}|.{183})$/g);
     return re.test(address);
 };
 
+exports.validateAddress = (address) => {
+    return ADDRESS_REGEX.test(address);
+};
+
 exports.validatePaymentId = (paymentId) => {
     if(!paymentId) return true; // true allow empty
-    let re = new RegExp(/^([aA-zZ0-9]{64})$/g);
-    return re.test(paymentId);
+    return PAYMENT_ID_REGEX.test(paymentId);
 };
 
 exports.validateSecretKey = (key) => {
-    if(!key){
-        console.log('emmpty key');
-        return false;
-    }
-    let re = new RegExp(/^[aA-zZ0-9]{64}$/g);
-    return re.test(key);
+    return SECRET_KEY_REGEX.test(key);
 };
 
 exports.validateMnemonic = (seed) => {
     if(!seed) return false;
-    let re = new RegExp(/^[aA-zZ]+(?!.*  )[a-zA-Z0-9 ]*$/g);
-    if(!re.test(seed)) return false;
+
+    if(!MNEMONIC_SEED_REGEX.test(seed)) return false;
+
     if(seed.split(' ').length !== 25) return false;
+
     return true;
+};
+
+exports.amountForMortal = (amount) => {
+    if(!config.decimalDivisor) return amount;
+    let decimalPlaces = config.decimalPlaces || 2;
+    return (amount / config.decimalDivisor).toFixed(decimalPlaces);
+};
+
+exports.amountForImmortal = (amount) => {
+    if(!config.decimalDivisor) return amount;
+    let da = decimalAdjust("round", parseFloat(amount), -(config.decimalPlaces));
+    return parseInt(da*config.decimalDivisor);
 };
 
 exports.isFileExist = (filePath) => {
@@ -176,9 +213,9 @@ exports.isRegularFileAndWritable = (filePath) => {
 
 exports.normalizeWalletFilename = (rawFilename) => {
     if(!rawFilename) return '';
-    const walletExt = 'twl';
+    const walletExt = config.walletFileDefaultExt;
     let ext = path.extname(rawFilename.trim());
-    if(ext.endsWith('.twl')) return rawFilename;
+    if(ext.endsWith(`.${walletExt}`)) return rawFilename;
     if(ext.endsWith('.')) return `${rawFilename}${walletExt}`;
     return `${rawFilename}.${walletExt}`;
 };

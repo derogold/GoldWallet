@@ -1,14 +1,15 @@
 const request = require('request-promise-native');
+const config = require('./ws_config.js');
 
 class WalletShellApi {
     constructor(args) {
         args = args || {};
         if (!(this instanceof WalletShellApi)) return new WalletShellApi(args);
         this.service_host = args.service_host || '127.0.0.1';
-        this.service_port = args.service_port || 8070;
+        this.service_port = args.service_port || config.walletServiceRpcPort;
         this.service_password = args.service_password || "WHATEVER1234567891";
-        this.tx_fee = (args.tx_fee !== undefined) ? args.tx_fee : 0.1;
-        this.anonimity = 3;
+        this.minimum_fee = (args.minimum_fee !== undefined) ? args.minimum_fee : (config.minimumFee*config.decimalDivisor);
+        this.anonimity = config.defaultMixin;
     }
     _sendRequest(method, params, timeout) {
         return new Promise((resolve, reject) => {
@@ -193,7 +194,7 @@ class WalletShellApi {
             params.address = params.address || false;
             //params.transfers = params.transfers || false;
             params.paymentId = params.paymentId || false;
-            params.fee = params.fee || 0.1;
+            params.fee = params.fee || this.minimum_fee;
             if (!params.address) return reject(new Error('Missing recipient address parameter'));
             if (!params.amount) return reject(new Error('Missing transaction amount parameter'));
             if (parseFloat(params.fee) < 0.1) return reject(new Error('Minimum fee is 0.1 TRTL'));
