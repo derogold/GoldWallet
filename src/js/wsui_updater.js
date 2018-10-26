@@ -3,6 +3,7 @@ const {webFrame, remote} = require('electron');
 const Store = require('electron-store');
 const wsutil = require('./ws_utils');
 const WalletShellSession = require('./ws_session');
+const config = require('./ws_config');
 
 const brwin = remote.getCurrentWindow();
 const settings = new Store({name: 'Settings'});
@@ -152,7 +153,7 @@ function updateSyncProgres(data){
         let connStatusText = `Connected to: <strong>${wsession.get('connectedNode')}</strong>`;
         let connNodeFee = wsession.get('nodeFee');
         if(connNodeFee > 0 ){
-            connStatusText += ` | Node fee: <strong>${connNodeFee.toFixed(2)} TRTL</strong>`;
+            connStatusText += ` | Node fee: <strong>${connNodeFee.toFixed(config.decimalPlaces)} ${config.assetTicker}</strong>`;
         }
         connInfoDiv.innerHTML = connStatusText;
         connInfoDiv.classList.remove('conn-warning');
@@ -187,18 +188,20 @@ function updateBalance(data){
         if(availableBalance < 0) return;
     }
 
-    let bUnlocked = (availableBalance / 100).toFixed(2);
-    let bLocked = (data.lockedAmount / 100).toFixed(2);
+    //let bUnlocked = (availableBalance / 100).toFixed(2);
+    let bUnlocked = wsutil.amountForMortal(availableBalance);
+    let bLocked = wsutil.amountForMortal(data.lockedAmount);
     balanceAvailableField.innerHTML = bUnlocked;
     balanceLockedField.innerHTML = bLocked;
     wsession.set('walletUnlockedBalance', bUnlocked);
     wsession.set('walletLockedBalance', bLocked);
     let walletFile = require('path').basename(settings.get('recentWallet'));
-    let wintitle = `(${walletFile}) - ${bUnlocked} TRTL`;
+    let wintitle = `(${walletFile}) - ${bUnlocked} ${config.assetTicker}`;
     setWinTitle(wintitle);
     
     if(availableBalance > 0){
-        let maxSend = (bUnlocked - (wsession.get('nodeFee')+0.10)).toFixed(2);
+        let fees = (wsession.get('nodeFee')+config.minimumFee);
+        let maxSend = (bUnlocked - fees).toFixed(config.decimalPlaces);
         inputSendAmountField.setAttribute('max',maxSend);
         inputSendAmountField.removeAttribute('disabled');
         maxSendFormHelp.innerHTML = `Max. amount is ${maxSend}`;
@@ -226,10 +229,12 @@ function updateTransactions(result){
     Array.from(blockItems).forEach((block) => {
         block.transactions.map((tx) => {
             if(tx.amount !== 0 && !wsutil.objInArray(txlistExisting, tx, 'transactionHash')){
-                tx.amount = (tx.amount/100).toFixed(2);
+                //tx.amount = (tx.amount/100).toFixed(2);
+                tx.amount = wsutil.amountForMortal(tx.amount);
                 tx.timeStr = new Date(tx.timestamp*1000).toUTCString();
                 //tx.timeStr = tx.timeStr = new Date(tx.timestamp * 1000).toDateString();
-                tx.fee = (tx.fee/100).toFixed(2);
+                //tx.fee = (tx.fee/100).toFixed(2);
+                tx.fee = wsutil.amountForMortal(tx.fee);
                 tx.paymentId = tx.paymentId.length ? tx.paymentId : '-';
                 tx.txType = (tx.amount > 0 ? 'in' : 'out');
                 tx.rawAmount = tx.amount;
@@ -272,7 +277,7 @@ function updateTransactions(result){
     if(notify){
         settings.set('last_notification', newLastHash);
         let notiOptions = {
-            'body': `Amount: ${(newTxAmount)} TRTL\nHash: ${newLastHash.substring(24,-0)}...`,
+            'body': `Amount: ${(newTxAmount)} ${config.assetTicker}\nHash: ${newLastHash.substring(24,-0)}...`,
             'icon': '../assets/walletshell_icon.png'
         };
         let itNotification = new Notification('Incoming Transfer', notiOptions);
@@ -289,7 +294,7 @@ function updateTransactions(result){
 }
 
 function showFeeWarning(fee){
-    fee = fee || 0;
+    fee = fee || 0; // fee vale already for mortal
     let nodeFee = parseFloat(fee);
     if(nodeFee <= 0) return;
 
@@ -300,7 +305,7 @@ function showFeeWarning(fee){
     let htmlStr = `
         <h5>Fee Info</h5>
         <p>You are connected to a public node (${settings.get('daemon_host')}:${settings.get('daemon_port')}) that charges a fee to send transactions.<p>
-        <p>The fee for sending transactions is: <strong>${fee.toFixed(2)} TRTL </strong>.<br>
+        <p>The fee for sending transactions is: <strong>${fee.toFixed(config.decimalPlaces)} ${config.assetTicker} </strong>.<br>
             If you don't want to pay the node fee, please close your wallet, and update your settings to use different public node or your own node.
         </p>
         <p style="text-align:center;margin-top: 1.25rem;"><button  type="button" class="form-bt button-green" id="dialog-end">OK, I Understand</button></p>

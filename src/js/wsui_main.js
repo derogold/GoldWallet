@@ -11,11 +11,15 @@ const autoComplete = require('./extras/auto-complete');
 const wsutil = require('./ws_utils');
 const WalletShellSession = require('./ws_session');
 const WalletShellManager = require('./ws_manager');
+const config = require('./ws_config');
 
 const wsmanager = new WalletShellManager();
 const wsession = new WalletShellSession();
 const settings = new Store({ name: 'Settings' });
-const abook = new Store({ name: 'AddressBook', encryptionKey: ['79009fb00ca1b7130832a42d', 'e45142cf6c4b7f33', '3fe6fba5'].join('') });
+const abook = new Store({
+    name: 'AddressBook',
+    encryptionKey: config.addressBookObfuscateEntries ? config.addressBookObfuscationKey : null
+});
 
 const win = remote.getCurrentWindow();
 const Menu = remote.Menu;
@@ -198,12 +202,41 @@ function populateElementVars(){
     txButtonExport = document.getElementById('transaction-export');
 }
 
-// inject sections tpl
+
+
+// crude/junk template :)
+let jtfr = {
+   tFind:  [
+        "WalletShell",
+        "https://github.com/turtlecoin/turtle-wallet-electron",
+        "TurtleCoin",
+        "TRTL",
+        "turtle-service"
+    ],
+    tReplace: [
+        config.appName,
+        config.appGitRepo,
+        config.assetName,
+        config.assetTicker,
+    ]
+};
+
+let junkTemplate = (text) => {
+    return jtfr.tFind.reduce((acc, item, i) => {
+    const regex = new RegExp(item, "g");
+    return acc.replace(regex, jtfr.tReplace[i]);
+  }, text);
+};
+
 function initSectionTemplates(){
     const importLinks = document.querySelectorAll('link[rel="import"]');
     for (var i = 0; i < importLinks.length; i++){
         let template = importLinks[i].import.getElementsByTagName("template")[0];
-        let clone = document.importNode(template.content, true);
+        let templateString = junkTemplate(template.innerHTML);
+        let templateNode = document.createRange().createContextualFragment(templateString);
+        //let clone = document.importNode(templateNode, true);
+        let clone = document.adoptNode(templateNode);
+        //let clone = document.importNode(template.content, true);
         document.getElementById('main-div').appendChild(clone);
     }
     // once all elements in place, safe to populate dom vars
@@ -345,7 +378,7 @@ function showIntegratedAddressForm(){
     <h4>Generate Integrated Address:</h4>
     <div class="input-wrap">
     <label>Wallet Address</label>
-    <textarea id="genInputAddress" class="default-textarea" placeholder="Required, put any valid TRTL address..">${ownAddress}</textarea>
+    <textarea id="genInputAddress" class="default-textarea" placeholder="Required, put any valid ${config.assetTicker} address..">${ownAddress}</textarea>
     </div>
     <div class="input-wrap">
     <label>Payment Id (<a id="makePaymentId" class="wallet-tool inline-tool" title="generate random payment id...">generate</a>)</label>
@@ -401,6 +434,7 @@ function changeSection(sectionId, isSettingRedir) {
         showToast('Opening wallet in progress, please wait...');
         return;
     }
+    
     formMessageReset();
     isSettingRedir = isSettingRedir === true ? true : false;
     let targetSection = sectionId.trim();
@@ -621,27 +655,15 @@ function formMessageSet(target, status, txt){
 function insertSampleAddresses(){
     let flag = 'addressBookFirstUse';
     if(!settings.get(flag, true)) return;
-    const sampleData = [
-        { name: 'labaylabay',
-          address: 'TRTLv1A26ngXApin33p1JsSE9Yf6REj97Xruz15D4JtSg1wuqYTmsPj5Geu2kHtBzD8TCsfd5dbdYRsrhNXMGyvtJ61AoYqLXVS',
-          paymentId: 'DF794857BC4587ECEC911AF6A6AB02513FEA524EC5B98DA8702FAC92195A94B2', 
-        },
-        { name: 'Macroshock',
-          address: 'TRTLv3R17LWbVw8Qv4si2tieyKsytUfKQXUgsmjksgrgJsTsnhzxNAeLKPjsyDGF7HGfjqkDegu2LPaC5NeVYot1SnpfcYmjwie',
-          paymentId: '', 
-        },
-        { name: 'RockSteady',
-          address: 'TRTLuxEnfjdF46cBoHhyDtPN32weD9fvL43KX5cx2Ck9iSP4BLNPrJY3xtuFpXtLxiA6LDYojhF7n4SwPNyj9M64iTwJ738vnJk',
-          paymentId: '', 
-        }
-    ];
-
-    sampleData.forEach((item) => {
-        let ahash = wsutil.b2sSum(item.address + item.paymentId);
-        let aqr = wsutil.genQrDataUrl(item.address);
-        item.qrCode = aqr;
-        abook.set(ahash, item);
-    });
+    const sampleData = config.addressBookSampleEntries;
+    if(sampleData && Array.isArray(sampleData)){
+        sampleData.forEach((item) => {
+            let ahash = wsutil.b2sSum(item.address + item.paymentId);
+            let aqr = wsutil.genQrDataUrl(item.address);
+            item.qrCode = aqr;
+            abook.set(ahash, item);
+        });
+    }
     settings.set(flag, false);
     initAddressCompletion();
 }
@@ -687,13 +709,6 @@ function handleSettings(){
     settingsButtonSave.addEventListener('click', function(){
         formMessageReset();
         let serviceBinValue = settingsInputServiceBin.value ? settingsInputServiceBin.value.trim() : '';
-        //let daemonHostValue = settingsInputDaemonAddress.value ? settingsInputDaemonAddress.value.trim() :'';
-        //let daemonPortValue = settingsInputDaemonPort.value ? parseInt(settingsInputDaemonPort.value.trim(),10) : '';
-        
-        // if(!serviceBinValue.length || !daemonHostValue.length || !Number.isInteger(daemonPortValue)){
-        //     formMessageSet('settings','error',`Settings can't be saved, please enter correct values`);
-        //     return false;
-        // }
 
         if(!serviceBinValue.length){
             formMessageSet('settings','error',`Settings can't be saved, please enter correct values`);
@@ -701,27 +716,10 @@ function handleSettings(){
         }
 
         if(!wsutil.isRegularFileAndWritable(serviceBinValue)){
-            formMessageSet('settings','error',`Unable to find turtle-service, please enter the correct path`);
+            formMessageSet('settings','error',`Unable to find ${config.walletServiceBinaryFilename}, please enter the correct path`);
             return false;
         }
-        
-        // let validHost = daemonHostValue === 'localhost' ? true : false;
-        // if(require('net').isIP(daemonHostValue)) validHost = true;
-        // if(!validHost){
-        //     let domRe = new RegExp(/([a-z])([a-z0-9]+\.)*[a-z0-9]+\.[a-z.]+/ig);
-        //     if(domRe.test(daemonHostValue)) validHost = true;
-        // }
-        // if(!validHost){
-        //     formMessageSet('settings','error',`Invalid daemon/node address!`);
-        //     return false;
-        // }
-
-        // if(daemonPortValue <=0){
-        //     formMessageSet('settings','error',`Invalid daemon/node port number!`);
-        //     return false;
-        // }
-        
-        
+                
         let vals = {
             service_bin: serviceBinValue,
             daemon_host: settings.get('daemon_host'),
@@ -883,17 +881,17 @@ function handleAddressBook(){
     addressBookButtonSave.addEventListener('click', () => {
         formMessageReset();
         let nameValue = addressBookInputName.value ? addressBookInputName.value.trim() : '';
-        let walletValue = addressBookInputWallet.value ? addressBookInputWallet.value.trim() : '';
+        let addressValue = addressBookInputWallet.value ? addressBookInputWallet.value.trim() : '';
         let paymentIdValue = addressBookInputPaymentId.value ? addressBookInputPaymentId.value.trim() : '';
         let isUpdate = addressBookInputUpdate.value ? addressBookInputUpdate.value : 0;
 
-        if( !nameValue || !walletValue ){
+        if( !nameValue || !addressValue ){
             formMessageSet('addressbook','error',"Name and wallet address can not be left empty!");
             return;
         }
 
-        if(!wsutil.validateTRTLAddress(walletValue)){
-            formMessageSet('addressbook','error',"Invalid TurtleCoin address");
+        if(!wsutil.validateAddress(addressValue)){
+            formMessageSet('addressbook','error',`Invalid ${config.assetName} address`);
             return;
         }
         
@@ -904,13 +902,12 @@ function handleAddressBook(){
             }
         }
 
-        if(walletValue.length > 99) paymentIdValue.value = '';
+        if(addressValue.length > 99) paymentIdValue.value = '';
 
         let entryName = nameValue.trim();
-        let entryAddr = walletValue.trim();
+        let entryAddr = addressValue.trim();
         let entryPaymentId = paymentIdValue.trim();
         let entryHash = wsutil.b2sSum(entryAddr + entryPaymentId);
-
 
         if(abook.has(entryHash) && !isUpdate){
             formMessageSet('addressbook','error',"This combination of address and payment ID already exist, please enter new address or different payment id.");
@@ -978,7 +975,7 @@ function handleWalletOpen(){
         let validHost = daemonHostValue === 'localhost' ? true : false;
         if(require('net').isIP(daemonHostValue)) validHost = true;
         if(!validHost){
-            let domRe = new RegExp(/([a-z])([a-z0-9]+\.)*[a-z0-9]+\.[a-z.]+/ig);
+            let domRe = new RegExp(/([a-z])([a-z0-9]+\.)*[a-z0-9]+\.[a-z.]+/i);
             if(domRe.test(daemonHostValue)) validHost = true;
         }
         if(!validHost){
@@ -1047,8 +1044,10 @@ function handleWalletOpen(){
             setOpenButtonsState(1);
             WALLET_OPEN_IN_PROGRESS = true;
             settings.set('recentWallet', walletFile);
+            settings.set('recentWalletDir', path.dirname(walletFile));
             formMessageSet('load','warning', "Accessing wallet...<br><progress></progress>");
             wsmanager.stopService().then(() => {
+
                 formMessageSet('load','warning', "Starting wallet service...<br><progress></progress>");
                 setTimeout(() => {
                     formMessageSet('load','warning', "Opening wallet, please be patient...<br><progress></progress>");
@@ -1184,7 +1183,6 @@ function handleWalletImportKeys(){
                 return;
             }
 
-
             if(scanHeightValue < 0 || scanHeightValue.toPrecision().indexOf('.') !== -1){
                 formMessageSet('import','error', 'Invalid scan height!');
                 return;
@@ -1211,7 +1209,7 @@ function handleWalletImportKeys(){
             // user already confirm to overwrite
             if(wsutil.isRegularFileAndWritable(finalPath)){
                 try{
-                    // for now, backup instead of delete, just to be save
+                    // for now, backup instead of delete, just to be safe
                     let ts = new Date().getTime();
                     let backfn = `${finalPath}.bak${ts}`;
                     fs.renameSync(finalPath, backfn);
@@ -1350,10 +1348,10 @@ function handleWalletExport(){
 
 function handleSendTransfer(){
     sendMaxAmount.addEventListener('click', (event) => {
-        let maxsend = event.target.dataset.maxsend;
+        let maxsend = event.target.dataset.maxsend || 0;
         if(maxsend) sendInputAmount.value = maxsend;
-        
     });
+
     sendInputFee.value = 0.1;
     function setPaymentIdState(addr){
         if(addr.length > 99){
@@ -1384,81 +1382,80 @@ function handleSendTransfer(){
             return p;
         }
 
-        let recAddress = sendInputAddress.value ? sendInputAddress.value.trim() : '';
-        let recPayId = sendInputPaymentId.value ? sendInputPaymentId.value.trim() : '';
-        let amount = sendInputAmount.value ?  parseFloat(sendInputAmount.value) : 0;
-        let fee = sendInputFee.value ? parseFloat(sendInputFee.value) : 0;
-
-        let tobeSent = 0;
-
-        if(!recAddress.length || !wsutil.validateTRTLAddress(recAddress)){
-            formMessageSet('send','error','Sorry, invalid TRTL address');
+        let recipientAddress = sendInputAddress.value ? sendInputAddress.value.trim() : '';
+        if(!recipientAddress.length || !wsutil.validateAddress(recipientAddress)){
+            formMessageSet('send','error',`Invalid ${config.assetName} address`);
             return;
         }
 
-        if(recAddress === wsession.get('loadedWalletAddress')){
+        if(recipientAddress === wsession.get('loadedWalletAddress')){
             formMessageSet('send','error',"Sorry, can't send to your own address");
             return;
         }
 
-        if(recPayId.length){
-            if(!wsutil.validatePaymentId(recPayId)){
+        let paymentId = sendInputPaymentId.value ? sendInputPaymentId.value.trim() : '';
+        if(recipientAddress.length > 99){
+            paymentId = '';
+        }else if(paymentId.length){
+            if(!wsutil.validatePaymentId(paymentId)){
                 formMessageSet('send','error','Sorry, invalid Payment ID');
                 return;
             }
         }
 
-        if(recAddress.length > 99) recPayId = '';
-        
+        let total = 0;
+        let amount = sendInputAmount.value ?  parseFloat(sendInputAmount.value) : 0;
         if (amount <= 0) {
             formMessageSet('send','error','Sorry, invalid amount');
             return;
         }
 
-        if (precision(amount) > 2) {
-            formMessageSet('send','error',"Amount can't have more than 2 decimal places");
+        if (precision(amount) > config.decimalPlaces) {
+            formMessageSet('send','error',`Amount can't have more than ${config.decimalPlaces} decimal places`);
             return;
         }
-
-        let rAmount = amount; // copy raw amount for dialog
-        tobeSent += amount;
-        let minFee = 0.10;
-        amount *= 100;
-
-        if (fee < 0.10) {
-            formMessageSet('send','error',`Fee can't be less than ${(minFee).toFixed(2)}`);
-            return;
-        }
-
-        if (precision(fee) > 2) {
-            formMessageSet('send','error',"Fee can't have more than 2 decimal places");
-            return;
-        }
-        let rFee = fee; // copy raw fee for dialog
-        tobeSent += fee;
-        fee *= 100;
         
+        total += amount;
+        let txAmount = wsutil.amountForImmortal(amount); // final transfer amount
 
-        let nodeFee = wsession.get('nodeFee') || 0;
-        tobeSent = (tobeSent+nodeFee).toFixed(2);
+        let fee = sendInputFee.value ? parseFloat(sendInputFee.value) : 0;
+        let minFee = config.minimumFee;
+        if (fee < minFee) {
+            formMessageSet('send','error',`Fee can't be less than ${wsutil.amountForMortal(minFee)}`);
+            return;
+        }
 
-        const availableBalance = wsession.get('walletUnlockedBalance') || (0).toFixed(2);
+        if (precision(fee) > config.decimalPlaces) {
+            formMessageSet('send','error',`Fee can't have more than  ${config.decimalPlaces} decimal places`);
+            return;
+        }
 
-        if(parseFloat(tobeSent) > parseFloat(availableBalance)){
+        total += fee;
+        let txFee = wsutil.amountForImmortal(fee);
+
+        let nodeFee = wsession.get('nodeFee') || 0; // nodeFee value is already for mortal
+        total += nodeFee;
+        let txTotal = wsutil.amountForMortal(total);
+
+        const availableBalance = wsession.get('walletUnlockedBalance') || (0).toFixed(config.decimalPlaces);
+
+        if(parseFloat(txTotal) > parseFloat(availableBalance)){
             formMessageSet(
                 'send',
                 'error', 
-                `Sorry, you don't have enough funds to process this transfer. Transfer amount+fees: ${(tobeSent)}`
+                `Sorry, you don't have enough funds to process this transfer. Transfer amount+fees: ${(txTotal)}`
             );
             return;
         }
 
+        // todo: adjust decimal
         let tx = {
-            address: recAddress,
-            fee: parseInt(fee,10),
-            amount: parseInt(amount,10)
+            address: recipientAddress,
+            amount: txAmount,
+            fee: txFee
         };
-        if(recPayId.length) tx.paymentId = recPayId;
+
+        if(paymentId.length) tx.paymentId = paymentId;
         let tpl = `
             <div class="div-transaction-panel">
                 <h4>Transfer Confirmation</h4>
@@ -1467,16 +1464,16 @@ function handleSendTransfer(){
                     <dl>
                         <dt class="dt-ib">Recipient address:</dt>
                         <dd class="dd-ib">${tx.address}</dd>
-                        <dt class="${recPayId.length ? 'dt-ib' : 'hidden'}">Payment ID:</dt>
-                        <dd class="${recPayId.length ? 'dd-ib' : 'hidden'}">${recPayId.length ? recPayId : 'N/A'}</dd>
+                        <dt class="${paymentId.length ? 'dt-ib' : 'hidden'}">Payment ID:</dt>
+                        <dd class="${paymentId.length ? 'dd-ib' : 'hidden'}">${paymentId.length ? paymentId : 'N/A'}</dd>
                         <dt class="dt-ib">Amount:</dt>
-                        <dd class="dd-ib">${rAmount} TRTL</dd>
+                        <dd class="dd-ib">${amount} ${config.assetTicker}</dd>
                         <dt class="dt-ib">Transaction Fee:</dt>
-                        <dd class="dd-ib">${rFee} TRTL</dd>
+                        <dd class="dd-ib">${fee} ${config.assetTicker}</dd>
                         <dt class="dt-ib">Node Fee:</dt>
-                        <dd class="dd-ib">${(nodeFee > 0 ? nodeFee : '0.00')} TRTL</dd>
+                        <dd class="dd-ib">${(nodeFee > 0 ? nodeFee : '0.00')} ${config.assetTicker}</dd>
                         <dt class="dt-ib">Total:</dt>
-                        <dd class="dd-ib">${tobeSent} TRTL</dd>
+                        <dd class="dd-ib">${total} ${config.assetTicker}</dd>
                     </dl>
                 </div>
             </div>
@@ -1501,15 +1498,15 @@ function handleSendTransfer(){
                 let okMsg = `Transaction sent!<br>Tx. hash: ${result.transactionHash}.<br>Your balance may appear incorrect while transaction not fully confirmed.`;
                 formMessageSet('send', 'success', okMsg);
                 // check if it's new address, if so save it
-                let newId = wsutil.b2sSum(recAddress + recPayId);
+                let newId = wsutil.b2sSum(recipientAddress + paymentId);
                 if(!abook.has(newId)){
                     let now = new Date().toISOString();
                     let newName = `unnamed (${now.split('T')[0].replace(/-/g,'')}_${now.split('T')[1].split('.')[0].replace(/:/g,'')})`;
                     let newBuddy = {
                         name: newName,
-                        address: recAddress,
-                        paymentId: recPayId,
-                        qrCode: wsutil.genQrDataUrl(recAddress)
+                        address: recipientAddress,
+                        paymentId: paymentId,
+                        qrCode: wsutil.genQrDataUrl(recipientAddress)
                     };
                     abook.set(newId,newBuddy);
                 }
@@ -1919,13 +1916,13 @@ function initHandlers(){
             formMessageSet('gia','error', 'Address & Payment ID is required');
             return;
         }
-        if(!wsutil.validateTRTLAddress(addr)){
-            formMessageSet('gia','error', 'Invalid TRTL address');
+        if(!wsutil.validateAddress(addr)){
+            formMessageSet('gia','error', `Invalid ${config.assetName} address`);
             return;
         }
         // only allow standard address
         if(addr.length > 99){
-            formMessageSet('gia','error', 'Only standard TRTL address are supported');
+            formMessageSet('gia','error', `Only standard ${config.assetName} address are supported`);
             return;
         }
         if(!wsutil.validatePaymentId(pid)){
