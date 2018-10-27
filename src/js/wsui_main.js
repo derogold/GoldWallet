@@ -223,8 +223,8 @@ let jtfr = {
 
 let junkTemplate = (text) => {
     return jtfr.tFind.reduce((acc, item, i) => {
-    const regex = new RegExp(item, "g");
-    return acc.replace(regex, jtfr.tReplace[i]);
+        const regex = new RegExp(item, "g");
+        return acc.replace(regex, jtfr.tReplace[i]);
   }, text);
 };
 
@@ -329,6 +329,10 @@ let keybindingTpl = `<div class="transaction-panel">
 <tr>
     <th scope="col"><kbd>Ctrl</kbd>+<kbd>s</kbd></th>
     <td>Switch to <strong>Send/Transfer</strong> screen (when wallet opened)</td>
+</tr> 
+<tr>
+    <th scope="col"><kbd>Ctrl</kbd>+<kbd>x</kbd></th>
+    <td>Close wallet</td>
 </tr> 
 <tr>
     <th scope="col"><kbd>Ctrl</kbd>+<kbd>\\</kbd></th>
@@ -1495,7 +1499,8 @@ function handleSendTransfer(){
             formMessageSet('send', 'warning', 'Sending transaction, please wait...<br><progress></progress>');
             wsmanager.sendTransaction(tx).then((result) => {
                 formMessageReset();
-                let okMsg = `Transaction sent!<br>Tx. hash: ${result.transactionHash}.<br>Your balance may appear incorrect while transaction not fully confirmed.`;
+                let txhashUrl = `<a class="external" title="view in block explorer" href="${config.blockExplorerUrl.replace('[[TX_HASH]]', result.transactionHash)}">${result.transactionHash}</a>`;
+                let okMsg = `Transaction sent!<br>Tx. hash: ${txhashUrl}.<br>Your balance may appear incorrect while transaction not fully confirmed.`;
                 formMessageSet('send', 'success', okMsg);
                 // check if it's new address, if so save it
                 let newId = wsutil.b2sSum(recipientAddress + paymentId);
@@ -1564,6 +1569,7 @@ function handleTransactions(){
     function showTransaction(el){
         let tx = (el.name === "tr" ? el : el.closest('tr'));
         let txdate = new Date(tx.dataset.timestamp*1000).toUTCString();
+        let txhashUrl = `<a class="external" title="view in block explorer" href="${config.blockExplorerUrl.replace('[[TX_HASH]]', tx.dataset.rawhash)}">View in block explorer</a>`;
         let dialogTpl = `
                 <div class="div-transactions-panel">
                     <h4>Transaction Detail</h4>
@@ -1590,7 +1596,8 @@ function handleTransactions(){
                             <tr><th scope="col">Unlock Time</th>
                                 <td>${tx.dataset.unlocktime}</td></tr>
                         </tbody>
-                    </table> 
+                    </table>
+                    <p class="text-center">${txhashUrl}</p>
                 </div>
                 <div class="div-panel-buttons">
                     <button data-target="#tx-dialog" type="button" class="form-bt button-red dialog-close-default" id="button-transactions-panel-close">Close</button>
@@ -1902,7 +1909,9 @@ function initHandlers(){
         document.getElementById('genInputPaymentId').value = payId;
         iaf.value = '';
     });
+
     overviewIntegratedAddressGen.addEventListener('click', showIntegratedAddressForm);
+    
     wsutil.liveEvent('#doGenIntegratedAddr', 'click', () => {
         formMessageReset();
         let genInputAddress = document.getElementById('genInputAddress');
@@ -1984,6 +1993,7 @@ function initHandlers(){
             tel.close();
         }
     });
+
     var enterHandler;
     function handleFormEnter(el){
         if(enterHandler) clearTimeout(enterHandler);
