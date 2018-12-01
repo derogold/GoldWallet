@@ -37,7 +37,7 @@ function triggerTxRefresh(){
     txUpdateInputFlag.dispatchEvent(new Event('change'));
 }
 
-function updateSyncProgres(data){
+function updateSyncProgress(data){
     const iconSync = document.getElementById('navbar-icon-sync');
     let blockCount = data.displayBlockCount;
     let knownBlockCount = data.displayKnownBlockCount;
@@ -93,8 +93,8 @@ function updateSyncProgres(data){
         connInfoDiv.classList.remove('conn-warning');
         connInfoDiv.classList.add('empty');
         connInfoDiv.textContent = '';
-        
-        
+
+
         // sync sess flags
         wsession.set('syncStarted', false);
         wsession.set('synchronized', false);
@@ -129,7 +129,7 @@ function updateSyncProgres(data){
             // status text
             statusText = `SYNCED ${statusText}`;
             syncInfoBar.textContent = statusText;
-            // status icon 
+            // status icon
             iconSync.setAttribute('data-icon', 'check');
             iconSync.classList.remove('fa-spin');
             // sync status sess flag
@@ -149,7 +149,7 @@ function updateSyncProgres(data){
             let taskbarProgress = +(parseFloat(blockSyncPercent)/100).toFixed(2);
             brwin.setProgressBar(taskbarProgress);
         }
-        
+
         let connStatusText = `Connected to: <strong>${wsession.get('connectedNode')}</strong>`;
         let connNodeFee = wsession.get('nodeFee');
         if(connNodeFee > 0 ){
@@ -198,7 +198,7 @@ function updateBalance(data){
     let walletFile = require('path').basename(settings.get('recentWallet'));
     let wintitle = `(${walletFile}) - ${bUnlocked} ${config.assetTicker}`;
     setWinTitle(wintitle);
-    
+
     if(availableBalance > 0){
         let fees = (wsession.get('nodeFee')+config.minimumFee);
         let maxSend = (bUnlocked - fees).toFixed(config.decimalPlaces);
@@ -212,7 +212,7 @@ function updateBalance(data){
 
 function updateTransactions(result){
     let txlistExisting = wsession.get('txList');
-    
+
 
     const blockItems = result.items;
 
@@ -223,7 +223,7 @@ function updateTransactions(result){
     }
 
     if(!blockItems.length) return;
-    
+
     let txListNew = [];
 
     Array.from(blockItems).forEach((block) => {
@@ -273,7 +273,7 @@ function updateTransactions(result){
     if(lastTxDate !== currentDate || (newTxAmount < 0) || rememberedLastHash === newLastHash ){
         notify = false;
     }
-    
+
     if(notify){
         settings.set('last_notification', newLastHash);
         let notiOptions = {
@@ -334,7 +334,7 @@ function updateQr(address){
 
     let walletHash = wsutil.b2sSum(address);
     wsession.set('walletHash', walletHash);
-    
+
     let oldImg = document.getElementById('qr-gen-img');
     if(oldImg) oldImg.remove();
 
@@ -384,7 +384,7 @@ function updateUiState(msg){
     // do something with msg
     switch (msg.type) {
         case 'blockUpdated':
-            updateSyncProgres(msg.data);
+            updateSyncProgress(msg.data);
             break;
         case 'balanceUpdated':
             updateBalance(msg.data);
@@ -404,7 +404,7 @@ function updateUiState(msg){
         case 'fusionTxCompleted':
             let notif = 'Optimization completed';
             let toastOpts = {
-                style: { main: { 
+                style: { main: {
                     'padding': '4px 6px','left': '3px','right':'auto','border-radius': '0px'
                 }},
                 settings: {duration: 5000}

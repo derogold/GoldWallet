@@ -1,4 +1,4 @@
-![WalletShell](docs/walletshell.png)  
+![WalletShell](docs/walletshell.png)
 WalletShell is a GUI wallet for TurtleCoin.
 
 ![WalletShell Screens](https://i.imgur.com/41Ujq0S.gif "WalletShell Screens")
@@ -20,7 +20,7 @@ This wallet contains the basic functions required to manage your TurtleCoin asse
   * Export incoming, outgoing, or all transactions to csv file.
   * Incoming Transaction notification
   * Send TurtleCoin to single recipient address, allow to set payment id and custom fee. Provides address lookup from addressbook.
-  * Perform wallet optimization by creating fusion transactions 
+  * Perform wallet optimization by creating fusion transactions
   * Provides utility to generate payment id and integrated address
 * Address book
   * Add/Edit/Delete address entry (label/name, address and payment id)
@@ -56,7 +56,7 @@ If you don't trust the bundled `turtle-service` file, you can compare the checks
 #### GNU/Linux (AppImage):
 1. Download latest AppImage bundle here: https://github.com/turtlecoin//turtle-wallet-electron/releases
 2. Make it executable, either via GUI file manager or command line, e.g. `chmod +x walletshell-<version>-linux.AppImage`
-3. Run/execute the file, double click in file manager, or run via shell/command line. 
+3. Run/execute the file, double click in file manager, or run via shell/command line.
 
 See: https://docs.appimage.org/user-guide/run-appimages.html
 
@@ -96,7 +96,7 @@ $ npm run dist-lin
 # build Windows package
 $ mkdir -p ./bin/win
 $ cp /path/to/win-version-of/turtle-service.exe ./bin/win/
-$ npm run dist-lin
+$ npm run dist-win
 
 # build OSX package
 $ mkdir -p ./bin/osx
