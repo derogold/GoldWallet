@@ -19,9 +19,9 @@
   "license": "ISC",
   "devDependencies": {
     "devtron": "^1.4.0",
-    "electron": "^3.0.10",
-    "electron-builder": "^20.36.2",
-    "jshint": "^2.9.6"
+    "electron": "^3.0.12",
+    "electron-builder": "^20.38.3",
+    "jshint": "^2.9.7"
   },
   "dependencies": {
     "@trodi/electron-splashscreen": "^0.3.4",

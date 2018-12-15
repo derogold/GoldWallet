@@ -114,7 +114,7 @@ function updateSyncProgress(data){
         iconSync.setAttribute('data-icon', 'times');
         iconSync.classList.remove('fa-spin');
         // connection status
-        connInfoDiv.innerHTML = 'Connection failed, try switching to another Node in settings page, close and reopen your wallet';
+        connInfoDiv.innerHTML = 'Connection failed, try switching to another Node, close and reopen your wallet';
         connInfoDiv.classList.remove('empty');
         connInfoDiv.classList.add('conn-warning');
         wsession.set('connectedNode', '');
