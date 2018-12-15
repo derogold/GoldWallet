@@ -19,9 +19,9 @@
   "license": "ISC",
   "devDependencies": {
     "devtron": "^1.4.0",
-    "electron": "^3.0.10",
-    "electron-builder": "^20.36.2",
-    "jshint": "^2.9.6"
+    "electron": "^3.0.12",
+    "electron-builder": "^20.38.3",
+    "jshint": "^2.9.7"
   },
   "dependencies": {
     "@trodi/electron-splashscreen": "^0.3.4",
@@ -37,10 +37,29 @@
     "appId": "lol.turtlecoin.walletshell",
     "copyright": "Copyright (c) 2018 Rixombea, Macroshock, TurtleCoin Developers",
     "directories": {
-      "app": ".",
       "output": "dist",
       "buildResources": "build"
     },
+    "files": [
+      "**/*",
+      "!**/docs/*",
+      "!**/bin/*",
+      "!**/service.log",
+      "!**/src/js/*.src.js",
+      "!**/src/js/extras/*.src.js",
+      "!**/js/*.src.js",
+      "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
+      "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}",
+      "!**/node_modules/*.d.ts",
+      "!**/node_modules/.bin",
+      "!**/*.{iml,o,hprof,orig,pyc,pyo,rbc,swp,csproj,sln,xproj}",
+      "!.editorconfig",
+      "!**/._*",
+      "!**/{.DS_Store,.git,.hg,.svn,CVS,RCS,SCCS,.gitignore,.gitattributes}",
+      "!**/{__pycache__,thumbs.db,.flowconfig,.idea,.vs,.nyc_output}",
+      "!**/{appveyor.yml,.travis.yml,circle.yml}",
+      "!**/{npm-debug.log,yarn.lock,.yarn-integrity,.yarn-metadata.json}"
+    ],
     "linux": {
       "artifactName": "${productName}-v${version}-${os}.${ext}",
       "target": [
