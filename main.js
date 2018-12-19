@@ -35,7 +35,8 @@ const DEFAULT_SETTINGS = {
     pubnodes_custom: ['127.0.0.1:11898'],
     tray_minimize: false,
     tray_close: false,
-    darkmode: true
+    darkmode: true,
+    service_config_format: config.walletServiceConfigFormat
 };
 const DEFAULT_SIZE = { width: 840, height: 680 };
 
@@ -256,44 +257,8 @@ function doNodeListUpdate(){
     }
 }
 
-function serviceConfigFormatCheck(){
-    let serviceBin = settings.get('service_bin', false);
-    let semver = require('semver');
-    require('child_process').execFile(
-        serviceBin, ["--version"], (error, stdout) => {
-            if(error){
-                console.log(error);
-                settings.set('configFormat', 'ini');
-                return;
-            }
-
-            try{
-                let verout = stdout.trim();
-                let version = verout.split(' ')[1];
-                if(!version){
-                    version = verout.slice(
-                        verout.indexOf(config.assetName),
-                        verout.indexOf('(')
-                    );
-                }
-                version = semver.coerce(version.trim());
-                settings.set(
-                    'configFormat', 
-                    semver.lt('0.8.4', version) ? 'json' : 'ini'
-                );
-                log.info(
-                    `Service version: ${version}, config format: ${settings.get('configFormat')}`
-                );
-            }catch(_e){}
-        }
-    );
-}
-
-app.checkUpdateConfig = serviceConfigFormatCheck;
-
 function serviceBinCheck(){
     if(!DEFAULT_SERVICE_BIN.startsWith('/tmp')){
-        serviceConfigFormatCheck();    
         return;
     }
     
@@ -313,7 +278,6 @@ function serviceBinCheck(){
         }
         settings.set('service_bin', targetPath);
         log.debug(`service binary copied to ${targetPath}`);
-        serviceConfigFormatCheck();
       });
     }catch(_e){}
 }

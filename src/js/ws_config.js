@@ -19,6 +19,11 @@ config.walletServiceBinaryFilename = 'turtle-service';
 // version on the bundled service (turtle-service)
 config.walletServiceBinaryVersion = "v0.10.0";
 
+// config file format supported by wallet service, possible values:
+// ini -->  for turtle service (or its forks) version <= v0.8.3
+// json --> for turtle service (or its forks) version >= v0.8.4
+config.walletServiceConfigFormat = "json";
+
 // default port number for your wallet service (e.g. turtle-service)
 config.walletServiceRpcPort = 8070;
 

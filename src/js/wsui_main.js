@@ -720,7 +720,7 @@ function handleSettings(){
         };
 
         initSettingVal(vals);
-        remote.app.checkUpdateConfig(); // re-check config format
+        
         formMessageReset();
         initNodeCompletion();
         let goTo = wsession.get('loadedWalletAddress').length ? 'section-overview' : 'section-welcome';
