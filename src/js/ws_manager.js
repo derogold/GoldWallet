@@ -215,7 +215,7 @@ WalletShellManager.prototype._spawnService = function(walletFile, password, onEr
     
     let configFile = wsession.get('walletConfig', null);
     if(configFile){
-        let configFormat = settings.get('configFormat','ini');
+        let configFormat = settings.get('service_config_format','ini');
         if(configFormat === 'json'){
             childProcess.execFile(this.serviceBin, serviceArgs.concat(['--save-config', configFile]), (error) => {
                 if(error) configFile = null;
