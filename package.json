@@ -10,9 +10,9 @@
     "start": "electron .",
     "debug": "electron . debug",
     "dev": "electron . dev",
-    "dist-win": "./node_modules/.bin/electron-builder --x64 --win -c.extraResources=./bin/win/turtle-service.exe",
-    "dist-lin": "./node_modules/.bin/electron-builder --x64 --linux -c.extraResources=./bin/lin/turtle-service",
-    "dist-mac": "./node_modules/.bin/electron-builder --x64 --mac -c.extraResources=./bin/osx/turtle-service"
+    "dist-win": "./node_modules/.bin/electron-builder --x64 --win -c.extraResources=./bin/win/DeroGold-service.exe",
+    "dist-lin": "./node_modules/.bin/electron-builder --x64 --linux -c.extraResources=./bin/lin/DeroGold-service",
+    "dist-mac": "./node_modules/.bin/electron-builder --x64 --mac -c.extraResources=./bin/osx/DeroGold-service"
   },
   "keywords": [],
   "author": "Rixombea, Macroshock, TurtleCoin Developers",
