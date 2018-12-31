@@ -1,10 +1,10 @@
 {
-  "name": "walletshell",
-  "productName": "WalletShell",
-  "description": "TurtleCoin GUI Wallet",
-  "version": "v0.3.6",
-  "homepage": "https://github.com/turtlecoin/turtle-wallet-electron",
-  "repository": "https://github.com/turtlecoin/turtle-wallet-electron",
+  "name": "GoldWalletShell",
+  "productName": "GoldWallet",
+  "description": "DeroGold GUI Wallet",
+  "version": "v0.3.7",
+  "homepage": "https://github.com/ExtraHash/dego-wallet-electron",
+  "repository": "https://github.com/ExtraHash/dego-wallet-electron",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
