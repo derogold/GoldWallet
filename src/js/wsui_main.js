@@ -12,7 +12,7 @@ const wsutil = require('./ws_utils');
 const WalletShellSession = require('./ws_session');
 const WalletShellManager = require('./ws_manager');
 const config = require('./ws_config');
-
+const async = require('async');
 const wsmanager = new WalletShellManager();
 const wsession = new WalletShellSession();
 const settings = new Store({ name: 'Settings' });
@@ -30,7 +30,6 @@ const DEFAULT_WALLET_PATH = remote.app.getPath('documents');
 let WALLET_OPEN_IN_PROGRESS = false;
 let FUSION_IN_PROGRESS = false;
 let TXLIST_OBJ = null;
-let COMPLETION_PUBNODES;
 let COMPLETION_ADDRBOOK;
 
 /*  dom elements vars; */
@@ -49,8 +48,6 @@ let settingsInputServiceBin;
 let settingsInputMinToTray;
 let settingsInputCloseToTray;
 let settingsButtonSave;
-//let settingsDaemonHostFormHelp;
-//let settingsDaemonPortFormHelp;
 // overview page
 let overviewWalletAddress;
 let overviewWalletCloseButton;
@@ -67,6 +64,8 @@ let walletOpenInputPath;
 let walletOpenInputPassword;
 let walletOpenButtonOpen;
 let walletOpenButtons;
+let walletOpenInputNode;
+let addCustomNode;
 // show/export keys page
 let overviewShowKeyButton;
 let showkeyButtonExportKey;
@@ -135,8 +134,6 @@ function populateElementVars(){
     settingsInputMinToTray = document.getElementById('checkbox-tray-minimize');
     settingsInputCloseToTray = document.getElementById('checkbox-tray-close');
     settingsButtonSave = document.getElementById('button-settings-save');
-    // settingsDaemonHostFormHelp = document.getElementById('daemonHostFormHelp');
-    // settingsDaemonPortFormHelp = document.getElementById('daemonPortFormHelp');
 
     // overview pages
     overviewWalletAddress = document.getElementById('wallet-address');
@@ -156,6 +153,8 @@ function populateElementVars(){
     walletOpenInputPassword = document.getElementById('input-load-password');
     walletOpenButtonOpen = document.getElementById('button-load-load');
     walletOpenButtons = document.getElementById('walletOpenButtons');
+    walletOpenInputNode = document.getElementById('input-settings-node-address');
+    addCustomNode = document.getElementById('addCustomNode');
     // show/export keys page
     overviewShowKeyButton = document.getElementById('button-show-reveal');
     showkeyButtonExportKey = document.getElementById('button-show-export');
@@ -473,9 +472,10 @@ function changeSection(sectionId, isSettingRedir) {
         showToast("Please wait until syncing process completed!");
         return;
     }else{
-        if(targetSection === 'section-overview-load'){
-            initNodeCompletion();
-        }
+        // new node test
+        // if(targetSection === 'section-overview-load'){
+        //     initNodeCompletion();
+        // }
         finalTarget = targetSection;
         toastMsg = '';
     }
@@ -511,40 +511,37 @@ function changeSection(sectionId, isSettingRedir) {
         });
     }
 }
+function initNodeSelection(nodeAddr){
+    let selected = nodeAddr || settings.get('node_address');
+    let customNodes = settings.get('pubnodes_custom');
+    let aliveNodes = wsutil.arrShuffle(settings.get('pubnodes_checked', []));
 
-// public nodes autocompletion
-function initNodeCompletion(){
-    if(!settings.has('pubnodes_data')) return;
-    try{
-        if(COMPLETION_PUBNODES) COMPLETION_PUBNODES.destroy();
-    }catch(e){}
+    walletOpenInputNode.options.length = 0;
 
-    let publicNodes = settings.has('pubnodes_custom') ? wsutil.arrShuffle(settings.get('pubnodes_data')) : [];
-    let nodeChoices = settings.get('pubnodes_custom').concat(publicNodes);
+    if (!aliveNodes.length && settings.has('pubnodes_data')) {
+        customNodes = customNodes.concat(settings.get('pubnodes_data'));
+    }
 
-
-    COMPLETION_PUBNODES = new autoComplete({
-        selector: 'input[name="nodeAddress"]',
-        minChars: 0,
-        source: function(term, suggest){
-            term = term.toLowerCase();
-            var choices = nodeChoices;
-            var matches = [];
-            for (var i=0; i<choices.length; i++){
-                let phost = choices[i].split(':')[0];
-                if (~choices[i].toLowerCase().indexOf(term) && phost.length > term.length){
-                    matches.push(choices[i]);
-                }
-            }
-            suggest(matches);
-        },
-        onSelect: function(e, term){
-            settingsInputDaemonAddress.value = term.split(':')[0];
-            settingsInputDaemonPort.value = term.split(':')[1];
-            settingsInputDaemonAddress.dispatchEvent(new Event('blur'));
-            return settingsButtonSave.dispatchEvent(new Event('focus'));
+    customNodes.forEach(node => {
+        let opt = document.createElement('option');
+        opt.text = `${node} (Custom)`;
+        opt.value = node;
+        if (node === selected) {
+            opt.setAttribute('selected', true);
         }
+        walletOpenInputNode.add(opt, null);
     });
+
+    aliveNodes.forEach(node => {
+        let opt = document.createElement('option');
+        opt.text = node.label;
+        opt.value = node.host;
+        if (node.host === selected) {
+            opt.setAttribute('selected', true);
+        }
+        walletOpenInputNode.add(opt, null);
+    });
+    
 }
 
 // initial settings value or updater
@@ -555,12 +552,11 @@ function initSettingVal(values){
         settings.set('service_bin', values.service_bin);
         settings.set('daemon_host', values.daemon_host);
         settings.set('daemon_port', values.daemon_port);
+        settings.set('node_address', values.node_address);
         settings.set('tray_minimize', values.tray_minimize);
         settings.set('tray_close', values.tray_close);
     }
     settingsInputServiceBin.value = settings.get('service_bin');
-    settingsInputDaemonAddress.value = settings.get('daemon_host');
-    settingsInputDaemonPort.value = settings.get('daemon_port');
     settingsInputMinToTray.checked = settings.get('tray_minimize');
     settingsInputCloseToTray.checked = settings.get('tray_close');
 
@@ -679,7 +675,7 @@ function showInitialPage(){
     // other initiations here
     formMessageReset();
     initSettingVal(); // initial settings value
-    initNodeCompletion(); // initial public node completion list
+    //initNodeCompletion(); // initial public node completion list
     initAddressCompletion();
 
     if(!settings.has('firstRun') || settings.get('firstRun') !== 0){
@@ -722,7 +718,7 @@ function handleSettings(){
         initSettingVal(vals);
         
         formMessageReset();
-        initNodeCompletion();
+        //initNodeCompletion();
         let goTo = wsession.get('loadedWalletAddress').length ? 'section-overview' : 'section-welcome';
         changeSection(goTo, true);
         showToast('Settings has been updated.',8000);
@@ -954,42 +950,104 @@ function handleWalletOpen(){
         }
     }
 
+    function addCustomNodeForm(){
+        let dialog = document.getElementById('ab-dialog');
+        if (dialog.hasAttribute('open')) dialog.close();
+
+        let iaform = `<div class="transaction-panel">
+            <h4>Add custom daemon/node address:</h4>
+            <div class="input-wrap">
+            <label>Node Address</label>
+            <input type="text" id="customNodeAddress" placeholder="my.example.com:${config.daemonDefaultRpcPort}" class="text-block" />
+            <span class="form-help">Required, example: my.example-domain.com:${config.daemonDefaultRpcPort}, 123.123.123.123:${config.daemonDefaultRpcPort}</span>
+            </div>
+            <div class="input-wrap">
+                <span class="form-ew form-msg text-spaced-error hidden" id="text-customnode-error"></span>
+            </div>
+            <div class="div-panel-buttons">
+                <button id="saveCustomNode" type="button" class="button-green dialog-close-default">Save & activate</button>
+                <button  data-target="#ab-dialog" type="button" class="button-gray dialog-close-default">Close</button>
+            </div>
+            `;
+            dialog.innerHTML = iaform;
+            dialog.showModal();
+    }
+
+    wsutil.liveEvent("#saveCustomNode", "click", (e) => {
+        e.preventDefault();
+        formMessageReset();
+        let customNodeAddressInput = document.getElementById('customNodeAddress');
+        let nodeAddressVal = customNodeAddressInput.value ? customNodeAddressInput.value.trim() : false;
+        if (!nodeAddressVal) {
+            formMessageSet('customnode', 'error', 'Invalid node address, accepted format: &lt;domain.tld&gt;:&lt;port_number&gt; or &lt;ip_address&gt;:&lt;port_number&gt;');
+            return;
+        }
+        let nodeAddress = nodeAddressVal.split(":");
+        if(nodeAddress.length !== 2) {
+            formMessageSet('customnode', 'error', 'Invalid node address, accepted format: &lt;domain.tld&gt;:&lt;port_number&gt;<br>&lt;ip_address&gt;:&lt;port_number&gt;');
+            return;
+        }
+
+        let validHost = nodeAddress[0] === 'localhost' ? true : false;
+        if (require('net').isIP(nodeAddress[0])) validHost = true;
+        if (!validHost) {
+            let domRe = new RegExp(/([a-z])([a-z0-9]+\.)*[a-z0-9]+\.[a-z.]+/i);
+            if (domRe.test(nodeAddress[0])) validHost = true;
+        }
+        if (!validHost) {
+            formMessageSet('load', 'error', `Invalid daemon/node address!`);
+            return false;
+        }
+
+        if (parseInt(nodeAddress[1], 10) <= 0) {
+            formMessageSet('load', 'error', `Invalid daemon/node port number!`);
+            return false;
+        }
+
+        let customNodes = settings.get('pubnodes_custom', []);
+        customNodes.push(nodeAddressVal);
+        settings.set('pubnodes_custom', customNodes);
+        initNodeSelection(nodeAddressVal);
+        let dialog = document.getElementById('ab-dialog');
+        if (dialog.hasAttribute('open')) dialog.close();
+        showToast('New custom node has been added');
+    });
+
+    addCustomNode.addEventListener('click', (e) => {
+        e.preventDefault();
+        addCustomNodeForm();
+    });
+
     walletOpenButtonOpen.addEventListener('click', () => {
         formMessageReset();
-        // node settings thingy
-        let daemonHostValue = settingsInputDaemonAddress.value ? settingsInputDaemonAddress.value.trim() :'';
-        let daemonPortValue = settingsInputDaemonPort.value ? parseInt(settingsInputDaemonPort.value.trim(),10) : '';
-
-        if(!daemonHostValue.length || !Number.isInteger(daemonPortValue)){
-            formMessageSet('load','error',`Please enter enter a valid daemon address & port`);
-            return false;
-        }
-
-        let validHost = daemonHostValue === 'localhost' ? true : false;
-        if(require('net').isIP(daemonHostValue)) validHost = true;
-        if(!validHost){
+        let nodeAddressValue = walletOpenInputNode.value;
+        let nodeAddress = nodeAddressValue.split(':');
+        
+        let validHost = nodeAddress[0] === 'localhost' ? true : false;
+        if (require('net').isIP(nodeAddress[0])) validHost = true;
+        if (!validHost) {
             let domRe = new RegExp(/([a-z])([a-z0-9]+\.)*[a-z0-9]+\.[a-z.]+/i);
-            if(domRe.test(daemonHostValue)) validHost = true;
+            if (domRe.test(nodeAddress[0])) validHost = true;
         }
-        if(!validHost){
-            formMessageSet('load','error',`Invalid daemon/node address!`);
+        if (!validHost) {
+            formMessageSet('load', 'error', `Invalid daemon/node address!`);
             return false;
         }
 
-        if(daemonPortValue <=0){
-            formMessageSet('load','error',`Invalid daemon/node port number!`);
+        if (parseInt(nodeAddress[1], 10) <= 0) {
+            formMessageSet('load', 'error', `Invalid daemon/node port number!`);
             return false;
         }
 
         let settingVals = {
             service_bin: settings.get('service_bin'),
-            daemon_host: daemonHostValue,
-            daemon_port: daemonPortValue,
+            daemon_host: nodeAddress[0],
+            daemon_port: parseInt(nodeAddress[1],10),
+            node_address: nodeAddressValue,
             tray_minimize: settings.get('tray_minimize'),
             tray_close: settings.get('tray_close')
         };
         initSettingVal(settingVals);
-        initNodeCompletion();
 
         // actually open wallet
         if(!walletOpenInputPath.value){
@@ -2159,11 +2217,65 @@ function initKeyBindings(){
     });
 }
 
+function fetchWait(url, options, timeout = 3000) {
+    return Promise.race([
+        fetch(url, options),
+        new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('timeout')), timeout)
+        )
+    ]);
+}
+
+function fetchNodeInfo() {
+    window.ELECTRON_ENABLE_SECURITY_WARNINGS = false;
+    let aliveNodes = settings.get('pubnodes_checked', false);
+    if(aliveNodes.length){
+        initNodeSelection();
+        return aliveNodes;
+    }
+
+    let nodes = settings.get('pubnodes_data');
+    let reqs = [];
+    nodes.forEach(h => {
+        let out = {
+            host: h, 
+            label: h,
+        };
+
+        let url = `http://${h}/feeinfo`;
+        reqs.push(function(callback) {
+            return fetchWait(url)
+                .then( (response) => {
+                    return response.json();
+                }).then(json => {
+                    if(!json || !json.hasOwnProperty("address") || !json.hasOwnProperty("amount")) {
+                        return callback(null, null);
+                    }
+                    let feeAmount = parseInt(json.amount, 10) > 0 ? `Fee: ${wsutil.amountForMortal(json.amount)} ${config.assetTicker}` : "FREE";
+                    out.label = `${h.split(':')[0]} (${feeAmount})`;
+                    return callback(null, out);
+                }).catch( () => callback(null, null));
+        });
+    });
+
+    async.parallelLimit(reqs, 12, function(error, results) {
+        if(results) {
+            let res = results.filter(val=>val);
+            if(res.length){
+                settings.set('pubnodes_checked', res);
+                // test
+                initNodeSelection();
+            }
+        }
+    });
+}
+
 // spawn event handlers
 document.addEventListener('DOMContentLoaded', () => {
     initHandlers();
     showInitialPage();
     initKeyBindings();
+    fetchNodeInfo();
 }, false);
 
 ipcRenderer.on('cleanup', () => {

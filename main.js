@@ -217,14 +217,16 @@ function createWindow () {
 function storeNodeList(pnodes){
     pnodes = pnodes || settings.get('pubnodes_data');
     let validNodes = [];
-    if( pnodes.hasOwnProperty('nodes')){
+    if( pnodes.hasOwnProperty('nodes')) {
         pnodes.nodes.forEach(element => {
             let item = `${element.url}:${element.port}`;
             validNodes.push(item);
         });
+        settings.delete('pubnodes_checked');
     }
-    if(validNodes.length) settings.set('pubnodes_data', validNodes);
+    if (validNodes.length) settings.set('pubnodes_data', validNodes);    
 }
+
 
 function doNodeListUpdate(){
     try{
