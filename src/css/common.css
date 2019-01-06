@@ -139,7 +139,7 @@ body {
     background-color: rgba(0, 0, 0, 0.18);
 }
 
-input, textarea{
+input, textarea, select{
     width: 98.5%;
 }
 
@@ -159,6 +159,16 @@ input[type=number]::-webkit-inner-spin-button {
   margin-left:12px
 }
 
+select {
+    font-size: 0.95rem;
+}
+select option{
+    background: #333;
+    color: #fff;
+    padding: 12px;
+    font-family: monospace;
+    font-size: 1.2rem;
+}
 .input-wrap h4{
     margin-bottom: 0rem;
 }
@@ -594,6 +604,12 @@ h4.input-required:after{
     float:none;
     padding: 0;
     color: #fffb00;
+}
+.input-extra-link{
+    text-align: right;
+    display: inherit;
+    padding: 0 12px;
+    font-size: 1rem;
 }
 
 #sendMaxAmount{
@@ -1401,8 +1417,5 @@ a.external{
 }
 
 @media (min-width: 1280px){
-    .section{
-/*         border-left: 1px solid #cccccc69;
-        border-right: 1px solid #cccccc69; */
-    }
+   
 }
