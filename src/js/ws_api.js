@@ -8,7 +8,7 @@ class WalletShellApi {
         this.service_host = args.service_host || '127.0.0.1';
         this.service_port = args.service_port || config.walletServiceRpcPort;
         this.service_password = args.service_password || "WHATEVER1234567891";
-        this.minimum_fee = (args.minimum_fee !== undefined) ? args.minimum_fee : (config.minimumFee*config.decimalDivisor);
+        this.minimum_fee = (args.minimum_fee !== undefined) ? args.minimum_fee : (config.minimumFee * config.decimalDivisor);
         this.anonimity = config.defaultMixin;
     }
     _sendRequest(method, params, timeout) {
@@ -258,7 +258,7 @@ class WalletShellApi {
             if (!params.address || !params.paymentId) {
                 return reject(new Error('Address and Payment Id parameters are required'));
             }
-            
+
             this._sendRequest('createIntegratedAddress', params).then((result) => {
                 return resolve(result);
             }).catch((err) => {
