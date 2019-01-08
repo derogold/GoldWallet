@@ -4,7 +4,7 @@
 const os = require('os');
 const path = require('path');
 const fs = require('fs');
-const {clipboard, remote, ipcRenderer, shell} = require('electron');
+const { clipboard, remote, ipcRenderer, shell } = require('electron');
 const Store = require('electron-store');
 const Mousetrap = require('./extras/mousetrap.min.js');
 const autoComplete = require('./extras/auto-complete');
@@ -112,7 +112,7 @@ let thtml;
 let dmswitch;
 let kswitch;
 
-function populateElementVars(){
+function populateElementVars() {
     // misc
     thtml = document.documentElement;
     dmswitch = document.getElementById('tswitch');
@@ -205,7 +205,7 @@ function populateElementVars(){
 
 // crude/junk template :)
 let jtfr = {
-   tFind:  [
+    tFind: [
         "WalletShell",
         "https://github.com/turtlecoin/turtle-wallet-electron",
         "TurtleCoin",
@@ -225,12 +225,12 @@ let junkTemplate = (text) => {
     return jtfr.tFind.reduce((acc, item, i) => {
         const regex = new RegExp(item, "g");
         return acc.replace(regex, jtfr.tReplace[i]);
-  }, text);
+    }, text);
 };
 
-function initSectionTemplates(){
+function initSectionTemplates() {
     const importLinks = document.querySelectorAll('link[rel="import"]');
-    for (var i = 0; i < importLinks.length; i++){
+    for (var i = 0; i < importLinks.length; i++) {
         let template = importLinks[i].import.getElementsByTagName("template")[0];
         let templateString = junkTemplate(template.innerHTML);
         let templateNode = document.createRange().createContextualFragment(templateString);
@@ -244,44 +244,46 @@ function initSectionTemplates(){
 }
 
 // utility: show toast message
-function showToast(msg, duration, force){
+function showToast(msg, duration, force) {
     duration = duration || 1800;
     force = force || false;
     let datoaste = document.getElementById('datoaste');
-    if(datoaste && force) {
+    if (datoaste && force) {
         datoaste.parentNode.removeChild(datoaste);
     }
-    
+
     //if(datoaste) return;
 
     let toastOpts = {
-        style: { main: { 
-            'padding': '4px 6px','left': '3px','right':'auto','border-radius': '0px'
-        }},
-        settings: {duration: duration}
+        style: {
+            main: {
+                'padding': '4px 6px', 'left': '3px', 'right': 'auto', 'border-radius': '0px'
+            }
+        },
+        settings: { duration: duration }
     };
 
     let openedDialog = document.querySelector('dialog[open]');
-    if(openedDialog){
+    if (openedDialog) {
         openedDialog.classList.add('dialog-alerted');
-        setTimeout(()=>{
+        setTimeout(() => {
             openedDialog.classList.remove('dialog-alerted');
-        },duration+100);
+        }, duration + 100);
     }
     iqwerty.toast.Toast(msg, toastOpts);
 }
 
 // utility: dark mode
-function setDarkMode(dark){
+function setDarkMode(dark) {
     let tmode = dark ? 'dark' : '';
-    if(tmode === 'dark'){
+    if (tmode === 'dark') {
         thtml.classList.add('dark');
         dmswitch.setAttribute('title', 'Leave dark mode');
         dmswitch.firstChild.classList.remove('fa-moon');
         dmswitch.firstChild.classList.add('fa-sun');
-        settings.set('darkmode',true);
+        settings.set('darkmode', true);
         dmswitch.firstChild.dataset.icon = 'sun';
-    }else{
+    } else {
         thtml.classList.remove('dark');
         dmswitch.setAttribute('title', 'Swith to dark mode');
         dmswitch.firstChild.classList.remove('fa-sun');
@@ -354,12 +356,12 @@ let keybindingTpl = `<div class="transaction-panel">
 </div>
 `;
 
-function genPaymentId(ret){
+function genPaymentId(ret) {
     ret = ret || false;
-    
+
     let payId = require('crypto').randomBytes(32).toString('hex');
-    if(ret) return payId;
-    
+    if (ret) return payId;
+
     let dialogTpl = `<div class="transaction-panel">
     <h4>Generated Payment ID:</h4>
     <textarea data-cplabel="Payment ID" title="click to copy" class="ctcl default-textarea" rows="1" readonly="readonly">${payId}</textarea>
@@ -368,15 +370,15 @@ function genPaymentId(ret){
     </div>
     `;
     let dialog = document.getElementById('ab-dialog');
-    if(dialog.hasAttribute('open')) dialog.close();
+    if (dialog.hasAttribute('open')) dialog.close();
     dialog.innerHTML = dialogTpl;
     dialog.showModal();
 }
 
-function showIntegratedAddressForm(){
+function showIntegratedAddressForm() {
     let dialog = document.getElementById('ab-dialog');
     let ownAddress = wsession.get('loadedWalletAddress');
-    if(dialog.hasAttribute('open')) dialog.close();
+    if (dialog.hasAttribute('open')) dialog.close();
 
     let iaform = `<div class="transaction-panel">
     <h4>Generate Integrated Address:</h4>
@@ -403,15 +405,15 @@ function showIntegratedAddressForm(){
     dialog.showModal();
 }
 
-function showKeyBindings(){
+function showKeyBindings() {
     let dialog = document.getElementById('ab-dialog');
-    if(dialog.hasAttribute('open')) dialog.close();
+    if (dialog.hasAttribute('open')) dialog.close();
     dialog.innerHTML = keybindingTpl;
     dialog.showModal();
 }
 
-function switchTab(){
-    if(WALLET_OPEN_IN_PROGRESS){
+function switchTab() {
+    if (WALLET_OPEN_IN_PROGRESS) {
         showToast('Opening wallet in progress, please wait...');
         return;
     }
@@ -420,12 +422,12 @@ function switchTab(){
     let nextTab = activeTab.nextElementSibling || firstTab;
     let nextSection = nextTab.dataset.section.trim();
     let skippedSections = [];
-    if(!isServiceReady){
+    if (!isServiceReady) {
         skippedSections = ['section-send', 'section-transactions'];
-        if(nextSection === 'section-overview') nextSection = 'section-welcome';
+        if (nextSection === 'section-overview') nextSection = 'section-welcome';
     }
 
-    while(skippedSections.indexOf(nextSection) >=0){
+    while (skippedSections.indexOf(nextSection) >= 0) {
         nextTab = nextTab.nextElementSibling;
         nextSection = nextTab.dataset.section.trim();
     }
@@ -434,16 +436,16 @@ function switchTab(){
 
 // section switcher
 function changeSection(sectionId, isSettingRedir) {
-    if(WALLET_OPEN_IN_PROGRESS){
+    if (WALLET_OPEN_IN_PROGRESS) {
         showToast('Opening wallet in progress, please wait...');
         return;
     }
-    
+
     formMessageReset();
     isSettingRedir = isSettingRedir === true ? true : false;
     let targetSection = sectionId.trim();
     let untoast = false;
-    if(targetSection === 'section-welcome'){
+    if (targetSection === 'section-welcome') {
         targetSection = 'section-overview';
         untoast = true;
     }
@@ -453,25 +455,25 @@ function changeSection(sectionId, isSettingRedir) {
     let needServiceReady = ['section-transactions', 'section-send', 'section-overview'];
     let needServiceStopped = 'section-welcome';
     let needSynced = ['section-send'];
-    if(needSynced.indexOf(targetSection) && FUSION_IN_PROGRESS){
+    if (needSynced.indexOf(targetSection) && FUSION_IN_PROGRESS) {
         showToast('Wallet optimization in progress, please wait');
         return;
     }
 
     let finalTarget = targetSection;
     let toastMsg = '';
-    
-    if(needServiceReady.indexOf(targetSection) >=0 && !isServiceReady){
+
+    if (needServiceReady.indexOf(targetSection) >= 0 && !isServiceReady) {
         // no access to wallet, send, tx when no wallet opened
         finalTarget = 'section-welcome';
         toastMsg = "Please create/open your wallet!";
-    }else if(needServiceStopped.indexOf(targetSection) >=0 && isServiceReady){
+    } else if (needServiceStopped.indexOf(targetSection) >= 0 && isServiceReady) {
         finalTarget = 'section-overview';
-    }else if(needSynced.indexOf(targetSection) >=0 && !isSynced){
+    } else if (needSynced.indexOf(targetSection) >= 0 && !isSynced) {
         // just return early
         showToast("Please wait until syncing process completed!");
         return;
-    }else{
+    } else {
         // new node test
         // if(targetSection === 'section-overview-load'){
         //     initNodeCompletion();
@@ -481,37 +483,37 @@ function changeSection(sectionId, isSettingRedir) {
     }
 
     let section = document.getElementById(finalTarget);
-    if(section.classList.contains('is-shown')){
-        if(toastMsg.length && !isSettingRedir && !untoast) showToast(toastMsg);
+    if (section.classList.contains('is-shown')) {
+        if (toastMsg.length && !isSettingRedir && !untoast) showToast(toastMsg);
         return; // don't do anything if section unchanged
     }
 
     // navbar active section indicator, only for main section
     let finalButtonTarget = (finalTarget === 'section-welcome' ? 'section-overview' : finalTarget);
     let newActiveNavbarButton = document.querySelector(`.navbar button[data-section="${finalButtonTarget}"]`);
-    if(newActiveNavbarButton){
+    if (newActiveNavbarButton) {
         const activeButton = document.querySelector(`.btn-active`);
-        if(activeButton) activeButton.classList.remove('btn-active');    
-        if(newActiveNavbarButton) newActiveNavbarButton.classList.add('btn-active');
+        if (activeButton) activeButton.classList.remove('btn-active');
+        if (newActiveNavbarButton) newActiveNavbarButton.classList.add('btn-active');
     }
 
     // toggle section
     const activeSection = document.querySelector('.is-shown');
-    if(activeSection) activeSection.classList.remove('is-shown');
+    if (activeSection) activeSection.classList.remove('is-shown');
     section.classList.add('is-shown');
     section.dispatchEvent(new Event('click')); // make it focusable
     // show msg when needed
-    if(toastMsg.length && !isSettingRedir && !untoast) showToast(toastMsg);
+    if (toastMsg.length && !isSettingRedir && !untoast) showToast(toastMsg);
     // notify section was changed
     let currentButton = document.querySelector(`button[data-section="${finalButtonTarget}"]`);
-    if(currentButton){
+    if (currentButton) {
         wsmanager.notifyUpdate({
             type: 'sectionChanged',
             data: currentButton.getAttribute('id')
         });
     }
 }
-function initNodeSelection(nodeAddr){
+function initNodeSelection(nodeAddr) {
     let selected = nodeAddr || settings.get('node_address');
     let customNodes = settings.get('pubnodes_custom');
     let aliveNodes = wsutil.arrShuffle(settings.get('pubnodes_checked', []));
@@ -541,13 +543,13 @@ function initNodeSelection(nodeAddr){
         }
         walletOpenInputNode.add(opt, null);
     });
-    
+
 }
 
 // initial settings value or updater
-function initSettingVal(values){
+function initSettingVal(values) {
     values = values || null;
-    if(values){
+    if (values) {
         // save new settings
         settings.set('service_bin', values.service_bin);
         settings.set('daemon_host', values.daemon_host);
@@ -563,15 +565,15 @@ function initSettingVal(values){
     // if custom node, save it
     let mynode = `${settings.get('daemon_host')}:${settings.get('daemon_port')}`;
     let pnodes = settings.get('pubnodes_data');
-    if(!settings.has('pubnodes_custom')) settings.set('pubnodes_custom', []);
+    if (!settings.has('pubnodes_custom')) settings.set('pubnodes_custom', []);
     let cnodes = settings.get('pubnodes_custom');
-    if(pnodes.indexOf(mynode) === -1 && cnodes.indexOf(mynode) === -1){
+    if (pnodes.indexOf(mynode) === -1 && cnodes.indexOf(mynode) === -1) {
         cnodes.push(mynode);
         settings.set('pubnodes_custom', cnodes);
     }
 }
 // address book completions
-function initAddressCompletion(){
+function initAddressCompletion() {
     var nodeAddress = [];
 
     Object.keys(abook.get()).forEach((key) => {
@@ -579,9 +581,9 @@ function initAddressCompletion(){
         nodeAddress.push(`${et.name}###${et.address}###${(et.paymentId ? et.paymentId : '')}`);
     });
 
-    try{
-        if(COMPLETION_ADDRBOOK) COMPLETION_ADDRBOOK.destroy();
-    }catch(e){
+    try {
+        if (COMPLETION_ADDRBOOK) COMPLETION_ADDRBOOK.destroy();
+    } catch (e) {
         console.log(e);
     }
 
@@ -589,15 +591,15 @@ function initAddressCompletion(){
         selector: 'input[id="input-send-address"]',
         minChars: 1,
         cache: false,
-        source: function(term, suggest){
+        source: function (term, suggest) {
             term = term.toLowerCase();
             var choices = nodeAddress;
             var matches = [];
-            for (var i=0; i<choices.length; i++)
+            for (var i = 0; i < choices.length; i++)
                 if (~choices[i].toLowerCase().indexOf(term)) matches.push(choices[i]);
             suggest(matches);
         },
-        renderItem: function(item, search){
+        renderItem: function (item, search) {
             search = search.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
             var re = new RegExp("(" + search.split(' ').join('|') + ")", "gi");
             var spl = item.split("###");
@@ -606,42 +608,42 @@ function initAddressCompletion(){
             var wpayid = spl[2];
             return `<div class="autocomplete-suggestion" data-paymentid="${wpayid}" data-val="${waddr}">${wname.replace(re, "<b>$1</b>")}<br><span class="autocomplete-wallet-addr">${waddr.replace(re, "<b>$1</b>")}<br>Payment ID: ${(wpayid ? wpayid.replace(re, "<b>$1</b>") : 'N/A')}</span></div>`;
         },
-        onSelect: function(e, term, item){               
+        onSelect: function (e, term, item) {
             document.getElementById('input-send-payid').value = item.getAttribute('data-paymentid');
         }
     });
 }
 
 // generic form message reset
-function formMessageReset(){
-    if(!genericFormMessage.length) return;
-    for(var i=0; i < genericFormMessage.length;i++){
+function formMessageReset() {
+    if (!genericFormMessage.length) return;
+    for (var i = 0; i < genericFormMessage.length; i++) {
         genericFormMessage[i].classList.add('hidden');
         wsutil.clearChild(genericFormMessage[i]);
     }
 }
 
-function formMessageSet(target, status, txt){
+function formMessageSet(target, status, txt) {
     // clear all msg
     formMessageReset();
     let the_target = `${target}-${status}`;
     let the_el = null;
-    try{ 
-        the_el = document.querySelector('.form-ew[id$="'+the_target+'"]');
-    }catch(e){}
-    
-    if(the_el){
+    try {
+        the_el = document.querySelector('.form-ew[id$="' + the_target + '"]');
+    } catch (e) { }
+
+    if (the_el) {
         the_el.classList.remove('hidden');
         wsutil.innerHTML(the_el, txt);
     }
 }
 
 // sample address book, only on first use
-function insertSampleAddresses(){
+function insertSampleAddresses() {
     let flag = 'addressBookFirstUse';
-    if(!settings.get(flag, true)) return;
+    if (!settings.get(flag, true)) return;
     const sampleData = config.addressBookSampleEntries;
-    if(sampleData && Array.isArray(sampleData)){
+    if (sampleData && Array.isArray(sampleData)) {
         sampleData.forEach((item) => {
             let ahash = wsutil.b2sSum(item.address + item.paymentId);
             let aqr = wsutil.genQrDataUrl(item.address);
@@ -653,17 +655,17 @@ function insertSampleAddresses(){
     initAddressCompletion();
 }
 // utility: blank tx filler
-function setTxFiller(show){
+function setTxFiller(show) {
     show = show || false;
     let fillerRow = document.getElementById('txfiller');
     let txRow = document.getElementById('transaction-lists');
 
-    if(!show && fillerRow){
+    if (!show && fillerRow) {
         fillerRow.classList.add('hidden');
         txRow.classList.remove('hidden');
-    }else{
+    } else {
         let hasItemRow = document.querySelector('#transaction-list-table > tbody > tr.txlist-item');
-        if(!hasItemRow)  {
+        if (!hasItemRow) {
             txRow.classList.add('hidden');
             fillerRow.classList.remove('hidden');
         }
@@ -671,83 +673,84 @@ function setTxFiller(show){
 }
 
 // display initial page, settings page on first run, else overview page
-function showInitialPage(){
+function showInitialPage() {
     // other initiations here
     formMessageReset();
     initSettingVal(); // initial settings value
     //initNodeCompletion(); // initial public node completion list
     initAddressCompletion();
 
-    if(!settings.has('firstRun') || settings.get('firstRun') !== 0){
+    if (!settings.has('firstRun') || settings.get('firstRun') !== 0) {
         changeSection('section-settings');
         settings.set('firstRun', 0);
-    }else{
+    } else {
         changeSection('section-welcome');
     }
 
     let versionInfo = document.getElementById('walletShellVersion');
-    if(versionInfo) versionInfo.innerHTML = WS_VERSION;
+    if (versionInfo) versionInfo.innerHTML = WS_VERSION;
     let tsVersionInfo = document.getElementById('turtleServiceVersion');
-    if(tsVersionInfo) tsVersionInfo.innerHTML = config.walletServiceBinaryVersion;
+    if (tsVersionInfo) tsVersionInfo.innerHTML = config.walletServiceBinaryVersion;
 }
 
 // settings page handlers
-function handleSettings(){
-    settingsButtonSave.addEventListener('click', function(){
+function handleSettings() {
+    settingsButtonSave.addEventListener('click', function () {
         formMessageReset();
         let serviceBinValue = settingsInputServiceBin.value ? settingsInputServiceBin.value.trim() : '';
 
-        if(!serviceBinValue.length){
-            formMessageSet('settings','error',`Settings can't be saved, please enter correct values`);
+        if (!serviceBinValue.length) {
+            formMessageSet('settings', 'error', `Settings can't be saved, please enter correct values`);
             return false;
         }
 
-        if(!wsutil.isRegularFileAndWritable(serviceBinValue)){
-            formMessageSet('settings','error',`Unable to find ${config.walletServiceBinaryFilename}, please enter the correct path`);
+        if (!wsutil.isRegularFileAndWritable(serviceBinValue)) {
+            formMessageSet('settings', 'error', `Unable to find ${config.walletServiceBinaryFilename}, please enter the correct path`);
             return false;
         }
-                
+
         let vals = {
             service_bin: serviceBinValue,
             daemon_host: settings.get('daemon_host'),
             daemon_port: settings.get('daemon_port'),
+            node_address: settings.get('node_address'),
             tray_minimize: settingsInputMinToTray.checked,
             tray_close: settingsInputCloseToTray.checked
         };
 
         initSettingVal(vals);
-        
+
         formMessageReset();
         //initNodeCompletion();
         let goTo = wsession.get('loadedWalletAddress').length ? 'section-overview' : 'section-welcome';
         changeSection(goTo, true);
-        showToast('Settings has been updated.',8000);
+        showToast('Settings has been updated.', 8000);
     });
 }
 
-function handleAddressBook(){
-    function listAddressBook(force){
+function handleAddressBook() {
+    function listAddressBook(force) {
         force = force || false;
         insertSampleAddresses();
         let currentLength = document.querySelectorAll('.addressbook-item:not([data-hash="fake-hash"])').length;
-        let abookLength =abook.size;
+        let abookLength = abook.size;
         let perPage = 9;
-    
-        if(currentLength >= abookLength  && !force)  return;
-    
+
+        if (currentLength >= abookLength && !force) return;
+
         let listOpts = {
             valueNames: [
-                {data: ['hash', 'nameval','walletval','paymentidval','qrcodeval']},
-                'addressName','addressWallet','addressPaymentId'
+                { data: ['hash', 'nameval', 'walletval', 'paymentidval', 'qrcodeval'] },
+                'addressName', 'addressWallet', 'addressPaymentId'
             ],
             indexAsync: true
         };
-    
-        if(abookLength > perPage){
+
+        if (abookLength > perPage) {
             listOpts.page = perPage;
             listOpts.pagination = true;
         }
-    
+
         const addressList = new List('addressbooks', listOpts);
         addressList.clear();
         Object.keys(abook.get()).forEach((key) => {
@@ -763,13 +766,13 @@ function handleAddressBook(){
                 qrcodeval: et.qrCode || ''
             });
         });
-    
+
         addressList.remove('hash', 'fake-hash');
     }
 
-    function displayAddressBookEntry(){
+    function displayAddressBookEntry() {
         let dialog = document.getElementById('ab-dialog');
-        if(dialog.hasAttribute('open')) dialog.close();
+        if (dialog.hasAttribute('open')) dialog.close();
         let tpl = `
              <div class="div-transactions-panel">
                  <h4>Address Detail</h4>
@@ -795,74 +798,74 @@ function handleAddressBook(){
                      <button data-addressid="${this.dataset.hash}" type="button" class="form-bt button-gray" id="button-addressbook-panel-close">Close</button>
              </div>
         `;
-     
+
         wsutil.innerHTML(dialog, tpl);
         // get new dialog
         dialog = document.getElementById('ab-dialog');
         dialog.showModal();
         document.getElementById('button-addressbook-panel-close').addEventListener('click', () => {
-             let abdialog = document.getElementById('ab-dialog');
-             abdialog.close();
-             wsutil.clearChild(abdialog);
-         });
-     
-         let deleteBtn = document.getElementById('button-addressbook-panel-delete');
-         deleteBtn.addEventListener('click', () => {
-             let tardel = this.dataset.nameval;
-             let tarhash = this.dataset.hash;
-             if(!confirm(`Are you sure you want to delete ${tardel} from the address book?`)){
-                 return;
-             }else{
-                 abook.delete(tarhash);
-                 let abdialog = document.getElementById('ab-dialog');
-                 abdialog.close();
-                 wsutil.clearChild(abdialog);
-                 listAddressBook(true);
-                 if(!document.getElementById('datoaste')){
-                     iqwerty.toast.Toast("Address book entry was deleted.", {settings: {duration:1800}});
-                 }
-             }
-         });
-     
-         let editBtn = document.getElementById('button-addressbook-panel-edit');
-         editBtn.addEventListener('click', ()=>{
-             let origHash = this.dataset.hash;
-             let entry = abook.get(origHash);
-             if(!entry){
-                 iqwerty.toast.Toast("Invalid address book entry.", {settings: {duration:1800}});
-             }else{
-                 const nameField = document.getElementById('input-addressbook-name');
-                 const walletField = document.getElementById('input-addressbook-wallet');
-                 const payidField = document.getElementById('input-addressbook-paymentid');
-                 const updateField = document.getElementById('input-addressbook-update');
-                 nameField.value = entry.name;
-                 nameField.dataset.oldhash = origHash;
-                 walletField.value = entry.address;
-                 payidField.value = entry.paymentId;
-                 updateField.value = 1;
-             }
-             changeSection('section-addressbook-add');
-             let axdialog = document.getElementById('ab-dialog');
-             axdialog.close();
-             wsutil.clearChild(axdialog);
-         });
-     }
+            let abdialog = document.getElementById('ab-dialog');
+            abdialog.close();
+            wsutil.clearChild(abdialog);
+        });
 
-     function setAbPaymentIdState(addr){
-        if(addr.length > 99){
+        let deleteBtn = document.getElementById('button-addressbook-panel-delete');
+        deleteBtn.addEventListener('click', () => {
+            let tardel = this.dataset.nameval;
+            let tarhash = this.dataset.hash;
+            if (!confirm(`Are you sure you want to delete ${tardel} from the address book?`)) {
+                return;
+            } else {
+                abook.delete(tarhash);
+                let abdialog = document.getElementById('ab-dialog');
+                abdialog.close();
+                wsutil.clearChild(abdialog);
+                listAddressBook(true);
+                if (!document.getElementById('datoaste')) {
+                    iqwerty.toast.Toast("Address book entry was deleted.", { settings: { duration: 1800 } });
+                }
+            }
+        });
+
+        let editBtn = document.getElementById('button-addressbook-panel-edit');
+        editBtn.addEventListener('click', () => {
+            let origHash = this.dataset.hash;
+            let entry = abook.get(origHash);
+            if (!entry) {
+                iqwerty.toast.Toast("Invalid address book entry.", { settings: { duration: 1800 } });
+            } else {
+                const nameField = document.getElementById('input-addressbook-name');
+                const walletField = document.getElementById('input-addressbook-wallet');
+                const payidField = document.getElementById('input-addressbook-paymentid');
+                const updateField = document.getElementById('input-addressbook-update');
+                nameField.value = entry.name;
+                nameField.dataset.oldhash = origHash;
+                walletField.value = entry.address;
+                payidField.value = entry.paymentId;
+                updateField.value = 1;
+            }
+            changeSection('section-addressbook-add');
+            let axdialog = document.getElementById('ab-dialog');
+            axdialog.close();
+            wsutil.clearChild(axdialog);
+        });
+    }
+
+    function setAbPaymentIdState(addr) {
+        if (addr.length > 99) {
             addressBookInputPaymentId.value = '';
             addressBookInputPaymentId.setAttribute('disabled', true);
-        }else{
+        } else {
             addressBookInputPaymentId.removeAttribute('disabled');
         }
     }
 
     addressBookInputWallet.addEventListener('change', (event) => {
-         let val = event.target.value || '';
-         setAbPaymentIdState(val);
-     });
+        let val = event.target.value || '';
+        setAbPaymentIdState(val);
+    });
 
-     addressBookInputWallet.addEventListener('keyup', (event) => {
+    addressBookInputWallet.addEventListener('keyup', (event) => {
         let val = event.target.value || '';
         setAbPaymentIdState(val);
     });
@@ -874,36 +877,36 @@ function handleAddressBook(){
         let paymentIdValue = addressBookInputPaymentId.value ? addressBookInputPaymentId.value.trim() : '';
         let isUpdate = addressBookInputUpdate.value ? addressBookInputUpdate.value : 0;
 
-        if( !nameValue || !addressValue ){
-            formMessageSet('addressbook','error',"Name and wallet address can not be left empty!");
+        if (!nameValue || !addressValue) {
+            formMessageSet('addressbook', 'error', "Name and wallet address can not be left empty!");
             return;
         }
 
-        if(!wsutil.validateAddress(addressValue)){
-            formMessageSet('addressbook','error',`Invalid ${config.assetName} address`);
+        if (!wsutil.validateAddress(addressValue)) {
+            formMessageSet('addressbook', 'error', `Invalid ${config.assetName} address`);
             return;
         }
-        
-        if( paymentIdValue.length){
-            if( !wsutil.validatePaymentId(paymentIdValue) ){
-                formMessageSet('addressbook','error',"Invalid Payment ID");
+
+        if (paymentIdValue.length) {
+            if (!wsutil.validatePaymentId(paymentIdValue)) {
+                formMessageSet('addressbook', 'error', "Invalid Payment ID");
                 return;
             }
         }
 
-        if(addressValue.length > 99) paymentIdValue.value = '';
+        if (addressValue.length > 99) paymentIdValue.value = '';
 
         let entryName = nameValue.trim();
         let entryAddr = addressValue.trim();
         let entryPaymentId = paymentIdValue.trim();
         let entryHash = wsutil.b2sSum(entryAddr + entryPaymentId);
 
-        if(abook.has(entryHash) && !isUpdate){
-            formMessageSet('addressbook','error',"This combination of address and payment ID already exist, please enter new address or different payment id.");
+        if (abook.has(entryHash) && !isUpdate) {
+            formMessageSet('addressbook', 'error', "This combination of address and payment ID already exist, please enter new address or different payment id.");
             return;
         }
-   
-        try{
+
+        try {
             abook.set(entryHash, {
                 name: entryName,
                 address: entryAddr,
@@ -912,12 +915,12 @@ function handleAddressBook(){
             });
             let oldHash = addressBookInputName.dataset.oldhash || '';
             let isNew = (oldHash.length && oldHash !== entryHash);
-            
-            if(isUpdate && isNew){
+
+            if (isUpdate && isNew) {
                 abook.delete(oldHash);
             }
-        }catch(e){
-            formMessageSet('addressbook','error',"Address book entry can not be saved, please try again");
+        } catch (e) {
+            formMessageSet('addressbook', 'error', "Address book entry can not be saved, please try again");
             return;
         }
         addressBookInputName.value = '';
@@ -932,25 +935,25 @@ function handleAddressBook(){
         showToast('Address book entry has been saved.');
     });
     // entry detail
-    wsutil.liveEvent('.addressbook-item','click',displayAddressBookEntry);
+    wsutil.liveEvent('.addressbook-item', 'click', displayAddressBookEntry);
     listAddressBook();
 }
 
-function handleWalletOpen(){
-    if(settings.has('recentWallet')){
+function handleWalletOpen() {
+    if (settings.has('recentWallet')) {
         walletOpenInputPath.value = settings.get('recentWallet');
     }
 
-    function setOpenButtonsState(isInProgress){
+    function setOpenButtonsState(isInProgress) {
         isInProgress = isInProgress ? 1 : 0;
-        if(isInProgress){
+        if (isInProgress) {
             walletOpenButtons.classList.add('hidden');
-        }else{
+        } else {
             walletOpenButtons.classList.remove('hidden');
         }
     }
 
-    function addCustomNodeForm(){
+    function addCustomNodeForm() {
         let dialog = document.getElementById('ab-dialog');
         if (dialog.hasAttribute('open')) dialog.close();
 
@@ -969,8 +972,8 @@ function handleWalletOpen(){
                 <button  data-target="#ab-dialog" type="button" class="button-gray dialog-close-default">Close</button>
             </div>
             `;
-            dialog.innerHTML = iaform;
-            dialog.showModal();
+        dialog.innerHTML = iaform;
+        dialog.showModal();
     }
 
     wsutil.liveEvent("#saveCustomNode", "click", (e) => {
@@ -983,7 +986,7 @@ function handleWalletOpen(){
             return;
         }
         let nodeAddress = nodeAddressVal.split(":");
-        if(nodeAddress.length !== 2) {
+        if (nodeAddress.length !== 2) {
             formMessageSet('customnode', 'error', 'Invalid node address, accepted format: &lt;domain.tld&gt;:&lt;port_number&gt;<br>&lt;ip_address&gt;:&lt;port_number&gt;');
             return;
         }
@@ -1022,7 +1025,7 @@ function handleWalletOpen(){
         formMessageReset();
         let nodeAddressValue = walletOpenInputNode.value;
         let nodeAddress = nodeAddressValue.split(':');
-        
+
         let validHost = nodeAddress[0] === 'localhost' ? true : false;
         if (require('net').isIP(nodeAddress[0])) validHost = true;
         if (!validHost) {
@@ -1042,7 +1045,7 @@ function handleWalletOpen(){
         let settingVals = {
             service_bin: settings.get('service_bin'),
             daemon_host: nodeAddress[0],
-            daemon_port: parseInt(nodeAddress[1],10),
+            daemon_port: parseInt(nodeAddress[1], 10),
             node_address: nodeAddressValue,
             tray_minimize: settings.get('tray_minimize'),
             tray_close: settings.get('tray_close')
@@ -1050,43 +1053,50 @@ function handleWalletOpen(){
         initSettingVal(settingVals);
 
         // actually open wallet
-        if(!walletOpenInputPath.value){
-            formMessageSet('load','error', "Invalid wallet file path");
+        if (!walletOpenInputPath.value) {
+            formMessageSet('load', 'error', "Invalid wallet file path");
             WALLET_OPEN_IN_PROGRESS = false;
             setOpenButtonsState(0);
             return;
         }
 
-        function onError(err){
+        function onError(err) {
             formMessageReset();
-            formMessageSet('load','error', err);
+            formMessageSet('load', 'error', err);
             WALLET_OPEN_IN_PROGRESS = false;
             setOpenButtonsState(0);
             return false;
         }
 
+        function onTimeout(err) {
+            formMessageReset();
+            WALLET_OPEN_IN_PROGRESS = false;
+            setOpenButtonsState(0);
+
+        }
+
         //function onSuccess(theWallet, scanHeight){
-        function onSuccess(){
+        function onSuccess() {
             walletOpenInputPath.value = settings.get('recentWallet');
             overviewWalletAddress.value = wsession.get('loadedWalletAddress');
             wsmanager.getNodeFee();
             WALLET_OPEN_IN_PROGRESS = false;
             changeSection('section-overview');
-            setTimeout(()=>{
+            setTimeout(() => {
                 setOpenButtonsState(0);
-            },300);
+            }, 300);
         }
 
-        function onDelay(msg){
-            formMessageSet('load','warning', `${msg}<br><progress></progress>`);
+        function onDelay(msg) {
+            formMessageSet('load', 'warning', `${msg}<br><progress></progress>`);
         }
 
         let walletFile = walletOpenInputPath.value;
         let walletPass = walletOpenInputPassword.value;
 
         fs.access(walletFile, fs.constants.R_OK, (err) => {
-            if(err){
-                formMessageSet('load','error', "Invalid wallet file path");
+            if (err) {
+                formMessageSet('load', 'error', "Invalid wallet file path");
                 setOpenButtonsState(0);
                 WALLET_OPEN_IN_PROGRESS = false;
                 return false;
@@ -1096,17 +1106,17 @@ function handleWalletOpen(){
             WALLET_OPEN_IN_PROGRESS = true;
             settings.set('recentWallet', walletFile);
             settings.set('recentWalletDir', path.dirname(walletFile));
-            formMessageSet('load','warning', "Accessing wallet...<br><progress></progress>");
+            formMessageSet('load', 'warning', "Accessing wallet...<br><progress></progress>");
             wsmanager.stopService().then(() => {
 
-                formMessageSet('load','warning', "Starting wallet service...<br><progress></progress>");
+                formMessageSet('load', 'warning', "Starting wallet service...<br><progress></progress>");
                 setTimeout(() => {
-                    formMessageSet('load','warning', "Opening wallet, please be patient...<br><progress></progress>");
-                    wsmanager.startService(walletFile, walletPass, onError, onSuccess, onDelay);
-                },800);
+                    formMessageSet('load', 'warning', "Opening wallet, please be patient...<br><progress></progress>");
+                    wsmanager.startService(walletFile, walletPass, onError, onSuccess, onDelay, onTimeout);
+                }, 800);
             }).catch((err) => {
                 console.log(err);
-                formMessageSet('load','error', "Unable to start service");
+                formMessageSet('load', 'error', "Unable to start service");
                 WALLET_OPEN_IN_PROGRESS = false;
                 setOpenButtonsState(0);
                 return false;
@@ -1115,10 +1125,10 @@ function handleWalletOpen(){
     });
 }
 
-function handleWalletClose(){
+function handleWalletClose() {
     overviewWalletCloseButton.addEventListener('click', (event) => {
         event.preventDefault();
-        if(!confirm('Are you sure want to close your wallet?')) return;
+        if (!confirm('Are you sure want to close your wallet?')) return;
 
         let dialog = document.getElementById('main-dialog');
         let htmlStr = '<div class="div-save-main" style="text-align: center;padding:1rem;"><i class="fas fa-spinner fa-pulse"></i><span style="padding:0px 10px;">Saving &amp; closing your wallet...</span></div>';
@@ -1128,7 +1138,7 @@ function handleWalletClose(){
         dialog.showModal();
         // save + SIGTERMed wallet daemon
         wsmanager.stopService().then(() => {
-            setTimeout(function(){
+            setTimeout(function () {
                 // cleare form err msg
                 formMessageReset();
                 changeSection('section-overview');
@@ -1148,17 +1158,17 @@ function handleWalletClose(){
                 };
                 wsmanager.notifyUpdate(resetdata);
                 dialog = document.getElementById('main-dialog');
-                if(dialog.hasAttribute('open')) dialog.close();
+                if (dialog.hasAttribute('open')) dialog.close();
                 wsmanager.resetState();
                 wsutil.clearChild(dialog);
-                try{
-                    if(null !== TXLIST_OBJ){
+                try {
+                    if (null !== TXLIST_OBJ) {
                         TXLIST_OBJ.clear();
                         TXLIST_OBJ.update();
                     }
 
                     TXLIST_OBJ = null;
-                }catch(e){}
+                } catch (e) { }
                 setTxFiller(true);
             }, 1200);
         }).catch((err) => {
@@ -1168,35 +1178,35 @@ function handleWalletClose(){
     });
 }
 
-function handleWalletCreate(){
+function handleWalletCreate() {
     overviewButtonCreate.addEventListener('click', () => {
         formMessageReset();
         let filePathValue = walletCreateInputPath.value ? walletCreateInputPath.value.trim() : '';
-        let passwordValue =  walletCreateInputPassword.value ? walletCreateInputPassword.value.trim() : '';
+        let passwordValue = walletCreateInputPassword.value ? walletCreateInputPassword.value.trim() : '';
 
         // validate path
-        wsutil.validateWalletPath(filePathValue, DEFAULT_WALLET_PATH).then((finalPath)=>{
+        wsutil.validateWalletPath(filePathValue, DEFAULT_WALLET_PATH).then((finalPath) => {
             // validate password
-            if(!passwordValue.length){
-                formMessageSet('create','error', `Please enter a password, creating wallet without a password will not be supported!`);
+            if (!passwordValue.length) {
+                formMessageSet('create', 'error', `Please enter a password, creating wallet without a password will not be supported!`);
                 return;
             }
 
             settings.set('recentWalletDir', path.dirname(finalPath));
 
             // user already confirm to overwrite
-            if(wsutil.isRegularFileAndWritable(finalPath)){
-                try{
+            if (wsutil.isRegularFileAndWritable(finalPath)) {
+                try {
                     // for now, backup instead of delete, just to be save
                     let ts = new Date().getTime();
                     let backfn = `${finalPath}.bak${ts}`;
                     fs.renameSync(finalPath, backfn);
                     //fs.unlinkSync(finalPath);
-                }catch(err){
-                   formMessageSet('create','error', `Unable to overwrite existing file, please enter new wallet file path`);
-                   return;
+                } catch (err) {
+                    formMessageSet('create', 'error', `Unable to overwrite existing file, please enter new wallet file path`);
+                    return;
                 }
-           }
+            }
 
             // create
             wsmanager.createWallet(
@@ -1206,68 +1216,68 @@ function handleWalletCreate(){
                 settings.set('recentWallet', walletFile);
                 walletOpenInputPath.value = walletFile;
                 changeSection('section-overview-load');
-                showToast('Wallet has been created, you can now open your wallet!',12000);
+                showToast('Wallet has been created, you can now open your wallet!', 12000);
             }).catch((err) => {
                 formMessageSet('create', 'error', err.message);
                 return;
             });
         }).catch((err) => {
-            formMessageSet('create','error', err.message);
+            formMessageSet('create', 'error', err.message);
             return;
         });
     });
 }
 
-function handleWalletImportKeys(){
+function handleWalletImportKeys() {
     importKeyButtonImport.addEventListener('click', () => {
         formMessageReset();
         let filePathValue = importKeyInputPath.value ? importKeyInputPath.value.trim() : '';
-        let passwordValue =  importKeyInputPassword.value ? importKeyInputPassword.value.trim() : '';
+        let passwordValue = importKeyInputPassword.value ? importKeyInputPassword.value.trim() : '';
         let viewKeyValue = importKeyInputViewKey.value ? importKeyInputViewKey.value.trim() : '';
         let spendKeyValue = importKeyInputSpendKey.value ? importKeyInputSpendKey.value.trim() : '';
-        let scanHeightValue = importKeyInputScanHeight.value ? parseInt(importKeyInputScanHeight.value,10) : 1;
-        
+        let scanHeightValue = importKeyInputScanHeight.value ? parseInt(importKeyInputScanHeight.value, 10) : 1;
+
         // validate path
-        wsutil.validateWalletPath(filePathValue, DEFAULT_WALLET_PATH).then((finalPath)=>{
-            if(!passwordValue.length){
-                formMessageSet('import','error', `Please enter a password, creating wallet without a password will not be supported!`);
+        wsutil.validateWalletPath(filePathValue, DEFAULT_WALLET_PATH).then((finalPath) => {
+            if (!passwordValue.length) {
+                formMessageSet('import', 'error', `Please enter a password, creating wallet without a password will not be supported!`);
                 return;
             }
 
-            if(scanHeightValue < 0 || scanHeightValue.toPrecision().indexOf('.') !== -1){
-                formMessageSet('import','error', 'Invalid scan height!');
+            if (scanHeightValue < 0 || scanHeightValue.toPrecision().indexOf('.') !== -1) {
+                formMessageSet('import', 'error', 'Invalid scan height!');
                 return;
             }
 
             // validate viewKey
-            if(!viewKeyValue.length || !spendKeyValue.length){
-                formMessageSet('import','error', 'View Key and Spend Key can not be left blank!');
+            if (!viewKeyValue.length || !spendKeyValue.length) {
+                formMessageSet('import', 'error', 'View Key and Spend Key can not be left blank!');
                 return;
             }
-    
-            if(!wsutil.validateSecretKey(viewKeyValue)){
-                formMessageSet('import','error', 'Invalid view key!');
+
+            if (!wsutil.validateSecretKey(viewKeyValue)) {
+                formMessageSet('import', 'error', 'Invalid view key!');
                 return;
             }
             // validate spendKey
-            if(!wsutil.validateSecretKey(spendKeyValue)){
-                formMessageSet('import','error', 'Invalid spend key!');
+            if (!wsutil.validateSecretKey(spendKeyValue)) {
+                formMessageSet('import', 'error', 'Invalid spend key!');
                 return;
             }
 
             settings.set('recentWalletDir', path.dirname(finalPath));
 
             // user already confirm to overwrite
-            if(wsutil.isRegularFileAndWritable(finalPath)){
-                try{
+            if (wsutil.isRegularFileAndWritable(finalPath)) {
+                try {
                     // for now, backup instead of delete, just to be safe
                     let ts = new Date().getTime();
                     let backfn = `${finalPath}.bak${ts}`;
                     fs.renameSync(finalPath, backfn);
                     //fs.unlinkSync(finalPath);
-                }catch(err){
-                formMessageSet('import','error', `Unable to overwrite existing file, please enter new wallet file path`);
-                return;
+                } catch (err) {
+                    formMessageSet('import', 'error', `Unable to overwrite existing file, please enter new wallet file path`);
+                    return;
                 }
             }
             wsmanager.importFromKeys(
@@ -1286,35 +1296,35 @@ function handleWalletImportKeys(){
                 return;
             });
 
-        }).catch((err)=>{
-            formMessageSet('import','error', err.message);
+        }).catch((err) => {
+            formMessageSet('import', 'error', err.message);
             return;
         });
     });
 }
 
-function handleWalletImportSeed(){
+function handleWalletImportSeed() {
     importSeedButtonImport.addEventListener('click', () => {
         formMessageReset();
 
         let filePathValue = importSeedInputPath.value ? importSeedInputPath.value.trim() : '';
-        let passwordValue =  importSeedInputPassword.value ? importSeedInputPassword.value.trim() : '';
+        let passwordValue = importSeedInputPassword.value ? importSeedInputPassword.value.trim() : '';
         let seedValue = importSeedInputMnemonic.value ? importSeedInputMnemonic.value.trim() : '';
-        let scanHeightValue = importSeedInputScanHeight.value ? parseInt(importSeedInputScanHeight.value,10) : -1;
+        let scanHeightValue = importSeedInputScanHeight.value ? parseInt(importSeedInputScanHeight.value, 10) : -1;
         // validate path
-        wsutil.validateWalletPath(filePathValue, DEFAULT_WALLET_PATH).then((finalPath)=>{
+        wsutil.validateWalletPath(filePathValue, DEFAULT_WALLET_PATH).then((finalPath) => {
             // validate password
-            if(!passwordValue.length){
-                formMessageSet('import-seed','error', `Please enter a password, creating wallet without a password will not be supported!`);
+            if (!passwordValue.length) {
+                formMessageSet('import-seed', 'error', `Please enter a password, creating wallet without a password will not be supported!`);
                 return;
             }
 
-            if(scanHeightValue < 0 || scanHeightValue.toPrecision().indexOf('.') !== -1){
-                formMessageSet('import-seed','error', 'Invalid scan height!');
+            if (scanHeightValue < 0 || scanHeightValue.toPrecision().indexOf('.') !== -1) {
+                formMessageSet('import-seed', 'error', 'Invalid scan height!');
                 return;
             }
 
-            if(!wsutil.validateMnemonic(seedValue)){
+            if (!wsutil.validateMnemonic(seedValue)) {
                 formMessageSet('import-seed', 'error', 'Invalid mnemonic seed value!');
                 return;
             }
@@ -1322,16 +1332,16 @@ function handleWalletImportSeed(){
             settings.set('recentWalletDir', path.dirname(finalPath));
 
             // user already confirm to overwrite
-            if(wsutil.isRegularFileAndWritable(finalPath)){
-                try{
+            if (wsutil.isRegularFileAndWritable(finalPath)) {
+                try {
                     // for now, backup instead of delete, just to be save
                     let ts = new Date().getTime();
                     let backfn = `${finalPath}.bak${ts}`;
                     fs.renameSync(finalPath, backfn);
                     //fs.unlinkSync(finalPath);
-                }catch(err){
-                   formMessageSet('import-seed','error', `Unable to overwrite existing file, please enter new wallet file path`);
-                   return;
+                } catch (err) {
+                    formMessageSet('import-seed', 'error', `Unable to overwrite existing file, please enter new wallet file path`);
+                    return;
                 }
             }
 
@@ -1350,23 +1360,23 @@ function handleWalletImportSeed(){
                 return;
             });
 
-        }).catch((err)=>{
+        }).catch((err) => {
             formMessageSet('import-seed', 'error', err.message);
             return;
         });
     });
 }
 
-function handleWalletExport(){
+function handleWalletExport() {
     overviewShowKeyButton.addEventListener('click', () => {
         formMessageReset();
-        if(!overviewWalletAddress.value) return;
+        if (!overviewWalletAddress.value) return;
         wsmanager.getSecretKeys(overviewWalletAddress.value).then((keys) => {
             showkeyInputViewKey.value = keys.viewSecretKey;
             showkeyInputSpendKey.value = keys.spendSecretKey;
             showkeyInputSeed.value = keys.mnemonicSeed;
         }).catch(() => {
-            formMessageSet('secret','error', "Failed to get key, please try again in a few seconds");
+            formMessageSet('secret', 'error', "Failed to get key, please try again in a few seconds");
         });
     });
 
@@ -1376,50 +1386,50 @@ function handleWalletExport(){
             title: "Export keys to file...",
             filters: [
                 { name: 'Text files', extensions: ['txt'] }
-              ]
+            ]
         });
-        if(filename){
+        if (filename) {
             wsmanager.getSecretKeys(overviewWalletAddress.value).then((keys) => {
                 let textContent = `Wallet Address:${os.EOL}${wsession.get('loadedWalletAddress')}${os.EOL}`;
                 textContent += `${os.EOL}View Secret Key:${os.EOL}${keys.viewSecretKey}${os.EOL}`;
                 textContent += `${os.EOL}Spend Secret Key:${os.EOL}${keys.spendSecretKey}${os.EOL}`;
                 textContent += `${os.EOL}Mnemonic Seed:${os.EOL}${keys.mnemonicSeed}${os.EOL}`;
-                try{
+                try {
                     fs.writeFileSync(filename, textContent);
-                    formMessageSet('secret','success', 'Your keys have been exported, please keep the file secret!');
-                }catch(err){
-                    formMessageSet('secret','error', "Failed to save your keys, please check that you have write permission to the file");
+                    formMessageSet('secret', 'success', 'Your keys have been exported, please keep the file secret!');
+                } catch (err) {
+                    formMessageSet('secret', 'error', "Failed to save your keys, please check that you have write permission to the file");
                 }
             }).catch(() => {
-                formMessageSet('secret','error', "Failed to get keys, please try again in a few seconds");
+                formMessageSet('secret', 'error', "Failed to get keys, please try again in a few seconds");
             });
         }
     });
 }
 
-function handleSendTransfer(){
+function handleSendTransfer() {
     sendMaxAmount.addEventListener('click', (event) => {
         let maxsend = event.target.dataset.maxsend || 0;
-        if(maxsend) sendInputAmount.value = maxsend;
+        if (maxsend) sendInputAmount.value = maxsend;
     });
 
     sendInputFee.value = 0.1;
-    function setPaymentIdState(addr){
-        if(addr.length > 99){
+    function setPaymentIdState(addr) {
+        if (addr.length > 99) {
             sendInputPaymentId.value = '';
             sendInputPaymentId.setAttribute('disabled', true);
-        }else{
+        } else {
             sendInputPaymentId.removeAttribute('disabled');
         }
     }
     sendInputAddress.addEventListener('change', (event) => {
         let addr = event.target.value || '';
-        if(!addr.length) initAddressCompletion();
+        if (!addr.length) initAddressCompletion();
         setPaymentIdState(addr);
     });
     sendInputAddress.addEventListener('keyup', (event) => {
         let addr = event.target.value || '';
-        if(!addr.length) initAddressCompletion();
+        if (!addr.length) initAddressCompletion();
         setPaymentIdState(addr);
     });
 
@@ -1434,50 +1444,50 @@ function handleSendTransfer(){
         }
 
         let recipientAddress = sendInputAddress.value ? sendInputAddress.value.trim() : '';
-        if(!recipientAddress.length || !wsutil.validateAddress(recipientAddress)){
-            formMessageSet('send','error',`Invalid ${config.assetName} address`);
+        if (!recipientAddress.length || !wsutil.validateAddress(recipientAddress)) {
+            formMessageSet('send', 'error', `Invalid ${config.assetName} address`);
             return;
         }
 
-        if(recipientAddress === wsession.get('loadedWalletAddress')){
-            formMessageSet('send','error',"Sorry, can't send to your own address");
+        if (recipientAddress === wsession.get('loadedWalletAddress')) {
+            formMessageSet('send', 'error', "Sorry, can't send to your own address");
             return;
         }
 
         let paymentId = sendInputPaymentId.value ? sendInputPaymentId.value.trim() : '';
-        if(recipientAddress.length > 99){
+        if (recipientAddress.length > 99) {
             paymentId = '';
-        }else if(paymentId.length){
-            if(!wsutil.validatePaymentId(paymentId)){
-                formMessageSet('send','error','Sorry, invalid Payment ID');
+        } else if (paymentId.length) {
+            if (!wsutil.validatePaymentId(paymentId)) {
+                formMessageSet('send', 'error', 'Sorry, invalid Payment ID');
                 return;
             }
         }
 
         let total = 0;
-        let amount = sendInputAmount.value ?  parseFloat(sendInputAmount.value) : 0;
+        let amount = sendInputAmount.value ? parseFloat(sendInputAmount.value) : 0;
         if (amount <= 0) {
-            formMessageSet('send','error','Sorry, invalid amount');
+            formMessageSet('send', 'error', 'Sorry, invalid amount');
             return;
         }
 
         if (precision(amount) > config.decimalPlaces) {
-            formMessageSet('send','error',`Amount can't have more than ${config.decimalPlaces} decimal places`);
+            formMessageSet('send', 'error', `Amount can't have more than ${config.decimalPlaces} decimal places`);
             return;
         }
-        
+
         total += amount;
         let txAmount = wsutil.amountForImmortal(amount); // final transfer amount
 
         let fee = sendInputFee.value ? parseFloat(sendInputFee.value) : 0;
         let minFee = config.minimumFee;
         if (fee < minFee) {
-            formMessageSet('send','error',`Fee can't be less than ${wsutil.amountForMortal(minFee)}`);
+            formMessageSet('send', 'error', `Fee can't be less than ${wsutil.amountForMortal(minFee)}`);
             return;
         }
 
         if (precision(fee) > config.decimalPlaces) {
-            formMessageSet('send','error',`Fee can't have more than  ${config.decimalPlaces} decimal places`);
+            formMessageSet('send', 'error', `Fee can't have more than  ${config.decimalPlaces} decimal places`);
             return;
         }
 
@@ -1490,10 +1500,10 @@ function handleSendTransfer(){
 
         const availableBalance = wsession.get('walletUnlockedBalance') || (0).toFixed(config.decimalPlaces);
 
-        if(parseFloat(txTotal) > parseFloat(availableBalance)){
+        if (parseFloat(txTotal) > parseFloat(availableBalance)) {
             formMessageSet(
                 'send',
-                'error', 
+                'error',
                 `Sorry, you don't have enough funds to process this transfer. Transfer amount+fees: ${(txTotal)}`
             );
             return;
@@ -1506,7 +1516,7 @@ function handleSendTransfer(){
             fee: txFee
         };
 
-        if(paymentId.length) tx.paymentId = paymentId;
+        if (paymentId.length) tx.paymentId = paymentId;
         let tpl = `
             <div class="div-transaction-panel">
                 <h4>Transfer Confirmation</h4>
@@ -1551,16 +1561,16 @@ function handleSendTransfer(){
                 formMessageSet('send', 'success', okMsg);
                 // check if it's new address, if so save it
                 let newId = wsutil.b2sSum(recipientAddress + paymentId);
-                if(!abook.has(newId)){
+                if (!abook.has(newId)) {
                     let now = new Date().toISOString();
-                    let newName = `unnamed (${now.split('T')[0].replace(/-/g,'')}_${now.split('T')[1].split('.')[0].replace(/:/g,'')})`;
+                    let newName = `unnamed (${now.split('T')[0].replace(/-/g, '')}_${now.split('T')[1].split('.')[0].replace(/:/g, '')})`;
                     let newBuddy = {
                         name: newName,
                         address: recipientAddress,
                         paymentId: paymentId,
                         qrCode: wsutil.genQrDataUrl(recipientAddress)
                     };
-                    abook.set(newId,newBuddy);
+                    abook.set(newId, newBuddy);
                 }
                 sendInputAddress.value = '';
                 sendInputPaymentId.value = '';
@@ -1573,15 +1583,15 @@ function handleSendTransfer(){
     });
 
     sendOptimize.addEventListener('click', () => {
-        if(!wsession.get('synchronized', false)){
+        if (!wsession.get('synchronized', false)) {
             showToast('Synchronization is in progress, please wait.');
             return;
         }
 
-        if(!confirm('You are about to perform wallet optimization. This process may took a while to complete, are you sure?')) return;
+        if (!confirm('You are about to perform wallet optimization. This process may took a while to complete, are you sure?')) return;
         showToast('Optimization started, your balance may appear incorrect during the process', 3000);
         FUSION_IN_PROGRESS = true;
-        wsmanager.optimizeWallet().then( () => {
+        wsmanager.optimizeWallet().then(() => {
             //console.log(res);
             FUSION_IN_PROGRESS = false;
         }).catch(() => {
@@ -1592,15 +1602,17 @@ function handleSendTransfer(){
     });
 }
 
-function handleTransactions(){
+function handleTransactions() {
     // tx list options
     let txListOpts = {
         valueNames: [
-            { data: [
-                'rawPaymentId', 'rawHash', 'txType', 'rawAmount', 'rawFee',
-                'fee', 'timestamp', 'blockIndex', 'extra', 'isBase', 'unlockTime'
-            ]},
-            'amount','timeStr','paymentId','transactionHash','fee'
+            {
+                data: [
+                    'rawPaymentId', 'rawHash', 'txType', 'rawAmount', 'rawFee',
+                    'fee', 'timestamp', 'blockIndex', 'extra', 'isBase', 'unlockTime'
+                ]
+            },
+            'amount', 'timeStr', 'paymentId', 'transactionHash', 'fee'
         ],
         item: `<tr title="click for detail..." class="txlist-item">
                 <td class="txinfo">
@@ -1609,13 +1621,13 @@ function handleTransactions(){
                     <p class="tx-ov-info">Payment ID: <span class="paymentId"></span></p>
                 </td><td class="amount txamount"></td>
         </tr>`,
-        searchColumns: ['transactionHash','paymentId','timeStr','amount'],
+        searchColumns: ['transactionHash', 'paymentId', 'timeStr', 'amount'],
         indexAsync: true
     };
     // tx detail
-    function showTransaction(el){
+    function showTransaction(el) {
         let tx = (el.name === "tr" ? el : el.closest('tr'));
-        let txdate = new Date(tx.dataset.timestamp*1000).toUTCString();
+        let txdate = new Date(tx.dataset.timestamp * 1000).toUTCString();
         let txhashUrl = `<a class="external" title="view in block explorer" href="${config.blockExplorerUrl.replace('[[TX_HASH]]', tx.dataset.rawhash)}">View in block explorer</a>`;
         let dialogTpl = `
                 <div class="div-transactions-panel">
@@ -1657,7 +1669,7 @@ function handleTransactions(){
         dialog.showModal();
     }
 
-    function sortAmount(a, b){
+    function sortAmount(a, b) {
         var aVal = parseFloat(a._values.amount.replace(/[^0-9.-]/g, ""));
         var bVal = parseFloat(b._values.amount.replace(/[^0-9.-]/g, ""));
         if (aVal > bVal) return 1;
@@ -1665,53 +1677,53 @@ function handleTransactions(){
         return 0;
     }
 
-    function resetTxSortMark(){
+    function resetTxSortMark() {
         let sortedEl = document.querySelectorAll('#transaction-lists .asc, #transaction-lists .desc');
-        Array.from(sortedEl).forEach((el)=>{
+        Array.from(sortedEl).forEach((el) => {
             el.classList.remove('asc');
             el.classList.remove('desc');
         });
     }
 
-    function listTransactions(){
-        if(wsession.get('txLen') <= 0){
+    function listTransactions() {
+        if (wsession.get('txLen') <= 0) {
             setTxFiller(true);
             return;
         }
 
         let txs = wsession.get('txNew');
-        if(!txs.length) {
-            if(TXLIST_OBJ === null || TXLIST_OBJ.size() <= 0) setTxFiller(true);
+        if (!txs.length) {
+            if (TXLIST_OBJ === null || TXLIST_OBJ.size() <= 0) setTxFiller(true);
             return;
         }
 
         setTxFiller(false);
         let txsPerPage = 20;
-        if(TXLIST_OBJ === null){
-            if(txs.length > txsPerPage){
+        if (TXLIST_OBJ === null) {
+            if (txs.length > txsPerPage) {
                 txListOpts.page = txsPerPage;
                 txListOpts.pagination = [{
                     innerWindow: 2,
                     outerWindow: 1
-                }]; 
+                }];
             }
             TXLIST_OBJ = new List('transaction-lists', txListOpts, txs);
-            TXLIST_OBJ.sort('timestamp', {order: 'desc'});
+            TXLIST_OBJ.sort('timestamp', { order: 'desc' });
             resetTxSortMark();
             txButtonSortDate.classList.add('desc');
             txButtonSortDate.dataset.dir = 'desc';
-        }else{
+        } else {
             setTxFiller(false);
             TXLIST_OBJ.add(txs);
-            TXLIST_OBJ.sort('timestamp', {order: 'desc'});
+            TXLIST_OBJ.sort('timestamp', { order: 'desc' });
             resetTxSortMark();
             txButtonSortDate.classList.add('desc');
             txButtonSortDate.dataset.dir = 'desc';
         }
     }
 
-    function exportAsCsv(mode){
-        if(wsession.get('txLen') <= 0) return;
+    function exportAsCsv(mode) {
+        if (wsession.get('txLen') <= 0) return;
 
         formMessageReset();
         mode = mode || 'all';
@@ -1721,21 +1733,21 @@ function handleTransactions(){
             defaultPath: recentDir,
             filters: [
                 { name: 'CSV files', extensions: ['csv'] }
-              ]
+            ]
         });
-        if(!filename) return;
+        if (!filename) return;
 
-        const createCsvWriter  = require('csv-writer').createObjectCsvWriter;
+        const createCsvWriter = require('csv-writer').createObjectCsvWriter;
         const csvWriter = createCsvWriter({
             path: filename,
             header: [
-                {id: 'timeStr', title: 'Time'},
-                {id: 'amount', title: 'Amount'},
-                {id: 'paymentId', title: 'PaymentId'},
-                {id: 'transactionHash', title: 'Transaction Hash'},
-                {id: 'fee', title: 'Transaction Fee'},
-                {id: 'extra', title: 'Extra Data'},
-                {id: 'blockIndex', title: 'Block Height'}
+                { id: 'timeStr', title: 'Time' },
+                { id: 'amount', title: 'Amount' },
+                { id: 'paymentId', title: 'PaymentId' },
+                { id: 'transactionHash', title: 'Transaction Hash' },
+                { id: 'fee', title: 'Transaction Fee' },
+                { id: 'extra', title: 'Extra Data' },
+                { id: 'blockIndex', title: 'Block Height' }
             ]
         });
         let rawTxList = wsession.get('txList');
@@ -1753,45 +1765,45 @@ function handleTransactions(){
         });
 
         let dialog = document.getElementById('ab-dialog');
-        switch(mode){
+        switch (mode) {
             case 'in':
-                let txin = txlist.filter( (obj) => {return obj.txType === "in";});
-                if(!txin.length){
+                let txin = txlist.filter((obj) => { return obj.txType === "in"; });
+                if (!txin.length) {
                     showToast('Transaction export failed, incoming transactions not available!');
-                    if(dialog.hasAttribute('open')) dialog.close();
+                    if (dialog.hasAttribute('open')) dialog.close();
                     return;
                 }
 
-                csvWriter.writeRecords(txin).then(()=>{
-                    if(dialog.hasAttribute('open')) dialog.close();
+                csvWriter.writeRecords(txin).then(() => {
+                    if (dialog.hasAttribute('open')) dialog.close();
                     showToast(`Transaction list exported to ${filename}`);
                 }).catch((err) => {
-                    if(dialog.hasAttribute('open')) dialog.close();
+                    if (dialog.hasAttribute('open')) dialog.close();
                     showToast(`Transaction export failed, ${err.message}`);
                 });
                 break;
             case 'out':
-                let txout = txlist.filter( (obj) => {return obj.txType === "out";});
-                if(!txout.length){
+                let txout = txlist.filter((obj) => { return obj.txType === "out"; });
+                if (!txout.length) {
                     showToast('Transaction export failed, outgoing transactions not available!');
-                    if(dialog.hasAttribute('open')) dialog.close();
+                    if (dialog.hasAttribute('open')) dialog.close();
                     return;
                 }
 
-                csvWriter.writeRecords(txout).then(()=>{
-                    if(dialog.hasAttribute('open')) dialog.close();
+                csvWriter.writeRecords(txout).then(() => {
+                    if (dialog.hasAttribute('open')) dialog.close();
                     showToast(`Transaction list exported to ${filename}`);
                 }).catch((err) => {
-                    if(dialog.hasAttribute('open')) dialog.close();
+                    if (dialog.hasAttribute('open')) dialog.close();
                     showToast(`Transaction export failed, ${err.message}`);
                 });
                 break;
             default:
-                csvWriter.writeRecords(txlist).then(()=>{
-                    if(dialog.hasAttribute('open')) dialog.close();
+                csvWriter.writeRecords(txlist).then(() => {
+                    if (dialog.hasAttribute('open')) dialog.close();
                     showToast(`Transaction list exported to ${filename}`);
                 }).catch((err) => {
-                    if(dialog.hasAttribute('open')) dialog.close();
+                    if (dialog.hasAttribute('open')) dialog.close();
                     showToast(`Transaction export failed, ${err.message}`);
                 });
                 break;
@@ -1814,7 +1826,7 @@ function handleTransactions(){
             </div>
         `;
         let dialog = document.getElementById('ab-dialog');
-        if(dialog.hasAttribute('open')) dialog.close();
+        if (dialog.hasAttribute('open')) dialog.close();
         dialog.innerHTML = dialogTpl;
         dialog.showModal();
     });
@@ -1822,14 +1834,14 @@ function handleTransactions(){
     // listen to tx update
     txInputUpdated.addEventListener('change', (event) => {
         let updated = parseInt(event.target.value, 10) === 1;
-        if(!updated) return;
+        if (!updated) return;
         txInputUpdated.value = 0;
         listTransactions();
     });
     // listen to tx notify
-    txInputNotify.addEventListener('change', (event)=>{
+    txInputNotify.addEventListener('change', (event) => {
         let notify = parseInt(event.target.value, 10) === 1;
-        if(!notify) return;
+        if (!notify) return;
         txInputNotify.value = 0; // reset
         changeSection('section-transactions');
     });
@@ -1839,9 +1851,9 @@ function handleTransactions(){
         event.preventDefault();
         event.stopPropagation();
         return showTransaction(event.target);
-    },document.getElementById('transaction-lists'));
+    }, document.getElementById('transaction-lists'));
 
-    txButtonSortAmount.addEventListener('click',(event)=>{
+    txButtonSortAmount.addEventListener('click', (event) => {
         event.preventDefault();
         let currentDir = event.target.dataset.dir;
         let targetDir = (currentDir === 'desc' ? 'asc' : 'desc');
@@ -1854,7 +1866,7 @@ function handleTransactions(){
         });
     });
 
-    txButtonSortDate.addEventListener('click',(event)=>{
+    txButtonSortDate.addEventListener('click', (event) => {
         event.preventDefault();
         let currentDir = event.target.dataset.dir;
         let targetDir = (currentDir === 'desc' ? 'asc' : 'desc');
@@ -1869,25 +1881,25 @@ function handleTransactions(){
     txButtonRefresh.addEventListener('click', listTransactions);
 }
 
-function handleNetworkChange(){
+function handleNetworkChange() {
     window.addEventListener('online', () => {
         let connectedNode = wsession.get('connectedNode');
-        if(!connectedNode.length || connectedNode.startsWith('127.0.0.1')) return;
+        if (!connectedNode.length || connectedNode.startsWith('127.0.0.1')) return;
         wsmanager.networkStateUpdate(1);
     });
-    window.addEventListener('offline',  () => {
+    window.addEventListener('offline', () => {
         let connectedNode = wsession.get('connectedNode');
-        if(!connectedNode.length || connectedNode.startsWith('127.0.0.1')) return;
+        if (!connectedNode.length || connectedNode.startsWith('127.0.0.1')) return;
         wsmanager.networkStateUpdate(0);
     });
 }
 
 // event handlers
-function initHandlers(){
+function initHandlers() {
     initSectionTemplates();
     let darkStart = settings.get('darkmode', false);
     setDarkMode(darkStart);
-    
+
     // netstatus
     handleNetworkChange();
 
@@ -1899,7 +1911,7 @@ function initHandlers(){
     });
 
     // main section link handler
-    for(var ei=0; ei < sectionButtons.length; ei++){
+    for (var ei = 0; ei < sectionButtons.length; ei++) {
         let target = sectionButtons[ei].dataset.section;
         sectionButtons[ei].addEventListener('click', changeSection.bind(this, target), false);
     }
@@ -1911,7 +1923,7 @@ function initHandlers(){
         let cplabel = el.dataset.cplabel ? el.dataset.cplabel : '';
         let cpnotice = cplabel ? `${cplabel} copied to clipboard!` : 'Copied to clipboard';
         el.select();
-        if(!wv.length) return;
+        if (!wv.length) return;
         clipboard.writeText(wv);
         showToast(cpnotice);
     });
@@ -1922,23 +1934,23 @@ function initHandlers(){
         let cplabel = el.dataset.cplabel ? el.dataset.cplabel : '';
         let cpnotice = cplabel ? `${cplabel} copied to clipboard!` : 'Copied to clipboard';
         wsutil.selectText(el);
-        if(!wv.length) return;
+        if (!wv.length) return;
         clipboard.writeText(wv);
         showToast(cpnotice);
     });
 
     // overview page address ctc
-    overviewWalletAddress.addEventListener('click', function(){
-        if(!this.value) return;
+    overviewWalletAddress.addEventListener('click', function () {
+        if (!this.value) return;
         let wv = this.value;
         let clipInfo = document.getElementById('form-help-wallet-address');
         let origInfo = clipInfo.value;
-        if(wv.length >= 10){
+        if (wv.length >= 10) {
             //this.select();
             clipboard.writeText(wv.trim());
             clipInfo.textContent = "Address copied to clipboard!";
             clipInfo.classList.add('help-hl');
-            setTimeout(function(){
+            setTimeout(function () {
                 clipInfo.textContent = origInfo;
                 clipInfo.classList.remove('help-hl');
             }, 1800);
@@ -1946,7 +1958,7 @@ function initHandlers(){
     });
 
     //genpaymentid+integAddress
-    overviewPaymentIdGen.addEventListener('click', ()=>{
+    overviewPaymentIdGen.addEventListener('click', () => {
         genPaymentId(false);
     });
 
@@ -1958,7 +1970,7 @@ function initHandlers(){
     });
 
     overviewIntegratedAddressGen.addEventListener('click', showIntegratedAddressForm);
-    
+
     wsutil.liveEvent('#doGenIntegratedAddr', 'click', () => {
         formMessageReset();
         let genInputAddress = document.getElementById('genInputAddress');
@@ -1968,21 +1980,21 @@ function initHandlers(){
         let pid = genInputPaymentId.value ? genInputPaymentId.value.trim() : '';
         outputField.value = '';
         outputField.removeAttribute('title');
-        if(!addr.length || !pid.length){
-            formMessageSet('gia','error', 'Address & Payment ID is required');
+        if (!addr.length || !pid.length) {
+            formMessageSet('gia', 'error', 'Address & Payment ID is required');
             return;
         }
-        if(!wsutil.validateAddress(addr)){
-            formMessageSet('gia','error', `Invalid ${config.assetName} address`);
+        if (!wsutil.validateAddress(addr)) {
+            formMessageSet('gia', 'error', `Invalid ${config.assetName} address`);
             return;
         }
         // only allow standard address
-        if(addr.length > 99){
-            formMessageSet('gia','error', `Only standard ${config.assetName} address are supported`);
+        if (addr.length > 99) {
+            formMessageSet('gia', 'error', `Only standard ${config.assetName} address are supported`);
             return;
         }
-        if(!wsutil.validatePaymentId(pid)){
-            formMessageSet('gia','error', 'Invalid Payment ID');
+        if (!wsutil.validatePaymentId(pid)) {
+            formMessageSet('gia', 'error', 'Invalid Payment ID');
             return;
         }
 
@@ -1991,12 +2003,12 @@ function initHandlers(){
             outputField.value = res.integratedAddress;
             outputField.setAttribute('title', 'click to copy');
         }).catch((err) => {
-            formMessageSet('gia','error', err.message);
+            formMessageSet('gia', 'error', err.message);
         });
     });
 
-    function handleBrowseButton(args){
-        if(!args) return;
+    function handleBrowseButton(args) {
+        if (!args) return;
         let dialogType = args.dialogType;
         let targetName = (args.targetName ? args.targetName : 'file');
         let targetInput = args.targetInput;
@@ -2005,14 +2017,14 @@ function initHandlers(){
             defaultPath: recentDir
         };
 
-        if(dialogType === 'saveFile') {
+        if (dialogType === 'saveFile') {
             dialogOpts.title = `Select directory to store your ${targetName}, and give it a filename.`;
             dialogOpts.buttonLabel = 'OK';
-            
+
             remote.dialog.showSaveDialog(dialogOpts, (file) => {
                 if (file) targetInput.value = file;
             });
-        } else{
+        } else {
             dialogOpts.properties = [dialogType];
 
             remote.dialog.showOpenDialog(dialogOpts, (files) => {
@@ -2033,44 +2045,44 @@ function initHandlers(){
     }
 
     // generic dialog closer
-    wsutil.liveEvent('.dialog-close-default','click', (event) => {
+    wsutil.liveEvent('.dialog-close-default', 'click', (event) => {
         let el = event.target;
-        if(el.dataset.target){
+        if (el.dataset.target) {
             let tel = document.querySelector(el.dataset.target);
             tel.close();
         }
     });
 
     var enterHandler;
-    function handleFormEnter(el){
-        if(enterHandler) clearTimeout(enterHandler);
+    function handleFormEnter(el) {
+        if (enterHandler) clearTimeout(enterHandler);
 
         let key = this.event.key;
-        enterHandler = setTimeout(()=>{
-            if(key === 'Enter'){
+        enterHandler = setTimeout(() => {
+            if (key === 'Enter') {
                 let section = el.closest('.section');
                 let target = section.querySelector('button:not(.notabindex)');
-                if(target) target.dispatchEvent(new Event('click'));
+                if (target) target.dispatchEvent(new Event('click'));
             }
-        },400);
+        }, 400);
     }
 
-    for(var oi=0;oi<genericEnterableInputs.length;oi++){
+    for (var oi = 0; oi < genericEnterableInputs.length; oi++) {
         let el = genericEnterableInputs[oi];
         el.addEventListener('keyup', handleFormEnter.bind(this, el));
     }
 
     let tp = document.querySelectorAll('.togpass');
-    for(var xi=0; xi<tp.length; xi++){
-        tp[xi].addEventListener('click', function(e){
+    for (var xi = 0; xi < tp.length; xi++) {
+        tp[xi].addEventListener('click', function (e) {
             let targetId = e.currentTarget.dataset.pf;
-            if(!targetId) return;
+            if (!targetId) return;
             let target = document.getElementById(targetId);
-            if(!target) return;
-            if(target.type === "password"){
+            if (!target) return;
+            if (target.type === "password") {
                 target.type = 'text';
                 e.currentTarget.firstChild.dataset.icon = 'eye-slash';
-            }else{
+            } else {
                 target.type = 'password';
                 e.currentTarget.firstChild.dataset.icon = 'eye';
             }
@@ -2079,10 +2091,10 @@ function initHandlers(){
 
     // allow paste by mouse
     const pasteMenu = Menu.buildFromTemplate([
-        { label: 'Paste', role: 'paste'}
+        { label: 'Paste', role: 'paste' }
     ]);
 
-    for(var ui=0;ui<genericEditableInputs.length;ui++){
+    for (var ui = 0; ui < genericEditableInputs.length; ui++) {
         let el = genericEditableInputs[ui];
         el.addEventListener('contextmenu', (e) => {
             e.preventDefault();
@@ -2096,7 +2108,7 @@ function initHandlers(){
     });
 
     kswitch.addEventListener('click', showKeyBindings);
-    
+
     //handleNetworkChange();
 
     // settings handlers
@@ -2121,72 +2133,72 @@ function initHandlers(){
     handleTransactions();
 }
 
-function initKeyBindings(){
+function initKeyBindings() {
     let walletOpened;
     // switch tab: ctrl+tab
-    Mousetrap.bind(['ctrl+tab','command+tab'], switchTab);
-    Mousetrap.bind(['ctrl+o','command+o'], () => {
+    Mousetrap.bind(['ctrl+tab', 'command+tab'], switchTab);
+    Mousetrap.bind(['ctrl+o', 'command+o'], () => {
         walletOpened = wsession.get('serviceReady') || false;
-        if(walletOpened){
+        if (walletOpened) {
             showToast('Please close current wallet before opening another wallet!');
             return;
         }
         return changeSection('section-overview-load');
     });
-    Mousetrap.bind(['ctrl+x','command+x'], () => {
+    Mousetrap.bind(['ctrl+x', 'command+x'], () => {
         walletOpened = wsession.get('serviceReady') || false;
-        if(!walletOpened){
+        if (!walletOpened) {
             showToast('No wallet is currently opened');
             return;
         }
         overviewWalletCloseButton.dispatchEvent(new Event('click'));
     });
     // display/export private keys: ctrl+e
-    Mousetrap.bind(['ctrl+e','command+e'],() => {
+    Mousetrap.bind(['ctrl+e', 'command+e'], () => {
         walletOpened = wsession.get('serviceReady') || false;
-        if(!walletOpened) return;
+        if (!walletOpened) return;
         return changeSection('section-overview-show');
     });
     // create new wallet: ctrl+n
-    Mousetrap.bind(['ctrl+n','command+n'], ()=> {
+    Mousetrap.bind(['ctrl+n', 'command+n'], () => {
         walletOpened = wsession.get('serviceReady') || false;
-        if(walletOpened){
+        if (walletOpened) {
             showToast('Please close current wallet before creating/importing new wallet');
             return;
         }
         return changeSection('section-overview-create');
     });
     // import from keys: ctrl+i
-    Mousetrap.bind(['ctrl+i','command+i'],() => {
+    Mousetrap.bind(['ctrl+i', 'command+i'], () => {
         walletOpened = wsession.get('serviceReady') || false;
-        if(walletOpened){
+        if (walletOpened) {
             showToast('Please close current wallet before creating/importing new wallet');
             return;
         }
         return changeSection('section-overview-import-key');
     });
     // tx page: ctrl+t
-    Mousetrap.bind(['ctrl+t','command+t'],() => {
+    Mousetrap.bind(['ctrl+t', 'command+t'], () => {
         walletOpened = wsession.get('serviceReady') || false;
-        if(!walletOpened){
+        if (!walletOpened) {
             showToast('Please open your wallet to view your transactions');
             return;
         }
         return changeSection('section-transactions');
     });
     // send tx: ctrl+s
-    Mousetrap.bind(['ctrl+s','command+s'],() => {
+    Mousetrap.bind(['ctrl+s', 'command+s'], () => {
         walletOpened = wsession.get('serviceReady') || false;
-        if(!walletOpened){
+        if (!walletOpened) {
             showToast('Please open your wallet to make a transfer');
             return;
         }
         return changeSection('section-send');
     });
     // import from mnemonic seed: ctrl+shift+i
-    Mousetrap.bind(['ctrl+shift+i','command+shift+i'], () => {
+    Mousetrap.bind(['ctrl+shift+i', 'command+shift+i'], () => {
         walletOpened = wsession.get('serviceReady') || false;
-        if(walletOpened){
+        if (walletOpened) {
             showToast('Please close current wallet before creating/importing new wallet');
             return;
         }
@@ -2194,25 +2206,25 @@ function initKeyBindings(){
     });
 
     // back home
-    Mousetrap.bind(['ctrl+home','command+home'], ()=>{
+    Mousetrap.bind(['ctrl+home', 'command+home'], () => {
         let section = walletOpened ? 'section-overview' : 'section-welcome';
         return changeSection(section);
     });
 
     // show key binding
-    Mousetrap.bind(['ctrl+/','command+/'], () => {
+    Mousetrap.bind(['ctrl+/', 'command+/'], () => {
         let openedDialog = document.querySelector('dialog[open]');
-        if(openedDialog) return openedDialog.close();
+        if (openedDialog) return openedDialog.close();
         return showKeyBindings();
     });
 
     Mousetrap.bind('esc', () => {
         let openedDialog = document.querySelector('dialog[open]');
-        if(!openedDialog) return;
+        if (!openedDialog) return;
         return openedDialog.close();
     });
 
-    Mousetrap.bind([`ctrl+\\`,`command+\\`], ()=>{
+    Mousetrap.bind([`ctrl+\\`, `command+\\`], () => {
         setDarkMode(!document.documentElement.classList.contains('dark'));
     });
 }
@@ -2229,7 +2241,7 @@ function fetchWait(url, options, timeout = 3000) {
 function fetchNodeInfo() {
     window.ELECTRON_ENABLE_SECURITY_WARNINGS = false;
     let aliveNodes = settings.get('pubnodes_checked', false);
-    if(aliveNodes.length){
+    if (aliveNodes.length) {
         initNodeSelection();
         return aliveNodes;
     }
@@ -2238,30 +2250,30 @@ function fetchNodeInfo() {
     let reqs = [];
     nodes.forEach(h => {
         let out = {
-            host: h, 
+            host: h,
             label: h,
         };
 
         let url = `http://${h}/feeinfo`;
-        reqs.push(function(callback) {
+        reqs.push(function (callback) {
             return fetchWait(url)
-                .then( (response) => {
+                .then((response) => {
                     return response.json();
                 }).then(json => {
-                    if(!json || !json.hasOwnProperty("address") || !json.hasOwnProperty("amount")) {
+                    if (!json || !json.hasOwnProperty("address") || !json.hasOwnProperty("amount")) {
                         return callback(null, null);
                     }
                     let feeAmount = parseInt(json.amount, 10) > 0 ? `Fee: ${wsutil.amountForMortal(json.amount)} ${config.assetTicker}` : "FREE";
                     out.label = `${h.split(':')[0]} (${feeAmount})`;
                     return callback(null, out);
-                }).catch( () => callback(null, null));
+                }).catch(() => callback(null, null));
         });
     });
 
-    async.parallelLimit(reqs, 12, function(error, results) {
-        if(results) {
-            let res = results.filter(val=>val);
-            if(res.length){
+    async.parallelLimit(reqs, 12, function (error, results) {
+        if (results) {
+            let res = results.filter(val => val);
+            if (res.length) {
                 settings.set('pubnodes_checked', res);
                 // test
                 initNodeSelection();
@@ -2279,14 +2291,14 @@ document.addEventListener('DOMContentLoaded', () => {
 }, false);
 
 ipcRenderer.on('cleanup', () => {
-    if(!win.isVisible()) win.show();
-    if(win.isMinimized()) win.restore();
+    if (!win.isVisible()) win.show();
+    if (win.isMinimized()) win.restore();
 
     win.focus();
 
     var dialog = document.getElementById('main-dialog');
     let htmlText = 'Terminating WalletShell...';
-    if(wsession.get('loadedWalletAddress') !== ''){
+    if (wsession.get('loadedWalletAddress') !== '') {
         htmlText = 'Saving &amp; closing your wallet...';
     }
 
@@ -2295,7 +2307,7 @@ ipcRenderer.on('cleanup', () => {
     dialog.showModal();
     wsmanager.stopSyncWorker();
     wsmanager.stopService().then(() => {
-        setTimeout(function(){
+        setTimeout(function () {
             dialog.innerHTML = 'Good bye!';
             wsmanager.terminateService(true);
             win.close();

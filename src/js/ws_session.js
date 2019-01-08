@@ -1,7 +1,7 @@
 const path = require('path');
 const remote = require('electron').remote;
 const Store = require('electron-store');
-const settings = new Store({name: 'Settings'});
+const settings = new Store({ name: 'Settings' });
 
 const DEFAULT_TITLE = 'WalletShell TurtleCoin Wallet';
 const SESSION_KEY = 'wlshell';
@@ -10,7 +10,7 @@ const SESSION_KEY = 'wlshell';
 const IS_DEBUG = remote.getGlobal('wsession').debug;
 const WALLET_CFG = path.join(remote.app.getPath('userData'), 'wconfig.txt');
 
-var WalletShellSession = function(){
+var WalletShellSession = function () {
     if (!(this instanceof WalletShellSession)) return new WalletShellSession();
 
     this.sessKey = SESSION_KEY;
@@ -40,33 +40,33 @@ var WalletShellSession = function(){
     };
 
     // initialize
-    if(!sessionStorage.getItem(this.sessKey)){
+    if (!sessionStorage.getItem(this.sessKey)) {
         sessionStorage.setItem(this.sessKey, JSON.stringify(this.sessDefault));
     }
 };
 
-WalletShellSession.prototype.get = function(key){
+WalletShellSession.prototype.get = function (key) {
     key = key || false;
-    if(!key){
+    if (!key) {
         return JSON.parse(sessionStorage.getItem(this.sessKey)) || this.sessDefault;
     }
-    
-    if(!this.sessDefault.hasOwnProperty(key)){
+
+    if (!this.sessDefault.hasOwnProperty(key)) {
         throw new Error(`Invalid session key: ${key}`);
     }
 
     return JSON.parse(sessionStorage.getItem(this.sessKey))[key];
 };
 
-WalletShellSession.prototype.getDefault = function(key){
-    if(!key){
+WalletShellSession.prototype.getDefault = function (key) {
+    if (!key) {
         return this.sessDefault;
     }
     return this.sessDefault[key];
 };
 
-WalletShellSession.prototype.set = function(key, val){
-    if(!this.sessDefault.hasOwnProperty(key)){
+WalletShellSession.prototype.set = function (key, val) {
+    if (!this.sessDefault.hasOwnProperty(key)) {
         throw new Error(`Invalid session key: ${key}`);
     }
 
@@ -75,9 +75,9 @@ WalletShellSession.prototype.set = function(key, val){
     return sessionStorage.setItem(this.sessKey, JSON.stringify(sessData));
 };
 
-WalletShellSession.prototype.reset = function(key){
-    if(key){
-        if(!this.sessDefault.hasOwnProperty(key)){
+WalletShellSession.prototype.reset = function (key) {
+    if (key) {
+        if (!this.sessDefault.hasOwnProperty(key)) {
             throw new Error('Invalid session key');
         }
         let sessData = this.get(); // all current data obj
@@ -87,7 +87,7 @@ WalletShellSession.prototype.reset = function(key){
     return sessionStorage.setItem(this.sessKey, JSON.stringify(this.sessDefault));
 };
 
-WalletShellSession.prototype.destroy = function(){
+WalletShellSession.prototype.destroy = function () {
     return sessionStorage.removeItem(this.sessKey);
 };
 
