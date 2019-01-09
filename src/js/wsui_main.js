@@ -2,6 +2,7 @@
 /* globals iqwerty */
 /* globals List */
 const os = require('os');
+const net = require('net');
 const path = require('path');
 const fs = require('fs');
 const { clipboard, remote, ipcRenderer, shell } = require('electron');
@@ -992,18 +993,18 @@ function handleWalletOpen() {
         }
 
         let validHost = nodeAddress[0] === 'localhost' ? true : false;
-        if (require('net').isIP(nodeAddress[0])) validHost = true;
+        if (net.isIP(nodeAddress[0])) validHost = true;
         if (!validHost) {
             let domRe = new RegExp(/([a-z])([a-z0-9]+\.)*[a-z0-9]+\.[a-z.]+/i);
             if (domRe.test(nodeAddress[0])) validHost = true;
         }
         if (!validHost) {
-            formMessageSet('load', 'error', `Invalid daemon/node address!`);
+            formMessageSet('customnode', 'error', `Invalid daemon/node address!`);
             return false;
         }
 
         if (parseInt(nodeAddress[1], 10) <= 0) {
-            formMessageSet('load', 'error', `Invalid daemon/node port number!`);
+            formMessageSet('customnode', 'error', `Invalid daemon/node port number!`);
             return false;
         }
 
@@ -1027,7 +1028,7 @@ function handleWalletOpen() {
         let nodeAddress = nodeAddressValue.split(':');
 
         let validHost = nodeAddress[0] === 'localhost' ? true : false;
-        if (require('net').isIP(nodeAddress[0])) validHost = true;
+        if (net.isIP(nodeAddress[0])) validHost = true;
         if (!validHost) {
             let domRe = new RegExp(/([a-z])([a-z0-9]+\.)*[a-z0-9]+\.[a-z.]+/i);
             if (domRe.test(nodeAddress[0])) validHost = true;
