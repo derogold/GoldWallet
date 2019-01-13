@@ -120,7 +120,7 @@ function populateElementVars() {
     kswitch = document.getElementById('kswitch');
     firstTab = document.querySelector('.navbar-button');
     // generics
-    genericBrowseButton = document.querySelectorAll('.path-input-button');
+    genericBrowseButton = document.querySelectorAll('.path-input-button:not(.d-opened');
     genericFormMessage = document.getElementsByClassName('form-ew');
     genericEnterableInputs = document.querySelectorAll('.section input:not(.noenter)');
     genericEditableInputs = document.querySelectorAll('textarea:not([readonly]), input:not([readonly]');
@@ -1070,10 +1070,10 @@ function handleWalletOpen() {
         }
 
         function onTimeout(err) {
-            formMessageReset();
-            WALLET_OPEN_IN_PROGRESS = false;
-            setOpenButtonsState(0);
-
+            console.log(err);
+            // formMessageReset();
+            // WALLET_OPEN_IN_PROGRESS = false;
+            // setOpenButtonsState(0);
         }
 
         //function onSuccess(theWallet, scanHeight){
@@ -1593,11 +1593,9 @@ function handleSendTransfer() {
         showToast('Optimization started, your balance may appear incorrect during the process', 3000);
         FUSION_IN_PROGRESS = true;
         wsmanager.optimizeWallet().then(() => {
-            //console.log(res);
             FUSION_IN_PROGRESS = false;
         }).catch(() => {
             FUSION_IN_PROGRESS = false;
-            //console.log(err);
         });
         return; // just return, it will notify when its done.
     });
@@ -2010,6 +2008,9 @@ function initHandlers() {
 
     function handleBrowseButton(args) {
         if (!args) return;
+        let tbtn = document.getElementById(args.targetButton);
+        if (tbtn.classList.contains('d-opened')) return;
+        tbtn.classList.add('d-opened');
         let dialogType = args.dialogType;
         let targetName = (args.targetName ? args.targetName : 'file');
         let targetInput = args.targetInput;
@@ -2024,12 +2025,14 @@ function initHandlers() {
 
             remote.dialog.showSaveDialog(dialogOpts, (file) => {
                 if (file) targetInput.value = file;
+                tbtn.classList.remove('d-opened');
             });
         } else {
             dialogOpts.properties = [dialogType];
 
             remote.dialog.showOpenDialog(dialogOpts, (files) => {
                 if (files) targetInput.value = files[0];
+                tbtn.classList.remove('d-opened');
             });
         }
     }
@@ -2040,7 +2043,8 @@ function initHandlers() {
         let args = {
             dialogType: genericBrowseButton[i].dataset.selection,
             targetName: genericBrowseButton[i].dataset.fileobj ? genericBrowseButton[i].dataset.fileobj : '',
-            targetInput: document.getElementById(targetInputId)
+            targetInput: document.getElementById(targetInputId),
+            targetButton: genericBrowseButton[i].id
         };
         genericBrowseButton[i].addEventListener('click', handleBrowseButton.bind(this, args));
     }
