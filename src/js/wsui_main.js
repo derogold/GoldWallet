@@ -1215,7 +1215,7 @@ function handleWalletImportKeys() {
         let passwordValue = importKeyInputPassword.value ? importKeyInputPassword.value.trim() : '';
         let viewKeyValue = importKeyInputViewKey.value ? importKeyInputViewKey.value.trim() : '';
         let spendKeyValue = importKeyInputSpendKey.value ? importKeyInputSpendKey.value.trim() : '';
-        let scanHeightValue = importKeyInputScanHeight.value ? parseInt(importKeyInputScanHeight.value, 10) : 1;
+        let scanHeightValue = importKeyInputScanHeight.value ? parseInt(importKeyInputScanHeight.value, 10) : 0;
 
         // validate path
         wsutil.validateWalletPath(filePathValue, DEFAULT_WALLET_PATH).then((finalPath) => {
@@ -1290,7 +1290,7 @@ function handleWalletImportSeed() {
         let filePathValue = importSeedInputPath.value ? importSeedInputPath.value.trim() : '';
         let passwordValue = importSeedInputPassword.value ? importSeedInputPassword.value.trim() : '';
         let seedValue = importSeedInputMnemonic.value ? importSeedInputMnemonic.value.trim() : '';
-        let scanHeightValue = importSeedInputScanHeight.value ? parseInt(importSeedInputScanHeight.value, 10) : -1;
+        let scanHeightValue = importSeedInputScanHeight.value ? parseInt(importSeedInputScanHeight.value, 10) : 0;
         // validate path
         wsutil.validateWalletPath(filePathValue, DEFAULT_WALLET_PATH).then((finalPath) => {
             // validate password
