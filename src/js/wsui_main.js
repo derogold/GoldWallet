@@ -277,6 +277,7 @@ function showToast(msg, duration, force) {
 // utility: dark mode
 function setDarkMode(dark) {
     let tmode = dark ? 'dark' : '';
+    thtml.classList.add('transit');
     if (tmode === 'dark') {
         thtml.classList.add('dark');
         dmswitch.setAttribute('title', 'Leave dark mode');
@@ -292,6 +293,9 @@ function setDarkMode(dark) {
         settings.set('darkmode', false);
         dmswitch.firstChild.dataset.icon = 'moon';
     }
+    setTimeout(function(){
+        thtml.classList.remove('transit');
+    }, 2000);
 }
 
 let keybindingTpl = `<div class="transaction-panel">

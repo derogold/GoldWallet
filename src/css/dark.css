@@ -1,5 +1,5 @@
 .dark{
-/*     background: linear-gradient(90deg, #0a0a0a, #212020 50%, #0a0a0a); */
+    background: linear-gradient(90deg, #0a0a0a, #212020 50%, #0a0a0a);
 }
 
 .dark *::-webkit-scrollbar {
@@ -25,11 +25,14 @@
 
 
 html.dark::before{
-    background: linear-gradient(90deg, #0a0a0a, #212020 50%, #0a0a0a);
-    opacity: 1.0;
+    background:transparent;
+    opacity: 1;
 }
 
-
+html.dark::after{
+background: #353535;
+    opacity: 0;
+}
 
 .dark body{
     background-image: url(../assets/walletshell_logo_dm.png);
