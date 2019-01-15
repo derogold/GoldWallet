@@ -337,7 +337,7 @@ WalletShellManager.prototype.stopService = function () {
                 }, 10000);
             });
         } else {
-            console.log("Service is not running");
+            log.debug("Service is not running");
             wsm._reinitSession();
             resolve(false);
         }

@@ -29,21 +29,42 @@
 
 html{
     font-family: 'Noto Sans', sans-serif;
-    background: linear-gradient(90deg, #00803b, #3ca74e 50%, #008e47);
+    
 }
 
 html::before{
-/*     background: linear-gradient(90deg, #00803b, #3ca74e 50%, #008e47); */
+    background: #08150e;
+    content: '';
+    display: block;
+    height: 100%;
+    width: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    opacity: 0;
+    z-index: -100;
+    transition: opacity 0.9s ease-in-out;
+}
+
+html::after{
+    background: linear-gradient(90deg, #00803b, #3ca74e 50%, #008e47);
     content: '';
     display: block;
     height: 100%;
     position: absolute;
     top: 0;
     left: 0;
-    opacity: 0;
+    opacity: 0.75;
     width: 100%;
-    z-index: -100;
-    transition: opacity 0.4s linear;
+    z-index: -99;
+    transition: opacity 1.4s ease-in-out;
+}
+
+html.transit .button-green,
+html.transit .button-gray,
+html.transit .button-red,
+html.transit .navbar *{
+    transition: all 0.4s linear;
 }
 
 html, body{
@@ -79,7 +100,9 @@ body {
     width: 100%;
     grid-auto-flow: column;
     grid-template-columns: 3fr repeat(6, auto);
+    
 }
+
 
 #navbar-div-sync {
     padding:12px 0 0 12px;
@@ -294,7 +317,10 @@ span.form-msg{
     padding: 0.5rem 0.75rem 0.3rem 0.75rem;
     margin-right: 0.25rem;
     /* box-shadow: 2px 2px 2px rgba(0,0,0,.29), inset 0px 0px 2px rgba(0,0,0, .5); */
+    
 }
+
+
 
 .button-green:hover,
 .button-gray:hover,
@@ -771,10 +797,10 @@ span.form-help-qr.hidden{
     z-index: 9999;
     /* anyar */
     opacity: 1.0;
-    transition: opacity .2s;
+    transition: opacity .9s, background .9s;
     height: 30px;
-    
 }
+
 .status-node-info.conn-warning{
     background: rgba(255, 0, 0, 0.7);
 }
