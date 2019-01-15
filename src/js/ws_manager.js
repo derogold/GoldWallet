@@ -507,8 +507,8 @@ WalletShellManager.prototype.importFromKeys = function (walletFile, password, vi
             '--view-key', viewKey, '--spend-key', spendKey,
         ]);
 
-        if (scanHeight > 1024) serviceArgs = serviceArgs.concat(['--scan-height', scanHeight]);
-
+        if (scanHeight > 0) serviceArgs = serviceArgs.concat(['--scan-height', scanHeight]);
+        
         childProcess.execFile(
             wsm.serviceBin, serviceArgs, (error, stdout, stderr) => {
                 if (stdout) log.debug(stdout);
@@ -524,7 +524,6 @@ WalletShellManager.prototype.importFromKeys = function (walletFile, password, vi
                 }
             }
         );
-
     });
 };
 
@@ -539,7 +538,7 @@ WalletShellManager.prototype.importFromSeed = function (walletFile, password, mn
             '--mnemonic-seed', mnemonicSeed,
         ]);
 
-        if (scanHeight > 1024) serviceArgs = serviceArgs.concat(['--scan-height', scanHeight]);
+        if (scanHeight > 0) serviceArgs = serviceArgs.concat(['--scan-height', scanHeight]);
 
         childProcess.execFile(
             wsm.serviceBin, serviceArgs, (error, stdout, stderr) => {
