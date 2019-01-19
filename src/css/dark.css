@@ -209,6 +209,15 @@ border: 2px solid #cccccc59;
 border-top-right-radius: 4px !important;
 border-bottom-right-radius: 4px !important;
 }
+.dark .borokokok{
+    background: #4d524d5c;
+    color: #fefefe;
+    border-top: 1px solid #ccccccba;
+    border-bottom: 1px solid #ccccccba;
+    border-right: 1px solid #ccccccba;
+    box-shadow: 1px 1px 3px #fefefea1;
+    text-shadow:0px 1px 1px #0a0a0a;
+}
 
 .dark h4.input-required:after{
     color: #ff7a00;

@@ -5,7 +5,6 @@
             content="default-src 'none'; script-src 'self' 'unsafe-inline'; font-src 'self'; 
             connect-src 'self' http: https:; img-src 'self' file: data:; style-src 'self' 'unsafe-inline'; media-src 'self'">
         <script defer src="../js/extras/fontawesome-solid.min.js"></script>
-        <script defer src="../js/extras/toast.js"></script>
         <script defer src="../js/extras/list.min.js"></script>
         <!-- CSS stylesheets -->
         <link rel="stylesheet" href="../css/font-notosans.css">
@@ -44,7 +43,7 @@
                 <i class="fas fa-address-book"></i> <span class="navbar-label">Address Book</span>
             </button>
             <button tabindex="-1" title="Send" class="form-bt navbar-button navbar-need-connected" data-section="section-send" id="button-section-send">
-                <i class="fas fa-share-square"></i> <span class="navbar-label">Send</span>
+                <i class="fas fa-paper-plane"></i> <span class="navbar-label">Send</span>
             </button>
             <button tabindex="-1" title="Transactions" class="form-bt navbar-button navbar-need-connected" data-section="section-transactions" id="button-section-transactions">
                 <i class="fas fa-exchange-alt"></i> <span class="navbar-label">Transactions</span>
@@ -52,9 +51,9 @@
             <button tabindex="-1" title="Settings" class="form-bt navbar-button" data-section="section-settings" id="button-section-settings">
                 <i class="fas fa-cog"></i> <span class="navbar-label">Settings</span>
             </button>
-            <button tabindex="-1" title="About" class="form-bt navbar-button" data-section="section-about" id="button-section-about">
+            <!-- <button tabindex="-1" title="About" class="form-bt navbar-button" data-section="section-about" id="button-section-about">
                 <i class="fas fa-info-circle"></i> <span class="navbar-label">About</span>
-            </button>
+            </button> -->
         </div>
     
         <!-- Main div, here the program will load the different .html files depending on the active tab -->
@@ -64,8 +63,12 @@
         <dialog id="tx-dialog" class="tx-dialog"></dialog>
         <dialog id="ab-dialog" class="default-dialog address-book-dialog"></dialog>
         <dialog id="tf-dialog" class="tx-dialog"></dialog>
-        <button tabindex="-1" title="Show keyboard shortcut" id="kswitch"><i class="fas fa-keyboard"></i></button>
-        <button  tabindex="-1" title="Swith to dark mode" id="tswitch"><i class="fas fa-moon"></i></button>
+        <div class="side-buttons">
+        <button tabindex="-1" class="side-button" title="About" id="button-section-about"><i class="fas fa-info-circle"></i></button>
+        <button tabindex="-1" class="side-button" title="Show keyboard shortcut" id="kswitch"><i class="fas fa-keyboard"></i></button>
+        <button  tabindex="-1" class="side-button" title="Swith to dark mode" id="tswitch"><i class="fas fa-moon"></i></button>
+        </div>
+        <div id="belekok" class="borokokok off">Please open your wallet to access Transaction page.</div>
         <script>require('../js/wsui_main.js')</script>
     </body>
 </html>

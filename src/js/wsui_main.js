@@ -1,5 +1,4 @@
 /*jshint bitwise: false*/
-/* globals iqwerty */
 /* globals List */
 const os = require('os');
 const net = require('net');
@@ -43,8 +42,8 @@ let genericEnterableInputs;
 let genericEditableInputs;
 let firstTab;
 // settings page
-let settingsInputDaemonAddress;
-let settingsInputDaemonPort;
+// let settingsInputDaemonAddress;
+// let settingsInputDaemonPort;
 let settingsInputServiceBin;
 let settingsInputMinToTray;
 let settingsInputCloseToTray;
@@ -112,12 +111,14 @@ let txButtonExport;
 let thtml;
 let dmswitch;
 let kswitch;
+let iswitch;
 
 function populateElementVars() {
     // misc
     thtml = document.documentElement;
     dmswitch = document.getElementById('tswitch');
     kswitch = document.getElementById('kswitch');
+    iswitch = document.getElementById('button-section-about');
     firstTab = document.querySelector('.navbar-button');
     // generics
     genericBrowseButton = document.querySelectorAll('.path-input-button:not(.d-opened');
@@ -129,8 +130,8 @@ function populateElementVars() {
     sectionButtons = document.querySelectorAll('[data-section]');
 
     // settings input & elements
-    settingsInputDaemonAddress = document.getElementById('input-settings-daemon-address');
-    settingsInputDaemonPort = document.getElementById('input-settings-daemon-port');
+    // settingsInputDaemonAddress = document.getElementById('input-settings-daemon-address');
+    // settingsInputDaemonPort = document.getElementById('input-settings-daemon-port');
     settingsInputServiceBin = document.getElementById('input-settings-path');
     settingsInputMinToTray = document.getElementById('checkbox-tray-minimize');
     settingsInputCloseToTray = document.getElementById('checkbox-tray-close');
@@ -244,36 +245,6 @@ function initSectionTemplates() {
     populateElementVars();
 }
 
-// utility: show toast message
-function showToast(msg, duration, force) {
-    duration = duration || 1800;
-    force = force || false;
-    let datoaste = document.getElementById('datoaste');
-    if (datoaste && force) {
-        datoaste.parentNode.removeChild(datoaste);
-    }
-
-    //if(datoaste) return;
-
-    let toastOpts = {
-        style: {
-            main: {
-                'padding': '4px 6px', 'left': '3px', 'right': 'auto', 'border-radius': '0px'
-            }
-        },
-        settings: { duration: duration }
-    };
-
-    let openedDialog = document.querySelector('dialog[open]');
-    if (openedDialog) {
-        openedDialog.classList.add('dialog-alerted');
-        setTimeout(() => {
-            openedDialog.classList.remove('dialog-alerted');
-        }, duration + 100);
-    }
-    iqwerty.toast.Toast(msg, toastOpts);
-}
-
 // utility: dark mode
 function setDarkMode(dark) {
     let tmode = dark ? 'dark' : '';
@@ -365,7 +336,7 @@ function genPaymentId(ret) {
     ret = ret || false;
 
     let payId = require('crypto').randomBytes(32).toString('hex');
-    if (ret) return payId;
+    if (ret) return payId.toUpperCase();
 
     let dialogTpl = `<div class="transaction-panel">
     <h4>Generated Payment ID:</h4>
@@ -417,9 +388,25 @@ function showKeyBindings() {
     dialog.showModal();
 }
 
+function showInfo() {
+    let dialog = document.getElementById('ab-dialog');
+    if (dialog.hasAttribute('open')) dialog.close();
+    let infoContent = document.querySelector('.about-main').innerHTML;
+    let info = `
+        <div class="transaction-panel">
+            ${infoContent}
+            <div class="div-panel-buttons">
+                <button  data-target="#ab-dialog" type="button" class="button-gray dialog-close-default">Close</button>
+            </div>
+        </div>`;
+    dialog.innerHTML = info;
+    dialog.showModal();
+
+}
+
 function switchTab() {
     if (WALLET_OPEN_IN_PROGRESS) {
-        showToast('Opening wallet in progress, please wait...');
+        wsutil.showToast('Opening wallet in progress, please wait...');
         return;
     }
     let isServiceReady = wsession.get('serviceReady') || false;
@@ -442,7 +429,7 @@ function switchTab() {
 // section switcher
 function changeSection(sectionId, isSettingRedir) {
     if (WALLET_OPEN_IN_PROGRESS) {
-        showToast('Opening wallet in progress, please wait...');
+        wsutil.showToast('Opening wallet in progress, please wait...');
         return;
     }
 
@@ -461,7 +448,7 @@ function changeSection(sectionId, isSettingRedir) {
     let needServiceStopped = 'section-welcome';
     let needSynced = ['section-send'];
     if (needSynced.indexOf(targetSection) && FUSION_IN_PROGRESS) {
-        showToast('Wallet optimization in progress, please wait');
+        wsutil.showToast('Wallet optimization in progress, please wait');
         return;
     }
 
@@ -476,7 +463,7 @@ function changeSection(sectionId, isSettingRedir) {
         finalTarget = 'section-overview';
     } else if (needSynced.indexOf(targetSection) >= 0 && !isSynced) {
         // just return early
-        showToast("Please wait until syncing process completed!");
+        wsutil.showToast("Please wait until syncing process completed!");
         return;
     } else {
         finalTarget = targetSection;
@@ -485,7 +472,7 @@ function changeSection(sectionId, isSettingRedir) {
 
     let section = document.getElementById(finalTarget);
     if (section.classList.contains('is-shown')) {
-        if (toastMsg.length && !isSettingRedir && !untoast) showToast(toastMsg);
+        if (toastMsg.length && !isSettingRedir && !untoast) wsutil.showToast(toastMsg);
         return; // don't do anything if section unchanged
     }
 
@@ -504,7 +491,7 @@ function changeSection(sectionId, isSettingRedir) {
     section.classList.add('is-shown');
     section.dispatchEvent(new Event('click')); // make it focusable
     // show msg when needed
-    if (toastMsg.length && !isSettingRedir && !untoast) showToast(toastMsg);
+    if (toastMsg.length && !isSettingRedir && !untoast) wsutil.showToast(toastMsg);
     // notify section was changed
     let currentButton = document.querySelector(`button[data-section="${finalButtonTarget}"]`);
     if (currentButton) {
@@ -722,7 +709,7 @@ function handleSettings() {
         formMessageReset();
         let goTo = wsession.get('loadedWalletAddress').length ? 'section-overview' : 'section-welcome';
         changeSection(goTo, true);
-        showToast('Settings has been updated.', 8000);
+        wsutil.showToast('Settings has been updated.', 8000);
     });
 }
 
@@ -819,9 +806,7 @@ function handleAddressBook() {
                 abdialog.close();
                 wsutil.clearChild(abdialog);
                 listAddressBook(true);
-                if (!document.getElementById('datoaste')) {
-                    iqwerty.toast.Toast("Address book entry was deleted.", { settings: { duration: 1800 } });
-                }
+                wsutil.showToast('Address book entry was deleted');
             }
         });
 
@@ -830,7 +815,7 @@ function handleAddressBook() {
             let origHash = this.dataset.hash;
             let entry = abook.get(origHash);
             if (!entry) {
-                iqwerty.toast.Toast("Invalid address book entry.", { settings: { duration: 1800 } });
+                wsutil.showToast('Invalid address book entry');
             } else {
                 const nameField = document.getElementById('input-addressbook-name');
                 const walletField = document.getElementById('input-addressbook-wallet');
@@ -930,7 +915,7 @@ function handleAddressBook() {
         initAddressCompletion();
         formMessageReset();
         changeSection('section-addressbook');
-        showToast('Address book entry has been saved.');
+        wsutil.showToast('Address book entry has been saved.');
     });
     // entry detail
     wsutil.liveEvent('.addressbook-item', 'click', displayAddressBookEntry);
@@ -1011,7 +996,7 @@ function handleWalletOpen() {
         initNodeSelection(nodeAddressVal);
         let dialog = document.getElementById('ab-dialog');
         if (dialog.hasAttribute('open')) dialog.close();
-        showToast('New custom node has been added');
+        wsutil.showToast('New custom node has been added');
     });
 
     addCustomNode.addEventListener('click', (e) => {
@@ -1200,7 +1185,7 @@ function handleWalletCreate() {
                 settings.set('recentWallet', walletFile);
                 walletOpenInputPath.value = walletFile;
                 changeSection('section-overview-load');
-                showToast('Wallet has been created, you can now open your wallet!', 12000);
+                wsutil.showToast('Wallet has been created, you can now open your wallet!', 12000);
             }).catch((err) => {
                 formMessageSet('create', 'error', err.message);
                 return;
@@ -1274,7 +1259,7 @@ function handleWalletImportKeys() {
                 settings.set('recentWallet', walletFile);
                 walletOpenInputPath.value = walletFile;
                 changeSection('section-overview-load');
-                showToast('Wallet has been imported, you can now open your wallet!', 12000);
+                wsutil.showToast('Wallet has been imported, you can now open your wallet!', 12000);
             }).catch((err) => {
                 formMessageSet('import', 'error', err);
                 return;
@@ -1338,7 +1323,7 @@ function handleWalletImportSeed() {
                 settings.set('recentWallet', walletFile);
                 walletOpenInputPath.value = walletFile;
                 changeSection('section-overview-load');
-                showToast('Wallet has been imported, you can now open your wallet!', 12000);
+                wsutil.showToast('Wallet has been imported, you can now open your wallet!', 12000);
             }).catch((err) => {
                 formMessageSet('import-seed', 'error', err);
                 return;
@@ -1568,12 +1553,12 @@ function handleSendTransfer() {
 
     sendOptimize.addEventListener('click', () => {
         if (!wsession.get('synchronized', false)) {
-            showToast('Synchronization is in progress, please wait.');
+            wsutil.showToast('Synchronization is in progress, please wait.');
             return;
         }
 
         if (!confirm('You are about to perform wallet optimization. This process may take a while to complete, are you sure?')) return;
-        showToast('Optimization started, your balance may appear incorrect during the process', 3000);
+        wsutil.showToast('Optimization started, your balance may appear incorrect during the process', 3000);
         FUSION_IN_PROGRESS = true;
         wsmanager.optimizeWallet().then(() => {
             FUSION_IN_PROGRESS = false;
@@ -1853,42 +1838,42 @@ function handleTransactions() {
             case 'in':
                 let txin = txlist.filter((obj) => { return obj.txType === "in"; });
                 if (!txin.length) {
-                    showToast('Transaction export failed, incoming transactions not available!');
+                    wsutil.showToast('Transaction export failed, incoming transactions not available!');
                     if (dialog.hasAttribute('open')) dialog.close();
                     return;
                 }
 
                 csvWriter.writeRecords(txin).then(() => {
                     if (dialog.hasAttribute('open')) dialog.close();
-                    showToast(`Transaction list exported to ${filename}`);
+                    wsutil.showToast(`Transaction list exported to ${filename}`);
                 }).catch((err) => {
                     if (dialog.hasAttribute('open')) dialog.close();
-                    showToast(`Transaction export failed, ${err.message}`);
+                    wsutil.showToast(`Transaction export failed, ${err.message}`);
                 });
                 break;
             case 'out':
                 let txout = txlist.filter((obj) => { return obj.txType === "out"; });
                 if (!txout.length) {
-                    showToast('Transaction export failed, outgoing transactions not available!');
+                    wsutil.showToast('Transaction export failed, outgoing transactions not available!');
                     if (dialog.hasAttribute('open')) dialog.close();
                     return;
                 }
 
                 csvWriter.writeRecords(txout).then(() => {
                     if (dialog.hasAttribute('open')) dialog.close();
-                    showToast(`Transaction list exported to ${filename}`);
+                    wsutil.showToast(`Transaction list exported to ${filename}`);
                 }).catch((err) => {
                     if (dialog.hasAttribute('open')) dialog.close();
-                    showToast(`Transaction export failed, ${err.message}`);
+                    wsutil.showToast(`Transaction export failed, ${err.message}`);
                 });
                 break;
             default:
                 csvWriter.writeRecords(txlist).then(() => {
                     if (dialog.hasAttribute('open')) dialog.close();
-                    showToast(`Transaction list exported to ${filename}`);
+                    wsutil.showToast(`Transaction list exported to ${filename}`);
                 }).catch((err) => {
                     if (dialog.hasAttribute('open')) dialog.close();
-                    showToast(`Transaction export failed, ${err.message}`);
+                    wsutil.showToast(`Transaction export failed, ${err.message}`);
                 });
                 break;
         }
@@ -1960,7 +1945,7 @@ function initHandlers() {
         el.select();
         if (!wv.length) return;
         clipboard.writeText(wv);
-        showToast(cpnotice);
+        wsutil.showToast(cpnotice);
     });
     // non-input elements ctc handlers
     wsutil.liveEvent('.tctcl', 'click', (event) => {
@@ -1971,7 +1956,7 @@ function initHandlers() {
         wsutil.selectText(el);
         if (!wv.length) return;
         clipboard.writeText(wv);
-        showToast(cpnotice);
+        wsutil.showToast(cpnotice);
     });
 
     // overview page address ctc
@@ -2149,6 +2134,7 @@ function initHandlers() {
     });
 
     kswitch.addEventListener('click', showKeyBindings);
+    iswitch.addEventListener('click', showInfo);
 
     //handleNetworkChange();
 
@@ -2181,7 +2167,7 @@ function initKeyBindings() {
     Mousetrap.bind(['ctrl+o', 'command+o'], () => {
         walletOpened = wsession.get('serviceReady') || false;
         if (walletOpened) {
-            showToast('Please close current wallet before opening another wallet!');
+            wsutil.showToast('Please close current wallet before opening another wallet!');
             return;
         }
         return changeSection('section-overview-load');
@@ -2189,7 +2175,7 @@ function initKeyBindings() {
     Mousetrap.bind(['ctrl+x', 'command+x'], () => {
         walletOpened = wsession.get('serviceReady') || false;
         if (!walletOpened) {
-            showToast('No wallet is currently opened');
+            wsutil.showToast('No wallet is currently opened');
             return;
         }
         overviewWalletCloseButton.dispatchEvent(new Event('click'));
@@ -2204,7 +2190,7 @@ function initKeyBindings() {
     Mousetrap.bind(['ctrl+n', 'command+n'], () => {
         walletOpened = wsession.get('serviceReady') || false;
         if (walletOpened) {
-            showToast('Please close current wallet before creating/importing new wallet');
+            wsutil.showToast('Please close current wallet before creating/importing new wallet');
             return;
         }
         return changeSection('section-overview-create');
@@ -2213,7 +2199,7 @@ function initKeyBindings() {
     Mousetrap.bind(['ctrl+i', 'command+i'], () => {
         walletOpened = wsession.get('serviceReady') || false;
         if (walletOpened) {
-            showToast('Please close current wallet before creating/importing new wallet');
+            wsutil.showToast('Please close current wallet before creating/importing new wallet');
             return;
         }
         return changeSection('section-overview-import-key');
@@ -2222,7 +2208,7 @@ function initKeyBindings() {
     Mousetrap.bind(['ctrl+t', 'command+t'], () => {
         walletOpened = wsession.get('serviceReady') || false;
         if (!walletOpened) {
-            showToast('Please open your wallet to view your transactions');
+            wsutil.showToast('Please open your wallet to view your transactions');
             return;
         }
         return changeSection('section-transactions');
@@ -2231,7 +2217,7 @@ function initKeyBindings() {
     Mousetrap.bind(['ctrl+s', 'command+s'], () => {
         walletOpened = wsession.get('serviceReady') || false;
         if (!walletOpened) {
-            showToast('Please open your wallet to make a transfer');
+            wsutil.showToast('Please open your wallet to make a transfer');
             return;
         }
         return changeSection('section-send');
@@ -2240,7 +2226,7 @@ function initKeyBindings() {
     Mousetrap.bind(['ctrl+shift+i', 'command+shift+i'], () => {
         walletOpened = wsession.get('serviceReady') || false;
         if (walletOpened) {
-            showToast('Please close current wallet before creating/importing new wallet');
+            wsutil.showToast('Please close current wallet before creating/importing new wallet');
             return;
         }
         return changeSection('section-overview-import-seed');
