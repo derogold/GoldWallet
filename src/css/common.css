@@ -160,7 +160,7 @@ body {
     box-sizing: border-box;
     color: white;
     /* background-color: rgba(0, 0, 0, 0.18); */
-    background-color: rgba(53, 53, 53, 0.39)
+    background-color: rgba(53, 53, 53, 0.39);
 }
 
 input, textarea, select{
@@ -186,6 +186,34 @@ input[type=number]::-webkit-inner-spin-button {
 select {
     font-size: 0.95rem;
 }
+
+label.select-label{
+    position:relative;
+    display: block;
+}
+
+label.select-label:after{
+    content: '\f103';
+    font-family: "FontAwesome";
+    font-size: 1.5rem;
+    color: #aaa;
+    right: 22px;
+    top: 10px;
+    padding:0 0 2px;
+    position:absolute;
+    pointer-events:none;
+}
+label.select-label:hover:after{
+    color: #fff;
+}
+
+select.text-block{
+    -webkit-appearance: none;
+    cursor: pointer;
+}
+
+
+
 select option{
     background: #333;
     color: #fff;
@@ -905,6 +933,31 @@ input.path-input-button{
     visibility: hidden !important;
 }
 
+.borokokok{
+    position:absolute;
+    bottom: 8px;
+    left: 0;
+    z-index:99999;
+    border-top-right-radius: 4px;
+    border-bottom-right-radius: 4px;
+    padding: 4px 12px;
+    font-size: 1rem;
+    display: inline-block;
+    transform:translateY(0px);
+    background: #050605;
+    color: #fff;
+    border-top: 1px solid #00a74dcf;
+    border-bottom: 1px solid #00a74dcf;
+    border-right: 1px solid #00a74dcf;
+    box-shadow: 1px 2px 2px #afafafd4;
+    text-shadow:0px 0px 1px #656565;
+    transition: transform 0.4s cubic-bezier(0.42, 0, 0.05, 1.32);
+}
+
+.borokokok.off{
+    transform: translateY(120px);
+}
+
 
 /** TRX **/
 #txfiller p{
@@ -1329,41 +1382,34 @@ progress.light{
     margin-bottom: 0;
 }
 
-#tswitch, #kswitch{
+.side-buttons{
+    display:block;
+    position: fixed;
+    right: 6px;
+    bottom: 6px;
+    width: 36px;
+    text-align:center;
+}
+.side-button{
     background: transparent;
     color: #ccc;
     font-size: 1.1rem;
-    position: fixed;
-    right: 4px;
-    display: inline-block;
+    display: block;
+    margin: .5rem auto;
     border: none;
     outline: none;
     cursor:pointer;
-    text-align: right;
-    padding: 6px 10px;
-    opacity: 0.85;
+    text-align: center;
+    opacity: 0.75;
     transition: opacity 0.3s linear;
 }
 
-#tswitch:hover,
-#tswitch:active,
-#tswitch:focus,
-#kswitch:hover,
-#kswitch:active,
-#kswitch:focus{
+.side-button:hover,
+.side-button:active,
+.side-button:focus{
     color: #fff;
     opacity: 1.0;
 }
-
-#tswitch{
-    bottom: 4px;
-}
-
-#kswitch{
-    bottom: 40px;
-    font-size: 0.9rem;
-}
-
 
 .action-buttons{
     position: fixed;
@@ -1446,7 +1492,7 @@ kbd{
 .license-text{
     text-align: left;
     font-family: monospace;
-    height: 140px;
+    height: 110px;
     overflow-x: hidden;
     overflow-y: auto;
     clear: both;
@@ -1457,7 +1503,6 @@ kbd{
     background: #56565691;
     color: #fff;
     pointer-events: auto;
-    
 }
 .license-text,.license-text *{
     user-select: text !important;

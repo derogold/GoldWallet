@@ -62,6 +62,41 @@ exports.innerHTML = (parentEl, html) => {
     parentEl.parentNode.replaceChild(newEl, parentEl);
 };
 
+exports.showToast = (msg, duration, force, elId)  => {
+    duration = duration || 3200;
+    elId = elId || 'belekok';
+    let blekok = document.getElementById(elId);
+    let openedDialog = document.querySelector('dialog[open]');
+
+    if (typeof window.TOASTT !== 'undefined' && window.TOASTT !== null){
+        try{
+            if(openedDialog) {
+                clearTimeout(window.TOASTBD);
+                openedDialog.classList.remove('dialog-alerted');
+            }
+            clearTimeout(window.TOASTT);
+            blekok.classList.add('off');
+        }catch(e){}
+    }
+
+    // if (!blekok.classList.contains('off') && force) {
+    //     blekok.classList.add('off');
+    // }
+    
+    if (openedDialog) {
+        openedDialog.classList.add('dialog-alerted');
+        window.TOASTBD = setTimeout(() => {
+            openedDialog.classList.remove('dialog-alerted');
+        }, duration + 100);
+    }
+    
+    blekok.innerHTML = msg;
+    blekok.classList.remove('off');
+    window.TOASTT = setTimeout(function () {
+        blekok.classList.add('off');
+    }, duration);
+};
+
 /*****  MISC util ****/
 exports.arrShuffle = (arr) => {
     return arr.map((a) => ({ sort: Math.random(), value: a }))

@@ -1,4 +1,3 @@
-/* globals iqwerty */
 const { webFrame, remote } = require('electron');
 const Store = require('electron-store');
 const wsutil = require('./ws_utils');
@@ -400,16 +399,8 @@ function updateUiState(msg) {
             break;
         case 'fusionTxCompleted':
             let notif = 'Optimization completed';
-            let toastOpts = {
-                style: {
-                    main: {
-                        'padding': '4px 6px', 'left': '3px', 'right': 'auto', 'border-radius': '0px'
-                    }
-                },
-                settings: { duration: 5000 }
-            };
             if (msg.data) notif = msg.data;
-            iqwerty.toast.Toast(notif, toastOpts);
+            wsutil.showToast(notif, 5000);
             break;
         default:
             console.log('invalid command received by ui', msg);
