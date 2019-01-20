@@ -9,7 +9,7 @@ const WalletShellApi = require('./ws_api');
 const uiupdater = require('./wsui_updater');
 const wsutil = require('./ws_utils');
 const config = require('./ws_config');
-
+const { remote } = require('electron');
 const settings = new Store({ name: 'Settings' });
 const wsession = new WalletShellSession();
 
@@ -153,16 +153,17 @@ WalletShellManager.prototype.startService = function (walletFile, password, onEr
         '-w', walletFile,
         '-p', password,
         '--log-level', 0,
+        '--log-file', path.join(remote.app.getPath('temp'), 'ts.log'),
         '--address'
     ]);
 
     let wsm = this;
 
     childProcess.execFile(this.serviceBin, serviceArgs, (error, stdout, stderr) => {
-        if (stderr) log.error(stderr);
+        if (stderr) log.debug(stderr);
 
         if (error) {
-            log.error(error.message);
+            log.debug(error.message);
             onError(`ERROR_WALLET_EXEC: ${error.message}`);
         } else {
             log.debug(stdout);
@@ -204,13 +205,14 @@ WalletShellManager.prototype._spawnService = function (walletFile, password, onE
         '--enable-cors', '*',
         '--daemon-address', this.daemonHost,
         '--daemon-port', this.daemonPort,
-        '--log-level', SERVICE_LOG_LEVEL
+        '--log-level', SERVICE_LOG_LEVEL,
+        '--log-file', logFile
     ]);
 
-    if (SERVICE_LOG_LEVEL > 0) {
-        serviceArgs.push('--log-file');
-        serviceArgs.push(logFile);
-    }
+    //if (SERVICE_LOG_LEVEL > 0) {
+    //serviceArgs.push('--log-file');
+    //serviceArgs.push(logFile);
+    //}
 
 
     let configFile = wsession.get('walletConfig', null);
@@ -508,7 +510,7 @@ WalletShellManager.prototype.importFromKeys = function (walletFile, password, vi
         ]);
 
         if (scanHeight > 0) serviceArgs = serviceArgs.concat(['--scan-height', scanHeight]);
-        
+
         childProcess.execFile(
             wsm.serviceBin, serviceArgs, (error, stdout, stderr) => {
                 if (stdout) log.debug(stdout);

@@ -62,35 +62,31 @@ exports.innerHTML = (parentEl, html) => {
     parentEl.parentNode.replaceChild(newEl, parentEl);
 };
 
-exports.showToast = (msg, duration, force, elId)  => {
-    duration = duration || 3200;
+exports.showToast = (msg, duration, elId) => {
+    duration = duration || 3500;
     elId = elId || 'belekok';
     let blekok = document.getElementById(elId);
     let openedDialog = document.querySelector('dialog[open]');
 
-    if (typeof window.TOASTT !== 'undefined' && window.TOASTT !== null){
-        try{
-            if(openedDialog) {
+    if (typeof window.TOASTT !== 'undefined' && window.TOASTT !== null) {
+        try {
+            if (openedDialog) {
                 clearTimeout(window.TOASTBD);
                 openedDialog.classList.remove('dialog-alerted');
             }
             clearTimeout(window.TOASTT);
             blekok.classList.add('off');
-        }catch(e){}
+        } catch (e) { }
     }
 
-    // if (!blekok.classList.contains('off') && force) {
-    //     blekok.classList.add('off');
-    // }
-    
     if (openedDialog) {
         openedDialog.classList.add('dialog-alerted');
         window.TOASTBD = setTimeout(() => {
             openedDialog.classList.remove('dialog-alerted');
         }, duration + 100);
     }
-    
-    blekok.innerHTML = msg;
+
+    blekok.innerText = msg;
     blekok.classList.remove('off');
     window.TOASTT = setTimeout(function () {
         blekok.classList.add('off');

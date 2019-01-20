@@ -149,12 +149,11 @@ class WalletShellApi {
             var backupKeys = {};
             this.getViewKey().then((vkres) => {
                 backupKeys.viewSecretKey = vkres.viewSecretKey;
-                return vkres;
-                //return Object.assign(vkres);
+                return backupKeys;
             }).then(() => {
                 this.getSpendKeys(req_params).then((vsres) => {
                     backupKeys.spendSecretKey = vsres.spendSecretKey;
-                    return vsres;
+                    return backupKeys;
                 }).catch((err) => {
                     return reject(err);
                 });
@@ -162,8 +161,11 @@ class WalletShellApi {
                 this.getMnemonicSeed(req_params).then((mres) => {
                     backupKeys.mnemonicSeed = mres.mnemonicSeed;
                     return resolve(backupKeys);
-                }).catch((err) => {
-                    return reject(err);
+                }).catch((_err) => { /* jshint ignore:line */
+                    // return reject(err);
+                    // did trtl ever support non-deterministric wallet? I don't know
+                    backupKeys.mnemonicSeed = "";
+                    return resolve(backupKeys);
                 });
             }).catch((err) => {
                 return reject(err);
