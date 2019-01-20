@@ -1,5 +1,6 @@
 /*jshint bitwise: false*/
 /* globals List */
+/* global AbortController */
 const os = require('os');
 const net = require('net');
 const path = require('path');
@@ -264,73 +265,12 @@ function setDarkMode(dark) {
         settings.set('darkmode', false);
         dmswitch.firstChild.dataset.icon = 'moon';
     }
-    setTimeout(function(){
+    setTimeout(function () {
         thtml.classList.remove('transit');
     }, 2000);
 }
 
-let keybindingTpl = `<div class="transaction-panel">
-<h4>Available Keybindings:</h4>
-<table class="custom-table kb-table">
-<tbody>
-<tr>
-    <th scope="col"><kbd>Ctrl</kbd>+<kbd>Home</kbd></th>
-    <td>Switch to <strong>overview/welcome</strong> screen</td>
-</tr> 
-<tr>
-    <th scope="col"><kbd>Ctrl</kbd>+<kbd>Tab</kbd></th>
-    <td>Switch to <strong>next screen</strong></td>
-</tr>
-<tr>
-<th scope="col"><kbd>Ctrl</kbd>+<kbd>n</kbd></th>
-<td>Switch to <strong>Create new wallet</strong> screen</td></tr>
-<tr>
-    <th scope="col"><kbd>Ctrl</kbd>+<kbd>o</kbd></th>
-    <td>Switch to <strong>Open a wallet</strong> screen</td>
-</tr>
-<tr>
-    <th scope="col"><kbd>Ctrl</kbd>+<kbd>i</kbd></th>
-    <td>Switch to <strong>Import wallet from private keys</strong> screen</td>
-</tr>
-<tr>
-    <th scope="col"><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>i</kbd></th>
-    <td>Switch to <strong>Import wallet from mnemonic seed</strong> screen</td>
-</tr> 
-<tr>
-    <th scope="col"><kbd>Ctrl</kbd>+<kbd>e</kbd></th>
-    <td>Switch to <strong>Export private keys/seed</strong> screen (when wallet opened)</td>
-</tr> 
-<tr>
-    <th scope="col"><kbd>Ctrl</kbd>+<kbd>t</kbd></th>
-    <td>Switch to <strong>Transactions</strong> screen (when wallet opened)</td>
-</tr> 
-<tr>
-    <th scope="col"><kbd>Ctrl</kbd>+<kbd>s</kbd></th>
-    <td>Switch to <strong>Send/Transfer</strong> screen (when wallet opened)</td>
-</tr> 
-<tr>
-    <th scope="col"><kbd>Ctrl</kbd>+<kbd>x</kbd></th>
-    <td>Close wallet</td>
-</tr> 
-<tr>
-    <th scope="col"><kbd>Ctrl</kbd>+<kbd>\\</kbd></th>
-    <td>Toggle dark/night mode</td>
-</tr>
-<tr>
-    <th scope="col"><kbd>Ctrl</kbd>+<kbd>/</kbd></th>
-    <td>Display shortcut key information (this dialog)</td>
-</tr>
-<tr>
-    <th scope="col"><kbd>Esc</kbd></th>
-    <td>Close any opened dialog (like this dialog)</td>
-</tr> 
-</tbody>
-</table>
-<div class="div-panel-buttons">
-    <button  data-target="#ab-dialog" type="button" class="button-gray dialog-close-default">Close</button>
-</div>
-</div>
-`;
+
 
 function genPaymentId(ret) {
     ret = ret || false;
@@ -340,7 +280,7 @@ function genPaymentId(ret) {
 
     let dialogTpl = `<div class="transaction-panel">
     <h4>Generated Payment ID:</h4>
-    <textarea data-cplabel="Payment ID" title="click to copy" class="ctcl default-textarea" rows="1" readonly="readonly">${payId}</textarea>
+    <textarea data-cplabel="Payment ID" title="click to copy" class="ctcl default-textarea" rows="1" readonly="readonly">${payId.toUpperCase()}</textarea>
     <div class="div-panel-buttons">
         <button  data-target="#ab-dialog" type="button" class="button-gray dialog-close-default">Close</button>
     </div>
@@ -384,11 +324,18 @@ function showIntegratedAddressForm() {
 function showKeyBindings() {
     let dialog = document.getElementById('ab-dialog');
     if (dialog.hasAttribute('open')) dialog.close();
+    let shortcutstInfo = document.getElementById('shortcuts-main').innerHTML;
+    let keybindingTpl = `<div class="transaction-panel">${shortcutstInfo}
+<div class="div-panel-buttons">
+    <button  data-target="#ab-dialog" type="button" class="button-gray dialog-close-default">Close</button>
+</div>
+</div>
+`;
     dialog.innerHTML = keybindingTpl;
     dialog.showModal();
 }
 
-function showInfo() {
+function showAbout() {
     let dialog = document.getElementById('ab-dialog');
     if (dialog.hasAttribute('open')) dialog.close();
     let infoContent = document.querySelector('.about-main').innerHTML;
@@ -768,7 +715,7 @@ function handleAddressBook() {
                      <div class="addressBookDetail-data">
                          <dl>
                              <dt>Name:</dt>
-                             <dd data-cplabel="Name" class="tctcl" title="click to copy">${this.dataset.nameval}</dd>
+                             <dd data-cplabel="Wallet Name" class="tctcl" title="click to copy">${this.dataset.nameval}</dd>
                              <dt>Wallet Address:</dt>
                              <dd data-cplabel="Wallet address" class="tctcl" title="click to copy">${this.dataset.walletval}</dd>
                              <dt>Payment Id:</dt>
@@ -1166,9 +1113,9 @@ function handleWalletCreate() {
             // user already confirm to overwrite
             if (wsutil.isRegularFileAndWritable(finalPath)) {
                 try {
-                    // for now, backup instead of delete, just to be save
+                    // for now, backup instead of delete
                     let ts = new Date().getTime();
-                    let backfn = `${finalPath}.bak${ts}`;
+                    let backfn = `${finalPath}.bak.${ts}`;
                     fs.renameSync(finalPath, backfn);
                     //fs.unlinkSync(finalPath);
                 } catch (err) {
@@ -1778,7 +1725,7 @@ function handleTransactions() {
         event.target.classList.add(targetDir);
         window.TXOPTSAPI.api.setSortModel(getSortModel('rawAmount', targetDir));
     });
-    
+
 
     txButtonSortDate.addEventListener('click', (event) => {
         event.preventDefault();
@@ -1940,41 +1887,25 @@ function initHandlers() {
     wsutil.liveEvent('textarea.ctcl, input.ctcl', 'click', (event) => {
         let el = event.target;
         let wv = el.value ? el.value.trim() : '';
-        let cplabel = el.dataset.cplabel ? el.dataset.cplabel : '';
-        let cpnotice = cplabel ? `${cplabel} copied to clipboard!` : 'Copied to clipboard';
-        el.select();
         if (!wv.length) return;
         clipboard.writeText(wv);
+
+        let cplabel = el.dataset.cplabel ? el.dataset.cplabel : '';
+        let cpnotice = cplabel ? `${cplabel} copied to clipboard!` : 'Copied to clipboard';
+        //el.select();
         wsutil.showToast(cpnotice);
+        //setTimeout(() => {el.setSelectionRange(0, 0);}, 1000);
     });
     // non-input elements ctc handlers
     wsutil.liveEvent('.tctcl', 'click', (event) => {
         let el = event.target;
         let wv = el.textContent.trim();
-        let cplabel = el.dataset.cplabel ? el.dataset.cplabel : '';
-        let cpnotice = cplabel ? `${cplabel} copied to clipboard!` : 'Copied to clipboard';
-        wsutil.selectText(el);
         if (!wv.length) return;
         clipboard.writeText(wv);
+        let cplabel = el.dataset.cplabel ? el.dataset.cplabel : '';
+        let cpnotice = cplabel ? `${cplabel} copied to clipboard!` : 'Copied to clipboard';
+        //wsutil.selectText(el);
         wsutil.showToast(cpnotice);
-    });
-
-    // overview page address ctc
-    overviewWalletAddress.addEventListener('click', function () {
-        if (!this.value) return;
-        let wv = this.value;
-        let clipInfo = document.getElementById('form-help-wallet-address');
-        let origInfo = clipInfo.value;
-        if (wv.length >= 10) {
-            //this.select();
-            clipboard.writeText(wv.trim());
-            clipInfo.textContent = "Address copied to clipboard!";
-            clipInfo.classList.add('help-hl');
-            setTimeout(function () {
-                clipInfo.textContent = origInfo;
-                clipInfo.classList.remove('help-hl');
-            }, 1800);
-        }
     });
 
     //genpaymentid+integAddress
@@ -2134,7 +2065,7 @@ function initHandlers() {
     });
 
     kswitch.addEventListener('click', showKeyBindings);
-    iswitch.addEventListener('click', showInfo);
+    iswitch.addEventListener('click', showAbout);
 
     //handleNetworkChange();
 
@@ -2256,11 +2187,17 @@ function initKeyBindings() {
     });
 }
 
-function fetchWait(url, options, timeout = 3000) {
+function fetchWait(url, timeout = 3000) {
+    let controller = new AbortController();
+    let signal = controller.signal;
+    timeout = timeout || 3000;
     return Promise.race([
-        fetch(url, options),
+        fetch(url, { signal }),
         new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('timeout')), timeout)
+            setTimeout(() => {
+                controller.abort();
+                return reject(new Error('timeout'));
+            }, timeout)
         )
     ]);
 }
@@ -2312,8 +2249,8 @@ function fetchNodeInfo() {
             let res = results.filter(val => val);
             if (res.length) {
                 settings.set('pubnodes_checked', res);
-                initNodeSelection();
             }
+            initNodeSelection();
         } else {
             initNodeSelection();
         }

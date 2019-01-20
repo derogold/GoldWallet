@@ -93,7 +93,6 @@ function updateSyncProgress(data) {
         connInfoDiv.classList.add('empty');
         connInfoDiv.textContent = '';
 
-
         // sync sess flags
         wsession.set('syncStarted', false);
         wsession.set('synchronized', false);
@@ -119,6 +118,16 @@ function updateSyncProgress(data) {
         wsession.set('connectedNode', '');
         brwin.setProgressBar(-1);
     } else {
+        if (!connInfoDiv.innerHTML.startsWith('Connected')) {
+            let connStatusText = `Connected to: <strong>${wsession.get('connectedNode')}</strong>`;
+            let connNodeFee = wsession.get('nodeFee');
+            if (connNodeFee > 0) {
+                connStatusText += ` | Node fee: <strong>${connNodeFee.toFixed(config.decimalPlaces)} ${config.assetTicker}</strong>`;
+            }
+            connInfoDiv.innerHTML = connStatusText;
+            connInfoDiv.classList.remove('conn-warning');
+            connInfoDiv.classList.remove('empty');
+        }
         // sync sess flags
         wsession.set('syncStarted', true);
         statusText = `${blockCount}/${knownBlockCount}`;
@@ -138,7 +147,8 @@ function updateSyncProgress(data) {
             // info bar class
             syncDiv.className = 'syncing';
             // status text
-            statusText = `SYNCING ${statusText} (${blockSyncPercent}%)`;
+            statusText = `SYNCING ${statusText}`;
+            if (blockSyncPercent < 100) statusText += ` (${blockSyncPercent}%)`;
             syncInfoBar.textContent = statusText;
             // status icon
             iconSync.setAttribute('data-icon', 'sync');
@@ -148,15 +158,6 @@ function updateSyncProgress(data) {
             let taskbarProgress = +(parseFloat(blockSyncPercent) / 100).toFixed(2);
             brwin.setProgressBar(taskbarProgress);
         }
-
-        let connStatusText = `Connected to: <strong>${wsession.get('connectedNode')}</strong>`;
-        let connNodeFee = wsession.get('nodeFee');
-        if (connNodeFee > 0) {
-            connStatusText += ` | Node fee: <strong>${connNodeFee.toFixed(config.decimalPlaces)} ${config.assetTicker}</strong>`;
-        }
-        connInfoDiv.innerHTML = connStatusText;
-        connInfoDiv.classList.remove('conn-warning');
-        connInfoDiv.classList.remove('empty');
     }
 
     if (WFCLEAR_TICK === 0 || WFCLEAR_TICK === WFCLEAR_INTERVAL) {

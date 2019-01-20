@@ -26,6 +26,7 @@
         <link rel="import" href="./overview_create.html">
         <link rel="import" href="./address_book.html">
         <link rel="import" href="./address_book_add.html">
+        <link rel="import" href="./shortcuts.html">
     </head>
 
     <body>
@@ -51,12 +52,8 @@
             <button tabindex="-1" title="Settings" class="form-bt navbar-button" data-section="section-settings" id="button-section-settings">
                 <i class="fas fa-cog"></i> <span class="navbar-label">Settings</span>
             </button>
-            <!-- <button tabindex="-1" title="About" class="form-bt navbar-button" data-section="section-about" id="button-section-about">
-                <i class="fas fa-info-circle"></i> <span class="navbar-label">About</span>
-            </button> -->
         </div>
     
-        <!-- Main div, here the program will load the different .html files depending on the active tab -->
         <div id="conn-info" class="status-node-info empty"></div>
         <div id="main-div"></div>
         <dialog id="main-dialog" class="default-dialog"></dialog>
@@ -68,7 +65,7 @@
         <button tabindex="-1" class="side-button" title="Show keyboard shortcut" id="kswitch"><i class="fas fa-keyboard"></i></button>
         <button  tabindex="-1" class="side-button" title="Swith to dark mode" id="tswitch"><i class="fas fa-moon"></i></button>
         </div>
-        <div id="belekok" class="borokokok off">Please open your wallet to access Transaction page.</div>
+        <div id="belekok" class="borokokok off"></div>
         <script>require('../js/wsui_main.js')</script>
     </body>
 </html>
