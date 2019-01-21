@@ -22,6 +22,7 @@ var STATE_PAUSED = false;
 var STATE_PENDING_SAVE = false;
 var PENDING_SAVE_SKIP_COUNTER = 0;
 var PENDING_SAVE_SKIP_MAX = 5;
+var FAILED_COUNTER = 0;
 
 var wsapi = null;
 var taskWorker = null;
@@ -74,6 +75,7 @@ function checkBlockUpdate() {
 
         // we have good connection
         STATE_CONNECTED = true;
+        FAILED_COUNTER = 0;
         let blockCount = parseInt(blockStatus.blockCount, 10);
         let knownBlockCount = parseInt(blockStatus.knownBlockCount, 10);
         if (blockCount <= LAST_BLOCK_COUNT && knownBlockCount <= LAST_KNOWN_BLOCK_COUNT && TX_SKIPPED_COUNT < 10) {
@@ -117,12 +119,29 @@ function checkBlockUpdate() {
         checkTransactionsUpdate();
 
     }).catch((err) => {
-        logDebug(`checkBlockUpdate: FAILED, ${err.message}`);
+        FAILED_COUNTER++;
+        logDebug(`checkBlockUpdate: FAILED, ${err.message} | failed count: ${FAILED_COUNTER}`);
+        if (FAILED_COUNTER >= 12) {
+            logDebug('checkBlockUpdate: too many timeout, mark connection as broken');
+
+            let fakeStatus = {
+                blockCount: -200,
+                knownBlockCount: -200,
+                displayBlockCount: -200,
+                displayKnownBlockCount: -200,
+                syncPercent: -200
+            };
+            process.send({
+                type: 'blockUpdated',
+                data: fakeStatus
+            });
+            STATE_CONNECTED = false;
+            return;
+        }
         return false;
     });
 }
 
-//var TX_CHECK_COUNTER = 0;
 function checkTransactionsUpdate() {
     if (!SERVICE_CFG || STATE_SAVING || wsapi === null) return;
 
