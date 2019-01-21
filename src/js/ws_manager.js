@@ -485,7 +485,7 @@ WalletShellManager.prototype.createWallet = function (walletFile, password) {
         childProcess.execFile(
             wsm.serviceBin, serviceArgs, (error, stdout, stderr) => {
                 if (stdout) log.debug(stdout);
-                if (stderr) log.error(stderr);
+                if (stderr) log.debug(stderr);
                 if (error) {
                     log.error(`Failed to create wallet: ${error.message}`);
                     return reject(new Error(ERROR_WALLET_CREATE));
@@ -518,7 +518,7 @@ WalletShellManager.prototype.importFromKeys = function (walletFile, password, vi
         childProcess.execFile(
             wsm.serviceBin, serviceArgs, (error, stdout, stderr) => {
                 if (stdout) log.debug(stdout);
-                if (stderr) log.error(stderr);
+                if (stderr) log.debug(stderr);
                 if (error) {
                     log.debug(`Failed to import key: ${error.message}`);
                     return reject(new Error(ERROR_WALLET_IMPORT));
@@ -550,7 +550,7 @@ WalletShellManager.prototype.importFromSeed = function (walletFile, password, mn
         childProcess.execFile(
             wsm.serviceBin, serviceArgs, (error, stdout, stderr) => {
                 if (stdout) log.debug(stdout);
-                if (stderr) log.error(stderr);
+                if (stderr) log.debug(stderr);
 
                 if (error) {
                     log.debug(`Error importing seed: ${error.message}`);
