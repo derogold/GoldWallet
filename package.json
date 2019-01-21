@@ -2,7 +2,7 @@
   "name": "walletshell",
   "productName": "WalletShell",
   "description": "TurtleCoin GUI Wallet",
-  "version": "v0.3.7",
+  "version": "v0.3.8",
   "homepage": "https://github.com/turtlecoin/turtle-wallet-electron",
   "repository": "https://github.com/turtlecoin/turtle-wallet-electron",
   "main": "main.js",

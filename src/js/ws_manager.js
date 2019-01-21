@@ -153,7 +153,7 @@ WalletShellManager.prototype.startService = function (walletFile, password, onEr
         '-w', walletFile,
         '-p', password,
         '--log-level', 0,
-        '--log-file', path.join(remote.app.getPath('temp'), 'ts.log'),
+        '--log-file', path.join(remote.app.getPath('temp'), 'ts.log'), // macOS failed without this
         '--address'
     ]);
 
@@ -477,12 +477,15 @@ WalletShellManager.prototype.createWallet = function (walletFile, password) {
     let wsm = this;
     return new Promise((resolve, reject) => {
         let serviceArgs = wsm.serviceArgsDefault.concat(
-            ['-g', '-w', walletFile, '-p', password]
+            [
+                '-g', '-w', walletFile, '-p', password,
+                '--log-level', 0, '--log-file', path.join(remote.app.getPath('temp'), 'ts.log')
+            ]
         );
         childProcess.execFile(
             wsm.serviceBin, serviceArgs, (error, stdout, stderr) => {
                 if (stdout) log.debug(stdout);
-                if (stderr) log.error(stderr);
+                if (stderr) log.debug(stderr);
                 if (error) {
                     log.error(`Failed to create wallet: ${error.message}`);
                     return reject(new Error(ERROR_WALLET_CREATE));
@@ -507,6 +510,7 @@ WalletShellManager.prototype.importFromKeys = function (walletFile, password, vi
         let serviceArgs = wsm.serviceArgsDefault.concat([
             '-g', '-w', walletFile, '-p', password,
             '--view-key', viewKey, '--spend-key', spendKey,
+            '--log-level', 0, '--log-file', path.join(remote.app.getPath('temp'), 'ts.log')
         ]);
 
         if (scanHeight > 0) serviceArgs = serviceArgs.concat(['--scan-height', scanHeight]);
@@ -514,7 +518,7 @@ WalletShellManager.prototype.importFromKeys = function (walletFile, password, vi
         childProcess.execFile(
             wsm.serviceBin, serviceArgs, (error, stdout, stderr) => {
                 if (stdout) log.debug(stdout);
-                if (stderr) log.error(stderr);
+                if (stderr) log.debug(stderr);
                 if (error) {
                     log.debug(`Failed to import key: ${error.message}`);
                     return reject(new Error(ERROR_WALLET_IMPORT));
@@ -538,6 +542,7 @@ WalletShellManager.prototype.importFromSeed = function (walletFile, password, mn
         let serviceArgs = wsm.serviceArgsDefault.concat([
             '-g', '-w', walletFile, '-p', password,
             '--mnemonic-seed', mnemonicSeed,
+            '--log-level', 0, '--log-file', path.join(remote.app.getPath('temp'), 'ts.log')
         ]);
 
         if (scanHeight > 0) serviceArgs = serviceArgs.concat(['--scan-height', scanHeight]);
@@ -545,7 +550,7 @@ WalletShellManager.prototype.importFromSeed = function (walletFile, password, mn
         childProcess.execFile(
             wsm.serviceBin, serviceArgs, (error, stdout, stderr) => {
                 if (stdout) log.debug(stdout);
-                if (stderr) log.error(stderr);
+                if (stderr) log.debug(stderr);
 
                 if (error) {
                     log.debug(`Error importing seed: ${error.message}`);
