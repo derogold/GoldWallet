@@ -19,7 +19,7 @@ log.transports.console.level = LOG_LEVEL;
 log.transports.file.level = LOG_LEVEL;
 log.transports.file.maxSize = 5 * 1024 * 1024;
 
-const WALLETSHELL_VERSION = app.getVersion() || '0.3.6';
+const WALLETSHELL_VERSION = app.getVersion() || '0.3.x';
 const SERVICE_FILENAME =  (platform === 'win32' ? `${config.walletServiceBinaryFilename}.exe` : config.walletServiceBinaryFilename );
 const SERVICE_OSDIR = (platform === 'win32' ? 'win' : (platform === 'darwin' ? 'osx' : 'lin'));
 const DEFAULT_SERVICE_BIN = path.join(process.resourcesPath,'bin', SERVICE_OSDIR, SERVICE_FILENAME);
@@ -125,7 +125,6 @@ function createWindow () {
         win.on('show', () => {
             tray.setHighlightMode('always');
             tray.setImage(trayIcon);
-            if (platform === 'darwin') return;
             contextMenu = Menu.buildFromTemplate([
                 { label: 'Minimize to tray', click: () => { win.hide();} },
                 { label: 'Quit', click: ()=> {
@@ -155,7 +154,7 @@ function createWindow () {
         });
 
         win.on('minimize', (event) => {
-            if(settings.get('tray_minimize')){
+            if(settings.get('tray_minimize') && platform !== 'darwin'){
                 event.preventDefault();
                 win.hide();
             }
@@ -182,7 +181,7 @@ function createWindow () {
     });
 
     win.on('close', (e) => {
-        if ((settings.get('tray_close') && !app.needToExit)){
+        if ((settings.get('tray_close') && !app.needToExit && platform !== 'darwin')){
             e.preventDefault();
             win.hide();
         }else if(app.prompExit ){
@@ -272,28 +271,40 @@ function doNodeListUpdate(){
 }
 
 function serviceBinCheck(){
-    if(!DEFAULT_SERVICE_BIN.startsWith('/tmp')){
-        return;
+    if(!IS_DEBUG) {
+        // better to force using default service binary remove it from settings page?
+        log.warn('Using default service bin path');
+        settings.set('service_bin', DEFAULT_SERVICE_BIN);
     }
-    
-    log.warn(`AppImage env, copying service bin file`);
-    let targetPath = path.join(app.getPath('userData'), SERVICE_FILENAME);
-    try{
-        fs.renameSync(targetPath, `${targetPath}.bak`, (err) => {
-            if(err) log.error(err);
+
+    if(DEFAULT_SERVICE_BIN.startsWith('/tmp')){
+        log.warn(`AppImage env, copying service bin file`);
+        let targetPath = path.join(app.getPath('userData'), SERVICE_FILENAME);
+        try{
+            fs.renameSync(targetPath, `${targetPath}.bak`, (err) => {
+                if(err) log.error(err);
+            });
+        }catch(_e){}
+        
+        try{
+            fs.copyFile(DEFAULT_SERVICE_BIN, targetPath, (err) => {
+            if (err){
+                log.error(err);
+                return;
+            }
+            settings.set('service_bin', targetPath);
+            log.debug(`service binary copied to ${targetPath}`);
         });
-    }catch(_e){}
-    
-    try{
-        fs.copyFile(DEFAULT_SERVICE_BIN, targetPath, (err) => {
-        if (err){
-            log.error(err);
-            return;
-        }
-        settings.set('service_bin', targetPath);
-        log.debug(`service binary copied to ${targetPath}`);
-      });
-    }catch(_e){}
+        }catch(_e){}
+    } 
+    // else 
+    // {
+    //     // don't trust user's settings :/
+    //     let svcbin = settings.get('service_bin');
+    //     if(!fs.existsSync(svcbin)){
+    //         settings.set('service_bin', DEFAULT_SERVICE_BIN);
+    //     }
+    // }
 }
 
 function initSettings(){
@@ -349,9 +360,8 @@ app.on('ready', () => {
 
 // Quit when all windows are closed.
 app.on('window-all-closed', () => {
-    // On macOS it is common for applications and their menu bar
-    // to stay active until the user quits explicitly with Cmd + Q
-    if (platform !== 'darwin') app.quit();
+    //if (platform !== 'darwin')
+    app.quit();
 });
 
 app.on('activate', () => {

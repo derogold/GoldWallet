@@ -145,7 +145,6 @@ function checkBlockUpdate() {
 function checkTransactionsUpdate() {
     if (!SERVICE_CFG || STATE_SAVING || wsapi === null) return;
 
-
     wsapi.getBalance().then((balance) => {
         STATE_PENDING_SAVE = false;
         process.send({
