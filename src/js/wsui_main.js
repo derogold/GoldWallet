@@ -1290,7 +1290,13 @@ function handleWalletExport() {
         wsmanager.getSecretKeys(overviewWalletAddress.value).then((keys) => {
             showkeyInputViewKey.value = keys.viewSecretKey;
             showkeyInputSpendKey.value = keys.spendSecretKey;
-            showkeyInputSeed.value = keys.mnemonicSeed;
+            if (keys.mnemonicSeed && keys.mnemonicSeed.length > 1) {
+                showkeyInputSeed.value = keys.mnemonicSeed;
+                showkeyInputSeed.classList.add('ctcl');
+            } else {
+                showkeyInputSeed.value = `- Mnemonic seed is not available for this wallet -${os.EOL}You still can restore your wallet using private keys shown above.`;
+                showkeyInputSeed.classList.remove('ctcl');
+            }
         }).catch(() => {
             formMessageSet('secret', 'error', "Failed to get key, please try again in a few seconds");
         });
@@ -1309,7 +1315,9 @@ function handleWalletExport() {
                 let textContent = `Wallet Address:${os.EOL}${wsession.get('loadedWalletAddress')}${os.EOL}`;
                 textContent += `${os.EOL}View Secret Key:${os.EOL}${keys.viewSecretKey}${os.EOL}`;
                 textContent += `${os.EOL}Spend Secret Key:${os.EOL}${keys.spendSecretKey}${os.EOL}`;
-                textContent += `${os.EOL}Mnemonic Seed:${os.EOL}${keys.mnemonicSeed}${os.EOL}`;
+                if (keys.mnemonicSeed && keys.mnemonicSeed.length > 1) {
+                    textContent += `${os.EOL}Mnemonic Seed:${os.EOL}${keys.mnemonicSeed}${os.EOL}`;
+                }
                 try {
                     fs.writeFileSync(filename, textContent);
                     formMessageSet('secret', 'success', 'Your keys have been exported, please keep the file secret!');
