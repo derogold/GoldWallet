@@ -1601,7 +1601,7 @@ progress.light{
 }
 
 ul.cnodes {
-    background: #00632e8f;
+    
     margin: 0;
     padding: 4px 2px 4px 28px;
     height: 100%;
@@ -1609,6 +1609,11 @@ ul.cnodes {
     overflow-x: hidden;
     overflow-y: auto;
     margin-top: -.5rem;
+    border: 1px solid #c3c3c39c;
+    border-radius: 4px;
+    box-sizing: border-box;
+    color: white;
+    background-color: rgba(53, 53, 53, 0.39);
 }
 
 ul.cnodes li{

@@ -251,5 +251,9 @@ border-bottom-right-radius: 4px !important;
     color: #fffb00;
 }
 .dark ul.cnodes {
- background: #526367;   
+    border: 1px solid #c3c3c39c;
+    border-radius: 4px;
+    box-sizing: border-box;
+    color: white;
+    background-color: rgba(53, 53, 53, 0.39);
 }
