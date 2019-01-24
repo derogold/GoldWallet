@@ -422,7 +422,9 @@ function changeSection(sectionId, isSettingRedir) {
     }
 
     if (finalTarget === 'section-overview-load') {
-        initNodeSelection(settings.get('node_address'));
+        if (walletOpenSelectBox.dataset.loading === "0") {
+            initNodeSelection(settings.get('node_address'));
+        }
     }
 
     let section = document.getElementById(finalTarget);
@@ -464,7 +466,7 @@ function initNodeSelection(nodeAddr) {
 
     walletOpenInputNode.removeAttribute('disabled');
     walletOpenInputNode.options.length = 0;
-    walletOpenSelectBox.dataset.loading = 0;
+    walletOpenSelectBox.dataset.loading = "0";
 
     if (!aliveNodes.length && settings.has('pubnodes_data')) {
         customNodes = customNodes.concat(settings.get('pubnodes_data'));
@@ -1119,9 +1121,10 @@ function handleWalletOpen() {
 
     // node selector
     walletOpenSelectBox.addEventListener('click', (e) => {
-        if (1 === walletOpenSelectBox.dataset.loading) {
+        if (walletOpenSelectBox.dataset.loading === "1") {
             return;
         }
+
         if (walletOpenSelectOpts.classList.contains("hidden")) {
             walletOpenSelectOpts.classList.remove("hidden");
         } else {
@@ -2333,7 +2336,7 @@ function fetchNodeInfo() {
     walletOpenInputNode.add(opt, null);
     walletOpenInputNode.setAttribute('disabled', true);
     walletOpenNodeLabel.innerHTML = '<i class="fas fa-sync fa-spin"></i> Updating node list, please wait...';
-    walletOpenSelectBox.dataset.loading = 1;
+    walletOpenSelectBox.dataset.loading = "1";
 
     window.ELECTRON_ENABLE_SECURITY_WARNINGS = false;
     let aliveNodes = settings.get('pubnodes_checked', false);
