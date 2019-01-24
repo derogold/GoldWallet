@@ -231,3 +231,25 @@ border-bottom-right-radius: 4px !important;
 .dark .wallet-tool:hover{
     color: #fefefe;
 }
+
+.dark .fake-node-options ul{
+    background-color: #232323;
+    border: 1px solid #929292cc;
+}
+
+.dark .fake-node-options ul li{
+
+}
+.dark .fake-node-options ul li:nth-child(odd){
+    background: #3c3c3c;
+    color: #eee;
+}
+.dark .fake-node-options ul li:hover{
+    background: #526367;
+}
+.dark .fake-node-options ul li span.node-address{
+    color: #fffb00;
+}
+.dark ul.cnodes {
+ background: #526367;   
+}

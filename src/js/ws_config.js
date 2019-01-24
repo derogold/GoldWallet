@@ -31,13 +31,14 @@ config.walletServiceRpcPort = 8070;
 config.blockExplorerUrl = 'https://explorer.turtlecoin.lol/transaction.html?hash=[[TX_HASH]]';
 
 // default remote node to connect to, set this to a known reliable node for 'just works' user experience
-config.remoteNodeDefaultHost = 'nodes.hashvault.pro';
+config.remoteNodeDefaultHost = 'turtlenode.co';
 
 // remote node list update url, set to null if you don't have one
 config.remoteNodeListUpdateUrl = 'https://raw.githubusercontent.com/turtlecoin/turtlecoin-nodes-json/master/turtlecoin-nodes.json';
 
 // fallback remote node list, in case fetching update failed, fill this with known to works remote nodes
 config.remoteNodeListFallback = [
+  'turtlenode.co:11898',
   'nodes.hashvault.pro:11898',
   'public.turtlenode.io:11898',
   'public.turtlenode.net:11898',

@@ -27,8 +27,14 @@
 
                 <div class="input-wrap">
                     <h4 class="text-spaced input-required">Select node address</h4>
+                    <div id="fake-select" class="fake-select" data-loading="0">
+                        <div id="fake-selected-node" class="fake-select-label"><span>Selected Node</span></div>
+                        <div id="fakeNodeOptions" class="hidden fake-node-options">
+                            <ul></ul>
+                        </div>
+                    </div>
                     <label class="select-label">
-                    <select required="required" tabindex="0" name="node-address" id="input-settings-node-address" class="text-block">
+                    <select required="required" tabindex="0" name="node-address" id="input-settings-node-address" class="text-block hidden">
                     </select>
                     </label>
                     <a href="#" tabindex="0" id="addCustomNode" class="input-extra-link inline-tool">

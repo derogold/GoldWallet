@@ -237,14 +237,13 @@ label.select-label{
     position:relative;
     display: block;
 }
-
+/*
 label.select-label:after{
-    content: '\f103';
-    font-family: "FontAwesome";
+    content: '\2B9F';
     font-size: 1.5rem;
     color: #aaa;
     right: 22px;
-    top: 10px;
+    top: 4px;
     padding:0 0 2px;
     position:absolute;
     pointer-events:none;
@@ -252,20 +251,130 @@ label.select-label:after{
 label.select-label:hover:after{
     color: #fff;
 }
-
+*/
 select.text-block{
     -webkit-appearance: none;
     cursor: pointer;
 }
-
-
+select.text-block * {
+    
+}
 
 select option{
-    background: #333;
+    background: #212121;
     color: #fff;
-    padding: 12px;
-    font-family: monospace;
-    font-size: 1.2rem;
+    font-size: 1rem;
+    display: table-row;
+}
+
+
+select option:nth-child(odd) {
+    background: #4c4c4c;
+}
+
+.fake-select{
+    padding: 0;
+    margin: 8px 0;
+    display: block;
+    border: 1px solid #c3c3c39c;
+    border-radius: 4px;
+    box-sizing: border-box;
+    color: white;
+    background-color: rgba(53, 53, 53, 0.39);
+    position: relative;
+     z-index: 1;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    cursor: default;
+    width:98%;
+   font-size: .85rem;
+}
+
+.fake-select-label{
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    margin: 0;
+    line-height: 18px;
+    color: #fff;
+    min-height: 18px;
+    padding: 12px 10px;
+}
+
+.fake-select-label:after{
+    content: '\2B9F';
+    font-size: 1.5rem;
+    color: #aaa;
+    right: 12px;
+    top: 12px;
+    padding:0 0 2px;
+    position:absolute;
+    pointer-events:none;
+}
+.fake-select-label:active:after,
+.fake-select-label:hover:after{
+    color: #fff;
+}
+
+.fake-node-options{
+    position: absolute;
+    width: 100%;
+    left:0;
+}
+.fake-node-options ul{
+    height: 230px;
+    width:100%;
+    overflow: hidden;
+    overflow-y: scroll;
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    line-height: 25px;
+    position: absolute;
+    background-color: #002f15;
+    border: 1px solid #929292cc;
+    z-index: 1;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    cursor: default;
+}
+.fake-node-options ul li{
+    margin: 0;
+    padding: 6px 12px;
+    border-bottom: 1px dashed #7575756e;
+    font-size: 1rem;
+}
+
+.fake-node-options ul li:nth-child(odd){
+    background: #004720;
+    color: #eee;
+}
+
+.fake-node-options ul li:hover{
+    background: #00843d;
+    text-shadow: 0px 1px 1px #1c1f20;
+}
+.fake-node-options ul li span.node-address{
+    color: #fff;
+    display: inline-block;
+    width:73%;
+}
+.fake-node-options ul li span.node-info{
+    text-align:right;
+    width:25%;
+    display:inline-block;
+    opacity: .25;
+    transition: opacity .2s linear;
+    
+}
+.fake-node-options ul li:hover span.node-info{
+    opacity: 1;
+}
+
+.fake-node-options ul li:hover span.node-address{
+    color: #fff;
 }
 .input-wrap h4{
     margin-bottom: 0rem;
@@ -1489,6 +1598,35 @@ progress.light{
     margin: 0 0 0 1rem;
     padding: 0;
     list-style: square;
+}
+
+ul.cnodes {
+    background: #00632e8f;
+    margin: 0;
+    padding: 4px 2px 4px 28px;
+    height: 100%;
+    max-height: 200px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    margin-top: -.5rem;
+}
+
+ul.cnodes li{
+    font-size: 0.95rem;
+    padding:0 0 .1rem 0;
+}
+
+ul.cnodes li a{
+    color: #fffb00;
+    text-decoration: none;
+    font-size:smaller;
+    text-transform: lowercase;
+}
+ul.cnodes li a:focus{
+    outline: none;
+}
+ul.cnodes li a:hover{
+    text-decoration:underline;
 }
 
 .custom-table.kb-table th, td{

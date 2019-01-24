@@ -234,7 +234,7 @@ function updateTransactions(result) {
                 tx.fee = wsutil.amountForMortal(tx.fee);
                 tx.paymentId = tx.paymentId.length ? tx.paymentId : '-';
                 tx.txType = (tx.amount > 0 ? 'in' : 'out');
-                tx.rawAmount = parseInt(tx.amount,10);
+                tx.rawAmount = parseInt(tx.amount, 10);
                 tx.rawFee = tx.fee;
                 tx.rawPaymentId = tx.paymentId;
                 tx.rawHash = tx.transactionHash;

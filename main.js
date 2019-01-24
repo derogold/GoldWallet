@@ -1,4 +1,4 @@
-const {app, dialog, Tray, Menu} = require('electron');
+const { app, dialog, Tray, Menu } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const url = require('url');
@@ -6,12 +6,12 @@ const https = require('https');
 const platform = require('os').platform();
 const crypto = require('crypto');
 const Store = require('electron-store');
-const settings = new Store({name: 'Settings'});
+const settings = new Store({ name: 'Settings' });
 const log = require('electron-log');
 const splash = require('@trodi/electron-splashscreen');
 const config = require('./src/js/ws_config');
 
-const IS_DEV  = (process.argv[1] === 'dev' || process.argv[2] === 'dev');
+const IS_DEV = (process.argv[1] === 'dev' || process.argv[2] === 'dev');
 const IS_DEBUG = IS_DEV || process.argv[1] === 'debug' || process.argv[2] === 'debug';
 const LOG_LEVEL = IS_DEBUG ? 'debug' : 'warn';
 
@@ -20,9 +20,9 @@ log.transports.file.level = LOG_LEVEL;
 log.transports.file.maxSize = 5 * 1024 * 1024;
 
 const WALLETSHELL_VERSION = app.getVersion() || '0.3.x';
-const SERVICE_FILENAME =  (platform === 'win32' ? `${config.walletServiceBinaryFilename}.exe` : config.walletServiceBinaryFilename );
+const SERVICE_FILENAME = (platform === 'win32' ? `${config.walletServiceBinaryFilename}.exe` : config.walletServiceBinaryFilename);
 const SERVICE_OSDIR = (platform === 'win32' ? 'win' : (platform === 'darwin' ? 'osx' : 'lin'));
-const DEFAULT_SERVICE_BIN = path.join(process.resourcesPath,'bin', SERVICE_OSDIR, SERVICE_FILENAME);
+const DEFAULT_SERVICE_BIN = path.join(process.resourcesPath, 'bin', SERVICE_OSDIR, SERVICE_FILENAME);
 const DEFAULT_SETTINGS = {
     service_bin: DEFAULT_SERVICE_BIN,
     service_host: '127.0.0.1',
@@ -45,23 +45,24 @@ app.prompExit = true;
 app.prompShown = false;
 app.needToExit = false;
 app.setAppUserModelId(config.appId);
+app.debug = IS_DEBUG;
 
 log.info(`Starting WalletShell ${WALLETSHELL_VERSION}`);
 
-let trayIcon = path.join(__dirname,'src/assets/tray.png');
-let trayIconHide = path.join(__dirname,'src/assets/trayon.png');
+let trayIcon = path.join(__dirname, 'src/assets/tray.png');
+let trayIconHide = path.join(__dirname, 'src/assets/trayon.png');
 
 let win;
 let tray;
 
-function createWindow () {
+function createWindow() {
     // Create the browser window.
     let darkmode = settings.get('darkmode', true);
     let bgColor = darkmode ? '#000000' : '#02853E';
 
     const winOpts = {
         title: `${config.appName} ${config.appDescription}`,
-        icon: path.join(__dirname,'src/assets/walletshell_icon.png'),
+        icon: path.join(__dirname, 'src/assets/walletshell_icon.png'),
         frame: true,
         width: DEFAULT_SIZE.width,
         height: DEFAULT_SIZE.height,
@@ -75,7 +76,7 @@ function createWindow () {
     win = splash.initSplashScreen({
         windowOpts: winOpts,
         templateUrl: path.join(__dirname, "src/html/splash.html"),
-        delay: 0, 
+        delay: 0,
         minVisible: 3000,
         splashScreenOpts: {
             width: 425,
@@ -86,12 +87,13 @@ function createWindow () {
 
     if (platform !== 'darwin') {
         let contextMenu = Menu.buildFromTemplate([
-            { label: 'Minimize to tray', click: () => { win.hide(); }},
-            { label: 'Quit', click: ()=> {
+            { label: 'Minimize to tray', click: () => { win.hide(); } },
+            {
+                label: 'Quit', click: () => {
                     app.needToExit = true;
-                    if(win) {
+                    if (win) {
                         win.close();
-                    }else {
+                    } else {
                         process.exit(0);
                     }
                 }
@@ -103,20 +105,20 @@ function createWindow () {
         tray.setTitle(config.appName);
         tray.setToolTip(config.appSlogan);
         tray.setContextMenu(contextMenu);
-        
+
 
         tray.on('click', () => {
-            if(settings.get('tray_minimize', false)){
-                if(win.isVisible()){
+            if (settings.get('tray_minimize', false)) {
+                if (win.isVisible()) {
                     win.hide();
-                }else{
+                } else {
                     win.show();
                 }
-            }else{
-                if(win.isMinimized()){
+            } else {
+                if (win.isMinimized()) {
                     win.restore();
                     win.focus();
-                }else{
+                } else {
                     win.minimize();
                 }
             }
@@ -126,8 +128,9 @@ function createWindow () {
             tray.setHighlightMode('always');
             tray.setImage(trayIcon);
             contextMenu = Menu.buildFromTemplate([
-                { label: 'Minimize to tray', click: () => { win.hide();} },
-                { label: 'Quit', click: ()=> {
+                { label: 'Minimize to tray', click: () => { win.hide(); } },
+                {
+                    label: 'Quit', click: () => {
                         app.needToExit = true;
                         win.close();
                     }
@@ -143,8 +146,9 @@ function createWindow () {
             if (platform === 'darwin') return;
 
             contextMenu = Menu.buildFromTemplate([
-                    { label: 'Restore', click: () => { win.show();} },
-                    { label: 'Quit', click: ()=> {
+                { label: 'Restore', click: () => { win.show(); } },
+                {
+                    label: 'Quit', click: () => {
                         app.needToExit = true;
                         win.close();
                     }
@@ -154,7 +158,7 @@ function createWindow () {
         });
 
         win.on('minimize', (event) => {
-            if(settings.get('tray_minimize') && platform !== 'darwin'){
+            if (settings.get('tray_minimize') && platform !== 'darwin') {
                 event.preventDefault();
                 win.hide();
             }
@@ -169,7 +173,7 @@ function createWindow () {
     }));
 
     // open devtools
-    if(IS_DEV ) win.webContents.openDevTools();
+    if (IS_DEV) win.webContents.openDevTools();
 
     // show windosw
     win.once('ready-to-show', () => {
@@ -181,12 +185,12 @@ function createWindow () {
     });
 
     win.on('close', (e) => {
-        if ((settings.get('tray_close') && !app.needToExit && platform !== 'darwin')){
+        if ((settings.get('tray_close') && !app.needToExit && platform !== 'darwin')) {
             e.preventDefault();
             win.hide();
-        }else if(app.prompExit ){
+        } else if (app.prompExit) {
             e.preventDefault();
-            if(app.prompShown) return;
+            if (app.prompShown) return;
             let msg = 'Are you sure want to exit?';
             app.prompShown = true;
             dialog.showMessageBox({
@@ -198,15 +202,15 @@ function createWindow () {
                 app.prompShown = false;
                 if (response === 0) {
                     app.prompExit = false;
-                    win.webContents.send('cleanup','Clean it up, Dad!');
-                }else{
+                    win.webContents.send('cleanup', 'Clean it up, Dad!');
+                } else {
                     app.prompExit = true;
                     app.needToExit = false;
                 }
             });
         }
     });
-    
+
     win.on('closed', () => {
         win = null;
     });
@@ -214,7 +218,7 @@ function createWindow () {
     win.setMenu(null);
 
     // misc handler
-    win.webContents.on('crashed', () => { 
+    win.webContents.on('crashed', () => {
         // todo: prompt to restart
         log.debug('webcontent was crashed');
     });
@@ -225,22 +229,22 @@ function createWindow () {
     });
 }
 
-function storeNodeList(pnodes){
+function storeNodeList(pnodes) {
     pnodes = pnodes || settings.get('pubnodes_data');
     let validNodes = [];
-    if( pnodes.hasOwnProperty('nodes')) {
+    if (pnodes.hasOwnProperty('nodes')) {
         pnodes.nodes.forEach(element => {
             let item = `${element.url}:${element.port}`;
             validNodes.push(item);
         });
         settings.delete('pubnodes_checked');
     }
-    if (validNodes.length) settings.set('pubnodes_data', validNodes);    
+    if (validNodes.length) settings.set('pubnodes_data', validNodes);
 }
 
 
-function doNodeListUpdate(){
-    try{
+function doNodeListUpdate() {
+    try {
         https.get(config.remoteNodeListUpdateUrl, (res) => {
             var result = '';
             res.setEncoding('utf8');
@@ -250,14 +254,14 @@ function doNodeListUpdate(){
             });
 
             res.on('end', () => {
-                try{
+                try {
                     var pnodes = JSON.parse(result);
                     let today = new Date();
                     storeNodeList(pnodes);
                     log.debug('Public node list has been updated');
-                    let mo = (today.getMonth()+1);
+                    let mo = (today.getMonth() + 1);
                     settings.set('pubnodes_date', `${today.getFullYear()}-${mo}-${today.getDate()}`);
-                }catch(e){
+                } catch (e) {
                     log.debug(`Failed to update public node list: ${e.message}`);
                     storeNodeList();
                 }
@@ -265,38 +269,38 @@ function doNodeListUpdate(){
         }).on('error', (e) => {
             log.debug(`Failed to update public-node list: ${e.message}`);
         });
-    }catch(e){
+    } catch (e) {
         log.error(`Failed to update public-node list: ${e.code} - ${e.message}`);
     }
 }
 
-function serviceBinCheck(){
-    if(!IS_DEBUG) {
+function serviceBinCheck() {
+    if (!IS_DEBUG) {
         // better to force using default service binary remove it from settings page?
         log.warn('Using default service bin path');
         settings.set('service_bin', DEFAULT_SERVICE_BIN);
     }
 
-    if(DEFAULT_SERVICE_BIN.startsWith('/tmp')){
+    if (DEFAULT_SERVICE_BIN.startsWith('/tmp')) {
         log.warn(`AppImage env, copying service bin file`);
         let targetPath = path.join(app.getPath('userData'), SERVICE_FILENAME);
-        try{
+        try {
             fs.renameSync(targetPath, `${targetPath}.bak`, (err) => {
-                if(err) log.error(err);
+                if (err) log.error(err);
             });
-        }catch(_e){}
-        
-        try{
+        } catch (_e) { }
+
+        try {
             fs.copyFile(DEFAULT_SERVICE_BIN, targetPath, (err) => {
-            if (err){
-                log.error(err);
-                return;
-            }
-            settings.set('service_bin', targetPath);
-            log.debug(`service binary copied to ${targetPath}`);
-        });
-        }catch(_e){}
-    } 
+                if (err) {
+                    log.error(err);
+                    return;
+                }
+                settings.set('service_bin', targetPath);
+                log.debug(`service binary copied to ${targetPath}`);
+            });
+        } catch (_e) { }
+    }
     // else 
     // {
     //     // don't trust user's settings :/
@@ -307,9 +311,9 @@ function serviceBinCheck(){
     // }
 }
 
-function initSettings(){
+function initSettings() {
     Object.keys(DEFAULT_SETTINGS).forEach((k) => {
-        if(!settings.has(k) || settings.get(k) === null){
+        if (!settings.has(k) || settings.get(k) === null) {
             settings.set(k, DEFAULT_SETTINGS[k]);
         }
     });
@@ -330,32 +334,32 @@ if (!silock) app.quit();
 app.on('ready', () => {
     initSettings();
 
-    if(IS_DEV || IS_DEBUG) log.warn(`Running in ${IS_DEV ? 'dev' : 'debug'} mode`);
+    if (IS_DEV || IS_DEBUG) log.warn(`Running in ${IS_DEV ? 'dev' : 'debug'} mode`);
 
     global.wsession = {
         debug: IS_DEBUG
     };
 
-    if(config.remoteNodeListUpdateUrl){
+    if (config.remoteNodeListUpdateUrl) {
         let today = new Date();
         let last_checked = new Date(settings.get('pubnodes_date'));
-        let diff_d = parseInt((today-last_checked)/(1000*60*60*24),10);
-        if(diff_d >= 1){
+        let diff_d = parseInt((today - last_checked) / (1000 * 60 * 60 * 24), 10);
+        if (diff_d >= 1) {
             log.info('Performing daily public-node list update.');
             doNodeListUpdate();
-        }else{
+        } else {
             log.info('Public node list up to date, skipping update');
             storeNodeList(false); // from local cache
         }
     }
-    
+
     createWindow();
     // try to target center pos of primary display
     let eScreen = require('electron').screen;
     let primaryDisp = eScreen.getPrimaryDisplay();
-    let tx = Math.ceil((primaryDisp.workAreaSize.width - DEFAULT_SIZE.width)/2);
-    let ty = Math.ceil((primaryDisp.workAreaSize.height - (DEFAULT_SIZE.height))/2);
-    if(tx > 0 && ty > 0) win.setPosition(parseInt(tx, 10), parseInt(ty,10));
+    let tx = Math.ceil((primaryDisp.workAreaSize.width - DEFAULT_SIZE.width) / 2);
+    let ty = Math.ceil((primaryDisp.workAreaSize.height - (DEFAULT_SIZE.height)) / 2);
+    if (tx > 0 && ty > 0) win.setPosition(parseInt(tx, 10), parseInt(ty, 10));
 });
 
 // Quit when all windows are closed.

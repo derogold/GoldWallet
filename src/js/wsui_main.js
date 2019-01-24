@@ -66,6 +66,9 @@ let walletOpenInputPassword;
 let walletOpenButtonOpen;
 let walletOpenButtons;
 let walletOpenInputNode;
+let walletOpenNodeLabel;
+let walletOpenSelectBox;
+let walletOpenSelectOpts;
 let addCustomNode;
 // show/export keys page
 let overviewShowKeyButton;
@@ -157,6 +160,9 @@ function populateElementVars() {
     walletOpenButtonOpen = document.getElementById('button-load-load');
     walletOpenButtons = document.getElementById('walletOpenButtons');
     walletOpenInputNode = document.getElementById('input-settings-node-address');
+    walletOpenNodeLabel = document.getElementById('fake-selected-node');
+    walletOpenSelectBox = document.getElementById('fake-select');
+    walletOpenSelectOpts = document.getElementById('fakeNodeOptions');
     addCustomNode = document.getElementById('addCustomNode');
     // show/export keys page
     overviewShowKeyButton = document.getElementById('button-show-reveal');
@@ -203,8 +209,6 @@ function populateElementVars() {
     txInputNotify = document.getElementById('transaction-notify');
     txButtonExport = document.getElementById('transaction-export');
 }
-
-
 
 // crude/junk template :)
 let jtfr = {
@@ -417,6 +421,10 @@ function changeSection(sectionId, isSettingRedir) {
         toastMsg = '';
     }
 
+    if (finalTarget === 'section-overview-load') {
+        initNodeSelection(settings.get('node_address'));
+    }
+
     let section = document.getElementById(finalTarget);
     if (section.classList.contains('is-shown')) {
         if (toastMsg.length && !isSettingRedir && !untoast) wsutil.showToast(toastMsg);
@@ -449,38 +457,69 @@ function changeSection(sectionId, isSettingRedir) {
     }
 }
 function initNodeSelection(nodeAddr) {
+    let forceNew = nodeAddr ? true : false;
     let selected = nodeAddr || settings.get('node_address');
     let customNodes = settings.get('pubnodes_custom');
     let aliveNodes = settings.get('pubnodes_checked', []);
 
     walletOpenInputNode.removeAttribute('disabled');
     walletOpenInputNode.options.length = 0;
+    walletOpenSelectBox.dataset.loading = 0;
 
     if (!aliveNodes.length && settings.has('pubnodes_data')) {
         customNodes = customNodes.concat(settings.get('pubnodes_data'));
     }
 
-    aliveNodes = wsutil.arrShuffle(aliveNodes);
+    let fakeSelect = document.querySelector('#fakeNodeOptions > ul');
+    fakeSelect.innerHTML = '';
+    let selectedLabel = '';
+    let rndMethod = wsutil.arrShuffle([0, 1]);
+    aliveNodes = wsutil.arrShuffle(aliveNodes, rndMethod);
     customNodes.forEach(node => {
         let opt = document.createElement('option');
-        opt.text = `${node} (Custom)`;
+        opt.text = `${node} | Custom Node`;
         opt.value = node;
+
+        let fakeOpt = document.createElement('li');
+        fakeOpt.setAttribute('class', 'fake-options');
+        fakeOpt.dataset.value = node;
+        fakeOpt.innerHTML = `<span class="node-address">${node}</span> <span class="node-info">(Custom Node)</span>`;
+
         if (node === selected) {
             opt.setAttribute('selected', true);
+            fakeOpt.classList.add('selected');
+            selectedLabel = fakeOpt.innerHTML;
         }
         walletOpenInputNode.add(opt, null);
+        fakeSelect.appendChild(fakeOpt);
     });
 
     aliveNodes.forEach(node => {
         let opt = document.createElement('option');
         opt.text = node.label;
         opt.value = node.host;
+
+        let fakeOpt = document.createElement('li');
+        fakeOpt.setAttribute('class', 'fake-options');
+        fakeOpt.dataset.value = node.host;
+        let all_labels = node.label.split('|');
+        fakeOpt.innerHTML = `<span class="node-address">${all_labels[0].trim()}</span> <span class="node-info">(${all_labels[1].trim()})</span>`;
+
         if (node.host === selected) {
             opt.setAttribute('selected', true);
+            fakeOpt.classList.add('selected');
+            //walletOpenNodeLabel.innerHTML = fakeOpt.innerHTML;
         }
-        walletOpenInputNode.add(opt, null);
-    });
 
+        walletOpenInputNode.add(opt, null);
+        fakeSelect.appendChild(fakeOpt);
+        if (!forceNew) {
+            selectedLabel = fakeOpt.innerHTML;
+        }
+    });
+    walletOpenNodeLabel.innerHTML = selectedLabel;
+    customNodes = null;
+    aliveNodes = null;
 }
 
 // initial settings value or updater
@@ -613,12 +652,15 @@ function showInitialPage() {
     initSettingVal(); // initial settings value
     initAddressCompletion();
 
-    if (!settings.has('firstRun') || settings.get('firstRun') !== 0) {
-        changeSection('section-settings');
-        settings.set('firstRun', 0);
-    } else {
-        changeSection('section-welcome');
-    }
+    // no more first RUN :-)
+    // if (!settings.has('firstRun') || settings.get('firstRun') !== 0) {
+    //     changeSection('section-settings');
+    //     settings.set('firstRun', 0);
+    // } else {
+    //     changeSection('section-welcome');
+    // }
+    settings.set('firstRun', 0);
+    changeSection('section-welcome');
 
     let versionInfo = document.getElementById('walletShellVersion');
     if (versionInfo) versionInfo.innerHTML = WS_VERSION;
@@ -886,16 +928,30 @@ function handleWalletOpen() {
     function addCustomNodeForm() {
         let dialog = document.getElementById('ab-dialog');
         if (dialog.hasAttribute('open')) dialog.close();
+        let customNodes = settings.get('pubnodes_custom');
+        let cnode = '<ul class="cnodes">';
+        customNodes.forEach(node => {
+            cnode += `<li>${node} (<a href="#" title="remove this node" class="cnode-item" data-value="${node}">REMOVE</a>)</li>`;
+        });
+        cnode += '</ul>';
 
         let iaform = `<div class="transaction-panel">
-            <h4>Add custom daemon/node address:</h4>
-            <div class="input-wrap">
-            <label>Node Address</label>
-            <input type="text" id="customNodeAddress" placeholder="my.example.com:${config.daemonDefaultRpcPort}" class="text-block" />
-            <span class="form-help">Required, example: my.example-domain.com:${config.daemonDefaultRpcPort}, 123.123.123.123:${config.daemonDefaultRpcPort}</span>
-            </div>
-            <div class="input-wrap">
-                <span class="form-ew form-msg text-spaced-error hidden" id="text-customnode-error"></span>
+            <h4>Custom daemon/node address:</h4>
+            <div class="splitted-area splitted-2">
+                <div class="splitted-content first">
+                    <p>Your Custom Nodes:</p>
+                    ${cnode}
+                </div>
+                <div class="splitted-content last">
+                    <div class="input-wrap f-right">
+                    <label>Add New Custom Node</label>
+                    <input type="text" id="customNodeAddress" placeholder="my.example.com:${config.daemonDefaultRpcPort}" class="text-block" />
+                    <span class="form-help">Required, example: my.example-domain.com:${config.daemonDefaultRpcPort}, 123.123.123.123:${config.daemonDefaultRpcPort}</span>
+                    </div>
+                    <div class="input-wrap">
+                        <span class="form-ew form-msg text-spaced-error hidden" id="text-customnode-error"></span>
+                    </div>
+                </div>
             </div>
             <div class="div-panel-buttons">
                 <button id="saveCustomNode" type="button" class="button-green">Save & activate</button>
@@ -905,6 +961,18 @@ function handleWalletOpen() {
         dialog.innerHTML = iaform;
         dialog.showModal();
     }
+
+    wsutil.liveEvent('.cnode-item', 'click', (e) => {
+        e.preventDefault();
+        let item = e.target.dataset.value.trim();
+        let tbr = e.target.closest('li');
+        let customNodes = settings.get('pubnodes_custom', []);
+        var index = customNodes.indexOf(item);
+        if (index !== -1) customNodes.splice(index, 1);
+        settings.set('pubnodes_custom', customNodes);
+        tbr.parentNode.removeChild(tbr);
+        initNodeSelection();
+    });
 
     wsutil.liveEvent("#saveCustomNode", "click", (e) => {
         e.preventDefault();
@@ -1045,6 +1113,44 @@ function handleWalletOpen() {
                 return false;
             });
         });
+    });
+
+    // node selector
+    walletOpenSelectBox.addEventListener('click', (e) => {
+        if (1 === walletOpenSelectBox.dataset.loading) {
+            return;
+        }
+        if (walletOpenSelectOpts.classList.contains("hidden")) {
+            walletOpenSelectOpts.classList.remove("hidden");
+        } else {
+            walletOpenSelectOpts.classList.add("hidden");
+        }
+    });
+
+    wsutil.liveEvent('.fake-options', 'click', (e) => {
+        let sel = e.target.classList.contains('fake-options') ? e.target : e.target.closest('.fake-options');
+        let val = sel.dataset.value;
+        walletOpenNodeLabel.innerHTML = sel.innerHTML;
+        walletOpenInputNode.value = val;
+        var event = new Event('change');
+        walletOpenInputNode.dispatchEvent(event);
+    });
+
+    let mox = document.getElementById('section-overview-load');
+    mox.addEventListener('click', function (e) {
+        function isChild(obj, parentObj) {
+            while (obj !== undefined && obj !== null && obj.tagName.toUpperCase() !== 'BODY') {
+                if (obj === parentObj) {
+                    return true;
+                }
+                obj = obj.parentNode;
+            }
+            return false;
+        }
+        let eid = e.target.getAttribute('id');
+        if (eid === 'fake-selected-node' || eid === 'fake-select') return;
+        if (isChild(e.target, walletOpenSelectBox)) return;
+        walletOpenSelectOpts.classList.add('hidden');
     });
 }
 
@@ -1631,12 +1737,17 @@ function handleTransactions() {
             };
 
             window.addEventListener('resize', () => {
-                window.TXOPTSAPI.api.sizeColumnsToFit();
+                if (window.TXOPTSAPI) {
+                    window.TXOPTSAPI.api.sizeColumnsToFit();
+                }
+
             });
 
             let txfilter = document.getElementById('tx-search');
             txfilter.addEventListener('input', function () {
-                window.TXOPTSAPI.api.setQuickFilter(this.value);
+                if (window.TXOPTSAPI) {
+                    window.TXOPTSAPI.api.setQuickFilter(this.value);
+                }
             });
         } else {
             window.TXOPTSAPI.api.updateRowData({ add: txs, addIndex: 0 });
@@ -2219,6 +2330,8 @@ function fetchNodeInfo() {
     opt.setAttribute('selected', true);
     walletOpenInputNode.add(opt, null);
     walletOpenInputNode.setAttribute('disabled', true);
+    walletOpenNodeLabel.innerHTML = '<i class="fas fa-sync fa-spin"></i> Updating node list, please wait...';
+    walletOpenSelectBox.dataset.loading = 1;
 
     window.ELECTRON_ENABLE_SECURITY_WARNINGS = false;
     let aliveNodes = settings.get('pubnodes_checked', false);
@@ -2246,7 +2359,7 @@ function fetchNodeInfo() {
                         return callback(null, null);
                     }
                     let feeAmount = parseInt(json.amount, 10) > 0 ? `Fee: ${wsutil.amountForMortal(json.amount)} ${config.assetTicker}` : "FREE";
-                    out.label = `${h.split(':')[0]} (${feeAmount})`;
+                    out.label = `${h.split(':')[0]} | ${feeAmount}`;
                     return callback(null, out);
                 }).catch(() => callback(null, null));
         });
@@ -2271,6 +2384,9 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchNodeInfo();
     showInitialPage();
     initKeyBindings();
+    if (!remote.app.debug) {
+        document.getElementById('old-path-settings').classList.add('hidden');
+    }
 }, false);
 
 ipcRenderer.on('cleanup', () => {
