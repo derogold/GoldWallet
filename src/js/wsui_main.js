@@ -508,7 +508,7 @@ function initNodeSelection(nodeAddr) {
         if (node.host === selected) {
             opt.setAttribute('selected', true);
             fakeOpt.classList.add('selected');
-            //walletOpenNodeLabel.innerHTML = fakeOpt.innerHTML;
+            walletOpenNodeLabel.innerHTML = fakeOpt.innerHTML;
         }
 
         walletOpenInputNode.add(opt, null);
@@ -517,7 +517,9 @@ function initNodeSelection(nodeAddr) {
             selectedLabel = fakeOpt.innerHTML;
         }
     });
-    walletOpenNodeLabel.innerHTML = selectedLabel;
+    if(selectedLabel.length){
+        walletOpenNodeLabel.innerHTML = selectedLabel;
+    }
     customNodes = null;
     aliveNodes = null;
 }
