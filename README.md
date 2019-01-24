@@ -60,10 +60,10 @@ If you don't trust the bundled `turtle-service` file, you can compare the checks
 
 See: https://docs.appimage.org/user-guide/run-appimages.html
 
-#### macOS (TBD/Untested)
+#### macOS
 1. Download latest archive here: https://github.com/turtlecoin//turtle-wallet-electron/releases
 2. Extract downloaded tar archived
-3. Run the executable binary (`WalletShell.app/Contents/MacOs/WalletShell`) ??
+3. Run the executable binary (`WalletShell.app/Contents/MacOs/WalletShell`)
 
 ### Build
 You need to have `Node.js` and `npm` installed, go to https://nodejs.org and find out how to get it installed on your platform.
