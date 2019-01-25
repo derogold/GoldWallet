@@ -213,12 +213,6 @@ WalletShellManager.prototype._spawnService = function (walletFile, password, onE
         '--log-file', logFile
     ]);
 
-    //if (SERVICE_LOG_LEVEL > 0) {
-    //serviceArgs.push('--log-file');
-    //serviceArgs.push(logFile);
-    //}
-
-
     let configFile = wsession.get('walletConfig', null);
     if (configFile) {
         let configFormat = settings.get('service_config_format', 'ini');

@@ -460,68 +460,96 @@ function changeSection(sectionId, isSettingRedir) {
 }
 function initNodeSelection(nodeAddr) {
     let forceNew = nodeAddr ? true : false;
-    let selected = nodeAddr || settings.get('node_address');
-    let customNodes = settings.get('pubnodes_custom');
+    if (forceNew) settings.set('node_address', nodeAddr);
+
+    // selected node
+    let selected = settings.get('node_address');
+    // custom node list
+    let customNodes = settings.get('pubnodes_custom', []);
+    // conntested node list
     let aliveNodes = settings.get('pubnodes_checked', []);
-
+    // remove node update progress, replace current list
     walletOpenInputNode.removeAttribute('disabled');
-    walletOpenInputNode.options.length = 0;
     walletOpenSelectBox.dataset.loading = "0";
-
-    if (!aliveNodes.length && settings.has('pubnodes_data')) {
-        customNodes = customNodes.concat(settings.get('pubnodes_data'));
+    walletOpenInputNode.options.length = 0;
+    // shuffle nodes
+    if (aliveNodes.length) {
+        let rndMethod = wsutil.arrShuffle([0, 1]);
+        aliveNodes = wsutil.arrShuffle(aliveNodes, rndMethod);
+    } else {
+        // if no tested node on the list, fallback to default, untested list
+        if (settings.has('pubnodes_data')) {
+            customNodes = customNodes.concat(settings.get('pubnodes_data'));
+        }
     }
 
+    // for visual selector
     let fakeSelect = document.querySelector('#fakeNodeOptions > ul');
+    // reset list
     fakeSelect.innerHTML = '';
+    // default value
     let selectedLabel = '';
-    let rndMethod = wsutil.arrShuffle([0, 1]);
-    aliveNodes = wsutil.arrShuffle(aliveNodes, rndMethod);
-    customNodes.forEach(node => {
-        let opt = document.createElement('option');
-        opt.text = `${node} | Custom Node`;
-        opt.value = node;
 
-        let fakeOpt = document.createElement('li');
-        fakeOpt.setAttribute('class', 'fake-options');
-        fakeOpt.dataset.value = node;
-        fakeOpt.innerHTML = `<span class="node-address">${node}</span> <span class="node-info">(Custom Node)</span>`;
+    if (customNodes.length) {
+        customNodes.forEach(node => {
+            // actual list items
+            let opt = document.createElement('option');
+            opt.text = `${node} | Custom Node`;
+            opt.value = node;
+            // list items display
+            let fakeOpt = document.createElement('li');
+            fakeOpt.setAttribute('class', 'fake-options');
+            fakeOpt.dataset.value = node;
+            fakeOpt.innerHTML = `<span class="node-address">${node}</span> <span class="node-info">(Custom Node)</span>`;
 
-        if (node === selected) {
-            opt.setAttribute('selected', true);
-            fakeOpt.classList.add('selected');
-            selectedLabel = fakeOpt.innerHTML;
-        }
-        walletOpenInputNode.add(opt, null);
-        fakeSelect.appendChild(fakeOpt);
-    });
-
-    aliveNodes.forEach(node => {
-        let opt = document.createElement('option');
-        opt.text = node.label;
-        opt.value = node.host;
-
-        let fakeOpt = document.createElement('li');
-        fakeOpt.setAttribute('class', 'fake-options');
-        fakeOpt.dataset.value = node.host;
-        let all_labels = node.label.split('|');
-        fakeOpt.innerHTML = `<span class="node-address">${all_labels[0].trim()}</span> <span class="node-info">(${all_labels[1].trim()})</span>`;
-
-        if (node.host === selected) {
-            opt.setAttribute('selected', true);
-            fakeOpt.classList.add('selected');
-            walletOpenNodeLabel.innerHTML = fakeOpt.innerHTML;
-        }
-
-        walletOpenInputNode.add(opt, null);
-        fakeSelect.appendChild(fakeOpt);
-        if (!forceNew) {
-            selectedLabel = fakeOpt.innerHTML;
-        }
-    });
-    if(selectedLabel.length){
-        walletOpenNodeLabel.innerHTML = selectedLabel;
+            if (node === selected) {
+                opt.setAttribute('selected', true);
+                fakeOpt.classList.add('selected');
+                selectedLabel = fakeOpt.innerHTML;
+            }
+            walletOpenInputNode.add(opt, null);
+            fakeSelect.appendChild(fakeOpt);
+        });
     }
+
+    if (aliveNodes.length) {
+        aliveNodes.forEach(node => {
+            let opt = document.createElement('option');
+            opt.text = node.label;
+            opt.value = node.host;
+
+            let fakeOpt = document.createElement('li');
+            fakeOpt.setAttribute('class', 'fake-options');
+            fakeOpt.dataset.value = node.host;
+            let all_labels = node.label.split('|');
+            fakeOpt.innerHTML = `<span class="node-address">${all_labels[0].trim()}</span> <span class="node-info">(${all_labels[1].trim()})</span>`;
+
+            if (node.host === selected) {
+                opt.setAttribute('selected', true);
+                fakeOpt.classList.add('selected');
+                selectedLabel = fakeOpt.innerHTML;
+            }
+
+            walletOpenInputNode.add(opt, null);
+            fakeSelect.appendChild(fakeOpt);
+        });
+    }
+
+    if (!selectedLabel.length) {
+        if (aliveNodes.length) {
+            selected = aliveNodes[0];
+            let opt = walletOpenInputNode.querySelector('option[value="' + selected.host + '"]');
+            opt.setAttribute('selected', true);
+            walletOpenInputNode.value = selected.host;
+            let all_labels = selected.label.split('|');
+            selectedLabel = `<span class="node-address">${all_labels[0].trim()}</span> <span class="node-info">(${all_labels[1].trim()})</span>`;
+        }
+    }
+    walletOpenNodeLabel.innerHTML = selectedLabel;
+
+    var event = new Event('change');
+    walletOpenInputNode.dispatchEvent(event);
+
     customNodes = null;
     aliveNodes = null;
 }
@@ -1120,7 +1148,7 @@ function handleWalletOpen() {
     });
 
     // node selector
-    walletOpenSelectBox.addEventListener('click', (e) => {
+    walletOpenSelectBox.addEventListener('click', () => {
         if (walletOpenSelectBox.dataset.loading === "1") {
             return;
         }
@@ -2339,9 +2367,9 @@ function fetchNodeInfo() {
     walletOpenSelectBox.dataset.loading = "1";
 
     window.ELECTRON_ENABLE_SECURITY_WARNINGS = false;
-    let aliveNodes = settings.get('pubnodes_checked', false);
+    let aliveNodes = settings.get('pubnodes_checked', []);
     if (aliveNodes.length) {
-        initNodeSelection();
+        initNodeSelection(settings.get('node_address'));
         return aliveNodes;
     }
 
