@@ -78,7 +78,7 @@ WalletShellManager.prototype._reinitSession = function () {
     });
 };
 
-WalletShellManager.prototype._serviceBinExists = function() {
+WalletShellManager.prototype._serviceBinExists = function () {
     wsutil.isFileExist(this.serviceBin);
 };
 
@@ -213,12 +213,6 @@ WalletShellManager.prototype._spawnService = function (walletFile, password, onE
         '--log-file', logFile
     ]);
 
-    //if (SERVICE_LOG_LEVEL > 0) {
-    //serviceArgs.push('--log-file');
-    //serviceArgs.push(logFile);
-    //}
-
-
     let configFile = wsession.get('walletConfig', null);
     if (configFile) {
         let configFormat = settings.get('service_config_format', 'ini');
@@ -287,7 +281,7 @@ WalletShellManager.prototype._spawnService = function (walletFile, password, onE
             return true;
         }).catch((err) => {
             log.debug('Connection failed or timeout');
-            log.debug(err.message);
+            log.debug(err);
             if (retry === 10 && onDelay) onDelay(`Still no response from ${config.walletServiceBinaryFilename}, please wait a few more seconds...`);
             if (retry >= MAX_CHECK && !TEST_OK) {
                 if (wsm.serviceStatus()) {
@@ -629,27 +623,33 @@ WalletShellManager.prototype._fusionGetMinThreshold = function (threshold, minTh
 
 WalletShellManager.prototype._fusionSendTx = function (threshold, counter) {
     let wsm = this;
+    const wtime = ms => new Promise(resolve => setTimeout(resolve, ms));
+
     return new Promise((resolve, reject) => {
         counter = counter || 0;
         let maxIter = 256;
         if (counter >= maxIter) return resolve(wsm.fusionTxHash); // stop at max iter
 
-        // keep sending fusion tx till it hit IOOR or reaching max iter 
-        log.debug(`send fusion tx, iteration: ${counter}`);
-        wsm.serviceApi.sendFusionTransaction({ threshold: threshold }).then((resp) => {
-            wsm.fusionTxHash.push(resp.transactionHash);
-            counter += 1;
-            return resolve(wsm._fusionSendTx(threshold, counter).then((resp) => {
-                return resp;
-            }));
-        }).catch((err) => {
-            return reject(new Error(err));
+        wtime(1200).then(() => {
+            // keep sending fusion tx till it hit IOOR or reaching max iter 
+            log.debug(`send fusion tx, iteration: ${counter}`);
+            wsm.serviceApi.sendFusionTransaction({ threshold: threshold }).then((resp) => {
+                wsm.fusionTxHash.push(resp.transactionHash);
+                counter += 1;
+                return resolve(wsm._fusionSendTx(threshold, counter).then((resp) => {
+                    return resp;
+                }));
+            }).catch((err) => {
+                return reject(new Error(err));
+            });
+
         });
     });
 };
 
 WalletShellManager.prototype.optimizeWallet = function () {
     let wsm = this;
+    log.debug('running optimizeWallet');
     return new Promise((resolve, reject) => {
         wsm.fusionTxHash = [];
         wsm._fusionGetMinThreshold().then((res) => {
@@ -658,16 +658,19 @@ WalletShellManager.prototype.optimizeWallet = function () {
                     type: 'fusionTxCompleted',
                     data: INFO_FUSION_SKIPPED
                 });
+                log.debug(wsm.fusionTxHash);
                 return resolve(INFO_FUSION_SKIPPED);
             }
 
             log.debug(`performing fusion tx, threshold: ${res}`);
+
             return resolve(
                 wsm._fusionSendTx(res).then(() => {
                     wsm.notifyUpdate({
                         type: 'fusionTxCompleted',
                         data: INFO_FUSION_DONE
                     });
+                    log.debug(wsm.fusionTxHash);
                     return INFO_FUSION_DONE;
                 }).catch((err) => {
                     let msg = err.message.toLowerCase();
@@ -679,6 +682,8 @@ WalletShellManager.prototype.optimizeWallet = function () {
                         default:
                             break;
                     }
+                    log.debug(`fusionTx outMsg: ${outMsg}`);
+                    log.debug(wsm.fusionTxHash);
                     wsm.notifyUpdate({
                         type: 'fusionTxCompleted',
                         data: outMsg

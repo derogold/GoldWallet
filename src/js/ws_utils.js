@@ -94,7 +94,20 @@ exports.showToast = (msg, duration, elId) => {
 };
 
 /*****  MISC util ****/
-exports.arrShuffle = (arr) => {
+exports.arrShuffle = (arr, method) => {
+    method = method || 0;
+    if (method === 1) {
+        var cidx = arr.length, tmp, ridx;
+        while (0 !== cidx) {
+            ridx = Math.floor(Math.random() * cidx);
+            cidx -= 1;
+            tmp = arr[cidx];
+            arr[cidx] = arr[ridx];
+            arr[ridx] = tmp;
+        }
+        return arr;
+    }
+
     return arr.map((a) => ({ sort: Math.random(), value: a }))
         .sort((a, b) => a.sort - b.sort)
         .map((a) => a.value);
