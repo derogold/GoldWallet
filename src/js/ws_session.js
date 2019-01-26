@@ -36,7 +36,9 @@ var WalletShellSession = function () {
         configUpdated: false,
         uiStateChanged: false,
         defaultTitle: DEFAULT_TITLE,
-        debug: IS_DEBUG
+        debug: IS_DEBUG,
+        fusionStarted: false,
+        fusionProgress: false
     };
 
     // initialize
