@@ -1736,6 +1736,26 @@ a.external{
     text-decoration: underline;
 }
 
+.fusion-progress {
+    position: absolute;
+    top: 0;
+    text-align: center;
+    width: 100%;
+    z-index: 999;
+    background: #00632e;
+    height: 60px;
+    border-radius: 3px;
+    padding: 8px 0;
+}
+
+.fusion-progress progress {
+    display: block;
+    margin: 0 auto;
+    width: 45%;
+    height: 8px;
+    margin-top: .25rem;
+}
+
 @media (min-width: 1280px){
    
 }

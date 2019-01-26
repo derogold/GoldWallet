@@ -1654,6 +1654,10 @@ function handleSendTransfer() {
         if (!confirm('You are about to perform wallet optimization. This process may take a while to complete, are you sure?')) return;
         wsutil.showToast('Optimization started, your balance may appear incorrect during the process', 3000);
         FUSION_IN_PROGRESS = true;
+        // start progress
+        let progressBar = document.getElementById('fusionProgress');
+        progressBar.classList.remove('hidden');
+        wsession.set('fusionProgress', true);
         wsmanager.optimizeWallet().then(() => {
             FUSION_IN_PROGRESS = false;
         }).catch(() => {
@@ -2440,13 +2444,12 @@ ipcRenderer.on('cleanup', () => {
     wsmanager.stopSyncWorker();
     wsmanager.stopService().then(() => {
         setTimeout(function () {
-            dialog.innerHTML = 'Good bye!';
             wsmanager.terminateService(true);
             win.close();
         }, 1200);
     }).catch((err) => {
+        console.log(err);
         wsmanager.terminateService(true);
         win.close();
-        console.log(err);
     });
 });

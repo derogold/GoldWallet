@@ -630,7 +630,7 @@ WalletShellManager.prototype._fusionSendTx = function (threshold, counter) {
         let maxIter = 256;
         if (counter >= maxIter) return resolve(wsm.fusionTxHash); // stop at max iter
 
-        wtime(1200).then(() => {
+        wtime(2400).then(() => {
             // keep sending fusion tx till it hit IOOR or reaching max iter 
             log.debug(`send fusion tx, iteration: ${counter}`);
             wsm.serviceApi.sendFusionTransaction({ threshold: threshold }).then((resp) => {
@@ -640,7 +640,15 @@ WalletShellManager.prototype._fusionSendTx = function (threshold, counter) {
                     return resp;
                 }));
             }).catch((err) => {
-                return reject(new Error(err));
+                if(err) {
+                    if (err.toLowerCase().trim() === 'index is out of range') {
+                        return reject(new Error(err));
+                    }
+                }
+                counter += 1;
+                return resolve(wsm._fusionSendTx(threshold, counter).then((resp) => {
+                    return resp;
+                }));
             });
 
         });
@@ -656,8 +664,10 @@ WalletShellManager.prototype.optimizeWallet = function () {
             if (res <= 0) {
                 wsm.notifyUpdate({
                     type: 'fusionTxCompleted',
-                    data: INFO_FUSION_SKIPPED
+                    data: INFO_FUSION_SKIPPED,
+                    code: 0
                 });
+                log.debug('fusion skipped');
                 log.debug(wsm.fusionTxHash);
                 return resolve(INFO_FUSION_SKIPPED);
             }
@@ -668,8 +678,10 @@ WalletShellManager.prototype.optimizeWallet = function () {
                 wsm._fusionSendTx(res).then(() => {
                     wsm.notifyUpdate({
                         type: 'fusionTxCompleted',
-                        data: INFO_FUSION_DONE
+                        data: INFO_FUSION_DONE,
+                        code: 1
                     });
+                    log.debug('fusion done');
                     log.debug(wsm.fusionTxHash);
                     return INFO_FUSION_DONE;
                 }).catch((err) => {
@@ -686,12 +698,15 @@ WalletShellManager.prototype.optimizeWallet = function () {
                     log.debug(wsm.fusionTxHash);
                     wsm.notifyUpdate({
                         type: 'fusionTxCompleted',
-                        data: outMsg
+                        data: outMsg,
+                        code: outMsg === INFO_FUSION_SKIPPED ? 0 : 1
                     });
                     return outMsg;
                 })
             );
         }).catch((err) => {
+            log.debug('fusion error');
+            console.log(err);
             return reject((err.message));
         });
     });

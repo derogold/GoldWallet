@@ -257,3 +257,6 @@ border-bottom-right-radius: 4px !important;
     color: white;
     background-color: rgba(53, 53, 53, 0.39);
 }
+.dark .fusion-progress{
+    background: #2b2a2a;
+}

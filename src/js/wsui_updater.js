@@ -13,6 +13,8 @@ const syncDiv = document.getElementById('navbar-div-sync');
 const syncInfoBar = document.getElementById('navbar-text-sync');
 const connInfoDiv = document.getElementById('conn-info');
 
+
+
 const SYNC_STATUS_NET_CONNECTED = -10;
 const SYNC_STATUS_NET_DISCONNECTED = -50;
 const SYNC_STATUS_IDLE = -100;
@@ -198,6 +200,21 @@ function updateBalance(data) {
     balanceLockedField.innerHTML = bLocked;
     wsession.set('walletUnlockedBalance', bUnlocked);
     wsession.set('walletLockedBalance', bLocked);
+    // update fusion progress
+    const fusionProgressBar = document.getElementById('fusionProgress');
+    if (true === wsession.get('fusionProgress')) {
+        if (wsession.get('fusionStarted') && parseInt(bLocked, 10) <= 0) {
+            fusionProgressBar.classList.add('hidden');
+            wsession.set('fusionStarted', false);
+            wsession.set('fusionProgress', false);
+            wsutil.showToast('Optimization completed. You may need to repeat the process until your wallet fully optimized.', 5000);
+        } else {
+            if (parseInt(bLocked, 10) > 0) {
+                wsession.set('fusionStarted', true);
+            }
+        }
+    }
+
     let walletFile = require('path').basename(settings.get('recentWallet'));
     let wintitle = `(${walletFile}) - ${bUnlocked} ${config.assetTicker}`;
     setWinTitle(wintitle);
@@ -399,9 +416,16 @@ function updateUiState(msg) {
             if (msg.data) resetFormState(msg.data);
             break;
         case 'fusionTxCompleted':
-            let notif = 'Optimization completed';
-            if (msg.data) notif = msg.data;
-            wsutil.showToast(notif, 5000);
+            const fusionProgressBar = document.getElementById('fusionProgress');
+            if (msg.code === 0) {
+                wsession.set('fusionProgress', false);
+                fusionProgressBar.classList.add('hidden');
+                wsutil.showToast(msg.data, 5000);
+            } else {
+                wsession.set('fusionProgress', true);
+                // do nothing, just wait
+            }
+
             break;
         default:
             console.log('invalid command received by ui', msg);
