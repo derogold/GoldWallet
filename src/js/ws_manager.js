@@ -640,11 +640,18 @@ WalletShellManager.prototype._fusionSendTx = function (threshold, counter) {
                     return resp;
                 }));
             }).catch((err) => {
-                if(err) {
-                    if (err.toLowerCase().trim() === 'index is out of range') {
+                if(typeof err === 'string') {
+                    if(!err.toLocaleLowerCase().includes('index is out of range')){
+                        console.log(err);
+                        return reject(new Error(err));
+                    }
+                }else if (typeof err === 'object') {
+                    if (!err.message.toLowerCase().includes('index is out of range')) {
+                        console.log(err);
                         return reject(new Error(err));
                     }
                 }
+
                 counter += 1;
                 return resolve(wsm._fusionSendTx(threshold, counter).then((resp) => {
                     return resp;

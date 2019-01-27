@@ -1102,7 +1102,7 @@ input.path-input-button{
     box-shadow: 1px 2px 2px #afafafd4;
     text-shadow:0px 0px 1px #656565;
 /*     transition: transform 0.4s cubic-bezier(0.42, 0, 0.05, 1.32); */
-    transition: transform 0.4s ease-in-out;
+    transition: transform 0.2s ease-in-out;
     z-index:9999
 }
 
@@ -1743,10 +1743,15 @@ a.external{
     width: 100%;
     z-index: 999;
     background: #00632e;
-    height: 60px;
+    height: auto;
     border-radius: 3px;
-    padding: 8px 0;
+    padding: 10px 0;
 }
+
+.fusion-progress .fa-spin{
+    margin: 0 5px;
+}
+
 
 .fusion-progress progress {
     display: block;

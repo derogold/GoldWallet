@@ -417,12 +417,15 @@ function updateUiState(msg) {
             break;
         case 'fusionTxCompleted':
             const fusionProgressBar = document.getElementById('fusionProgress');
-            if (msg.code === 0) {
+            if (msg.code === 0) { // skipped
                 wsession.set('fusionProgress', false);
                 fusionProgressBar.classList.add('hidden');
                 wsutil.showToast(msg.data, 5000);
             } else {
+                // set progress flag
                 wsession.set('fusionProgress', true);
+                // show progress bar
+                fusionProgressBar.classList.remove('hidden');
                 // do nothing, just wait
             }
 
