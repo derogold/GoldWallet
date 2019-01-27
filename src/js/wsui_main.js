@@ -414,7 +414,7 @@ function changeSection(sectionId, isSettingRedir) {
         finalTarget = 'section-overview';
     } else if (needSynced.indexOf(targetSection) >= 0 && !isSynced) {
         // just return early
-        wsutil.showToast("Please wait until syncing process completed!");
+        wsutil.showToast("Please wait until the syncing completes!");
         return;
     } else {
         finalTarget = targetSection;
