@@ -207,7 +207,7 @@ function updateBalance(data) {
             fusionProgressBar.classList.add('hidden');
             wsession.set('fusionStarted', false);
             wsession.set('fusionProgress', false);
-            wsutil.showToast('Optimization completed. You may need to repeat the process until your wallet fully optimized.', 5000);
+            wsutil.showToast('Optimization completed. You may need to repeat the process until your wallet is fully optimized.', 5000);
         } else {
             if (parseInt(bLocked, 10) > 0) {
                 wsession.set('fusionStarted', true);
