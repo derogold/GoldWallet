@@ -30,7 +30,7 @@ const WS_VERSION = settings.get('version', 'unknown');
 const DEFAULT_WALLET_PATH = remote.app.getPath('documents');
 
 let WALLET_OPEN_IN_PROGRESS = false;
-let FUSION_IN_PROGRESS = false;
+//let FUSION_IN_PROGRESS = false;
 let COMPLETION_ADDRBOOK;
 
 /*  dom elements vars; */
@@ -368,7 +368,10 @@ function switchTab() {
     if (!isServiceReady) {
         skippedSections = ['section-send', 'section-transactions'];
         if (nextSection === 'section-overview') nextSection = 'section-welcome';
+    } else if (wsession.get('fusionProgress')) {
+        skippedSections = ['section-send'];
     }
+
 
     while (skippedSections.indexOf(nextSection) >= 0) {
         nextTab = nextTab.nextElementSibling;
@@ -398,7 +401,7 @@ function changeSection(sectionId, isSettingRedir) {
     let needServiceReady = ['section-transactions', 'section-send', 'section-overview'];
     let needServiceStopped = 'section-welcome';
     let needSynced = ['section-send'];
-    if (needSynced.indexOf(targetSection) && FUSION_IN_PROGRESS) {
+    if (needSynced.indexOf(targetSection) >= 0 && wsession.get('fusionProgress') ) {
         wsutil.showToast('Wallet optimization in progress, please wait');
         return;
     }
@@ -1651,17 +1654,24 @@ function handleSendTransfer() {
             return;
         }
 
+        if (wsession.get('fusionProgress')) {
+            wsutil.showToast('Wallet optimization in progress, please wait');
+            return;
+        }
+
         if (!confirm('You are about to perform wallet optimization. This process may take a while to complete, are you sure?')) return;
         wsutil.showToast('Optimization started, your balance may appear incorrect during the process', 3000);
-        FUSION_IN_PROGRESS = true;
+        //FUSION_IN_PROGRESS = true;
         // start progress
         let progressBar = document.getElementById('fusionProgress');
         progressBar.classList.remove('hidden');
         wsession.set('fusionProgress', true);
         wsmanager.optimizeWallet().then(() => {
-            FUSION_IN_PROGRESS = false;
+            //FUSION_IN_PROGRESS = false;
+            // do nothing, just wait
         }).catch(() => {
-            FUSION_IN_PROGRESS = false;
+            //FUSION_IN_PROGRESS = false;
+            // do nothing, just wait
         });
         return; // just return, it will notify when its done.
     });
@@ -2417,6 +2427,8 @@ function fetchNodeInfo() {
 
 // spawn event handlers
 document.addEventListener('DOMContentLoaded', () => {
+    // remove any leftover wallet config
+    try { fs.unlinkSync(wsession.get('walletConfig')); } catch (e) { }
     initHandlers();
     fetchNodeInfo();
     showInitialPage();
@@ -2445,11 +2457,13 @@ ipcRenderer.on('cleanup', () => {
     wsmanager.stopService().then(() => {
         setTimeout(function () {
             wsmanager.terminateService(true);
+            try { fs.unlinkSync(wsession.get('walletConfig')); } catch (e) { }
             win.close();
         }, 1200);
     }).catch((err) => {
         console.log(err);
         wsmanager.terminateService(true);
+        try { fs.unlinkSync(wsession.get('walletConfig')); } catch (e) { }
         win.close();
     });
 });
