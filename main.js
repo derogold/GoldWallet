@@ -14,6 +14,7 @@ const config = require('./src/js/ws_config');
 const IS_DEV = (process.argv[1] === 'dev' || process.argv[2] === 'dev');
 const IS_DEBUG = IS_DEV || process.argv[1] === 'debug' || process.argv[2] === 'debug';
 const LOG_LEVEL = IS_DEBUG ? 'debug' : 'warn';
+const WALLET_CFGFILE = path.join(app.getPath('userData'), 'wconfig.txt');
 
 log.transports.console.level = LOG_LEVEL;
 log.transports.file.level = LOG_LEVEL;
@@ -317,6 +318,7 @@ function initSettings() {
             settings.set(k, DEFAULT_SETTINGS[k]);
         }
     });
+    settings.set('service_password', crypto.randomBytes(32).toString('hex'));
     settings.set('version', WALLETSHELL_VERSION);
     serviceBinCheck();
 }
@@ -376,6 +378,7 @@ app.on('activate', () => {
 
 process.on('uncaughtException', function (e) {
     log.error(`Uncaught exception: ${e.message}`);
+    try { fs.unlinkSync(WALLET_CFGFILE); } catch (e) { }
     process.exit(1);
 });
 
@@ -384,6 +387,8 @@ process.on('beforeExit', (code) => {
 });
 
 process.on('exit', (code) => {
+    // just to be sure
+    try { fs.unlinkSync(WALLET_CFGFILE); } catch (e) { }
     log.debug(`exit with code: ${code}`);
 });
 

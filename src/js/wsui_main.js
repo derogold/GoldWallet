@@ -2427,6 +2427,8 @@ function fetchNodeInfo() {
 
 // spawn event handlers
 document.addEventListener('DOMContentLoaded', () => {
+    // remove any leftover wallet config
+    try { fs.unlinkSync(wsession.get('walletConfig')); } catch (e) { }
     initHandlers();
     fetchNodeInfo();
     showInitialPage();
@@ -2455,11 +2457,13 @@ ipcRenderer.on('cleanup', () => {
     wsmanager.stopService().then(() => {
         setTimeout(function () {
             wsmanager.terminateService(true);
+            try { fs.unlinkSync(wsession.get('walletConfig')); } catch (e) { }
             win.close();
         }, 1200);
     }).catch((err) => {
         console.log(err);
         wsmanager.terminateService(true);
+        try { fs.unlinkSync(wsession.get('walletConfig')); } catch (e) { }
         win.close();
     });
 });
