@@ -238,10 +238,6 @@ function storeNodeList(pnodes) {
             let item = `${element.url}:${element.port}`;
             validNodes.push(item);
         });
-        // remove old settings format if exist
-        try { settings.delete('pubnodes_checked'); } catch (e) { }
-        // remove tested nodes list, forcing re-test
-        settings.delete('pubnodes_tested');
     }
     if (validNodes.length) settings.set('pubnodes_data', validNodes);
 }
@@ -357,6 +353,11 @@ app.on('ready', () => {
             storeNodeList(false); // from local cache
         }
     }
+
+    // remove old settings format if exist
+    try { settings.delete('pubnodes_checked'); } catch (e) { }
+    // remove tested nodes list, forcing re-test every start up
+    settings.delete('pubnodes_tested');
 
     createWindow();
     // try to target center pos of primary display

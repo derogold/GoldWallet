@@ -2355,10 +2355,10 @@ function initKeyBindings() {
     });
 }
 
-function fetchWait(url, timeout = 3000) {
+function fetchWait(url, timeout) {
     let controller = new AbortController();
     let signal = controller.signal;
-    timeout = timeout || 3000;
+    timeout = timeout || 4000;
     return Promise.race([
         fetch(url, { signal }),
         new Promise((_, reject) =>
@@ -2414,7 +2414,7 @@ function fetchNodeInfo() {
         });
     });
 
-    async.parallelLimit(reqs, 8, function (error, results) {
+    async.parallelLimit(reqs, 6, function (error, results) {
         if (results) {
             let res = results.filter(val => val);
             if (res.length) {
