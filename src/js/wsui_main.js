@@ -401,7 +401,7 @@ function changeSection(sectionId, isSettingRedir) {
     let needServiceReady = ['section-transactions', 'section-send', 'section-overview'];
     let needServiceStopped = 'section-welcome';
     let needSynced = ['section-send'];
-    if (needSynced.indexOf(targetSection) >= 0 && wsession.get('fusionProgress') ) {
+    if (needSynced.indexOf(targetSection) >= 0 && wsession.get('fusionProgress')) {
         wsutil.showToast('Wallet optimization in progress, please wait');
         return;
     }
@@ -470,7 +470,7 @@ function initNodeSelection(nodeAddr) {
     // custom node list
     let customNodes = settings.get('pubnodes_custom', []);
     // conntested node list
-    let aliveNodes = settings.get('pubnodes_checked', []);
+    let aliveNodes = settings.get('pubnodes_tested', []);
     // remove node update progress, replace current list
     walletOpenInputNode.removeAttribute('disabled');
     walletOpenSelectBox.dataset.loading = "0";
@@ -517,24 +517,26 @@ function initNodeSelection(nodeAddr) {
 
     if (aliveNodes.length) {
         aliveNodes.forEach(node => {
-            let opt = document.createElement('option');
-            opt.text = node.label;
-            opt.value = node.host;
-
-            let fakeOpt = document.createElement('li');
-            fakeOpt.setAttribute('class', 'fake-options');
-            fakeOpt.dataset.value = node.host;
             let all_labels = node.label.split('|');
-            fakeOpt.innerHTML = `<span class="node-address">${all_labels[0].trim()}</span> <span class="node-info">(${all_labels[1].trim()})</span>`;
+            if (all_labels.length === 2) {
+                let opt = document.createElement('option');
+                opt.text = node.label;
+                opt.value = node.host;
 
-            if (node.host === selected) {
-                opt.setAttribute('selected', true);
-                fakeOpt.classList.add('selected');
-                selectedLabel = fakeOpt.innerHTML;
+                let fakeOpt = document.createElement('li');
+                fakeOpt.setAttribute('class', 'fake-options');
+                fakeOpt.dataset.value = node.host;
+                fakeOpt.innerHTML = `<span class="node-address">${all_labels[0].trim()}</span> <span class="node-info">(${all_labels[1].trim()})</span>`;
+
+                if (node.host === selected) {
+                    opt.setAttribute('selected', true);
+                    fakeOpt.classList.add('selected');
+                    selectedLabel = fakeOpt.innerHTML;
+                }
+
+                walletOpenInputNode.add(opt, null);
+                fakeSelect.appendChild(fakeOpt);
             }
-
-            walletOpenInputNode.add(opt, null);
-            fakeSelect.appendChild(fakeOpt);
         });
     }
 
@@ -2381,7 +2383,7 @@ function fetchNodeInfo() {
     walletOpenSelectBox.dataset.loading = "1";
 
     window.ELECTRON_ENABLE_SECURITY_WARNINGS = false;
-    let aliveNodes = settings.get('pubnodes_checked', []);
+    let aliveNodes = settings.get('pubnodes_tested', []);
     if (aliveNodes.length) {
         initNodeSelection(settings.get('node_address'));
         return aliveNodes;
@@ -2416,7 +2418,7 @@ function fetchNodeInfo() {
         if (results) {
             let res = results.filter(val => val);
             if (res.length) {
-                settings.set('pubnodes_checked', res);
+                settings.set('pubnodes_tested', res);
             }
             initNodeSelection();
         } else {

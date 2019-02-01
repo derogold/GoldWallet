@@ -238,7 +238,10 @@ function storeNodeList(pnodes) {
             let item = `${element.url}:${element.port}`;
             validNodes.push(item);
         });
-        settings.delete('pubnodes_checked');
+        // remove old settings format if exist
+        try { settings.delete('pubnodes_checked'); } catch (e) { }
+        // remove tested nodes list, forcing re-test
+        settings.delete('pubnodes_tested');
     }
     if (validNodes.length) settings.set('pubnodes_data', validNodes);
 }
