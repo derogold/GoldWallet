@@ -4,7 +4,8 @@ const crypto = require('crypto');
 const { nativeImage } = require('electron');
 const qr = require('qr-image');
 const config = require('./ws_config');
-
+const fnv = require('fnv-plus');
+const GCM = require('node-crypto-gcm').GCM;
 
 const ADDRESS_REGEX_STR = `^${config.addressPrefix}(?=[aA-zZ0-9]*$)(?:.{${config.addressLength - config.addressPrefix.length}}|.{${config.integratedAddressLength - config.addressPrefix.length}})$`;
 const ADDRESS_REGEX = new RegExp(ADDRESS_REGEX_STR);
@@ -141,6 +142,11 @@ exports.b2sSum = (inputStr) => {
     return crypto.createHash('blake2s256')
         .update(inputStr)
         .digest('hex');
+};
+
+exports.fnvhash = (inputstr) => {
+    if (!inputstr) return false;
+    return fnv.hash(inputstr, 64).str();
 };
 
 exports.genQrDataUrl = (inputStr) => {
@@ -287,4 +293,50 @@ exports.validateWalletPath = (fullpath, defaultDir, isExisting) => {
         let finalPath = path.normalize(fullpath);
         return resolve(finalPath);
     });
+};
+
+exports.loadPrivateAddressBook = (path, password) => {
+    let rawcontents = '';
+    try {
+        rawcontents = fs.readFileSync(path, 'utf8');
+    } catch (e) {
+        return new Error('Unable to load specified file');
+    }
+
+    let jdata = null;
+    try {
+        jdata = JSON.parse(rawcontents);
+    } catch (e) {
+        return new Error("Invalid or broken address book file");
+    }
+
+    if (!jdata.hasOwnProperty('name') || !jdata.hasOwnProperty('data')) {
+        return new Error("Invalid or broken address book file");
+    }
+    if (typeof jdata.name !== "string" || typeof jdata.data !== "string") {
+        return new Error("Invalid or broken address book file");
+    }
+    let pref = '$w$s$a$b';
+    if (!jdata.data.startsWith(pref)) {
+        return new Error("Invalid or broken address book file");
+    }
+
+    let gcm = new GCM(password, config.addressBookCipherConfig);
+    let abdata = gcm.decrypt(jdata.data.replace(pref, ''));
+    if (null === abdata) {
+        return new Error("Invalid password");
+    }
+
+    return {
+        name: jdata.name,
+        data: JSON.parse(abdata)
+    };
+};
+
+exports.savePrivateAddressBook = (path, jsonData, password) => {
+    let gcm = new GCM(password, config.addressBookCipherConfig);
+    let pref = '$w$s$a$b';
+    let edata = gcm.encrypt(jsonData.data);
+    jsonData.data = `${pref}${edata}`;
+    fs.writeFileSync(path, JSON.stringify(jsonData));
 };

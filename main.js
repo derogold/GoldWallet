@@ -72,6 +72,11 @@ function createWindow() {
         show: false,
         backgroundColor: bgColor,
         center: true,
+        webPreferences: {
+            // allow code inside this window to use use native window.open()
+            nativeWindowOpen: true,
+            nodeIntegrationInWorker: true,
+        },
     };
 
     win = splash.initSplashScreen({

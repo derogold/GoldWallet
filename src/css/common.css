@@ -195,7 +195,9 @@ body {
     text-shadow: 0px -1px 1px #333;
     margin-top: 0;
 }
-
+#section-addressbook h2.title{
+    margin-bottom: 0.5rem;
+}
 /* Text */
 .text-block {
     padding: 12px 10px;
@@ -207,6 +209,19 @@ body {
     color: white;
     /* background-color: rgba(0, 0, 0, 0.18); */
     background-color: rgba(53, 53, 53, 0.39);
+}
+
+.ab-tools .text-block{
+    font-size: .85rem;
+    margin: .25rem 0 0 0;
+    padding: 10px 12px;
+}
+.ab-tools .text-block option{
+    font-size:.85rem;
+}
+
+.ab-tools .inline-tool{
+    font-size: .85rem;
 }
 
 input, textarea, select{
@@ -253,9 +268,18 @@ label.select-label:hover:after{
 }
 */
 select.text-block{
-    -webkit-appearance: none;
+    /* -webkit-appearance: none; */
     cursor: pointer;
 }
+
+.ab-tools select.text-block.wtl{
+    /* color:red; */
+    display: inline-block !important;
+    width: 89%;
+    padding: 10px 10px 8px 10px;
+    margin-top: 0px !important;
+}
+
 select.text-block * {
     
 }
@@ -575,6 +599,9 @@ span.form-msg{
     max-width: 1028px;
     margin: 0 auto;
 }
+#section-addressbook .section-contents{
+    /* padding: 0.5rem 3rem 0 3rem; */
+}
 
 /** overview styles */
 .welcome-box{
@@ -673,6 +700,152 @@ text-align: center;
     vertical-align:top;
 }
 
+#abGrid {
+    max-height: 330px;
+    overflow:hidden;
+    margin: 0;
+    padding: 2px;
+    max-width: 98.5% !important;
+    border-spacing: 3px;
+    background: rgba(255,255,255,0.2);
+    border: none;
+    border-radius: 3px;
+}
+
+#abGrid .ag-paging-panel{
+    display:block !important;
+}
+
+#abGrid .ag-paging-row-summary-panel,
+#abGrid .ag-paging-page-summary-panel{
+    display:none;
+}
+
+#abGrid .ag-header{
+    display: flex;
+    background: rgba(0,0,0,0.5);
+    cursor:pointer;
+    border-bottom: 3px double #7b7b7b8a;
+}
+
+#abGrid .ag-header-cell-text{
+    color: #f5f5f5;
+    text-shadow: 0px 0px 0px #000;
+}
+#abGrid .ag-header-cell-text:hover{
+    color:#fff;
+    text-shadow: 0px 0px 0px #333;
+}
+
+#abGrid .ag-header-cell,
+#abGrid .ag-cell{
+    border-right: 1px solid #50505080;
+    border-bottom: 1px dashed #7b7b7b8a;
+    padding: 0.25rem .5rem;
+    line-height:normal !important;
+}
+
+#abGrid .ag-header-cell:last-child{
+    border-right:none;
+}
+
+#abGrid *:focus{
+    outline: none;
+}
+
+
+#abGrid .ag-row-focus{
+    background:rgba(175, 175, 175, 0.5);
+}
+
+#abGrid .ag-row{
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+#abGrid .ag-row-odd {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+#abGrid .ag-row-even {
+    background-color: rgba(0, 0, 0, 0.35);
+    
+}
+
+#abGrid .ag-row:hover,
+#abGrid .ag-row-selected{
+    background-color: #4848488a !important;
+    text-shadow:0px 0px 1px #000;
+}
+#abGrid .ag-selection-checkbox,
+#abGrid .ag-checkbox-label{
+    margin-right: 0.25rem;
+}
+#abGrid .ag-selection-checkbox{
+    /* padding-top:0.25rem; */
+    /* display: inline-block; */
+    /* border:1px solid red; */
+}
+#abGrid .ag-cell-value{
+
+}
+
+#abGrid .ag-header-cell-sorted-asc .ag-header-cell-text:after{
+    content:'\2191';
+    padding:  0 0 0 4px;
+    font-size:smaller;
+    bottom: 3px;
+    position:relative;
+}
+#abGrid .ag-header-cell-sorted-desc .ag-header-cell-text:after{
+    content:'\2193';
+    padding:  0 0 0 4px;
+    font-size:smaller;
+    bottom: 3px;
+    position:relative;
+}
+
+#abGrid .ag-sort-ascending-icon,
+#abGrid .ag-sort-descending-icon{
+    display: none;
+    visibility:hidden;
+}
+#abGrid .ag-icon-checkbox-checked,
+#abGrid .ag-icon-checkbox-unchecked{
+    background-size: 19px 19px;
+    height: 18px;
+    width: 18px;
+    border: none;
+    opacity: 0.75
+}
+
+#abGrid .ag-row .ag-icon-checkbox-checked,
+#abGrid .ag-row .ag-icon-checkbox-unchecked{
+    float: left;
+    margin-right: 4px;
+}
+
+#abRowCount {
+    padding: 1px 6px;
+    background:rgba(0,0,0,0.5);
+    display:inline-block;
+    border-radius:3px;
+    color: #c3c3c3;
+    border: 1px solid rgba(0,0,0,0.5);
+    box-shadow: 1px 2px 2px #333;
+}
+
+#abRowCount.ab-delselected{
+    cursor: pointer;
+    box-shadow: 1px 2px 2px #333;
+    text-shadow: 1px 1px 0px #000;
+}
+
+#abRowCount.ab-delselected:hover{
+    color: #fff;
+    box-shadow: 1px 2px 2px #0a0a0a;
+    border: 1px solid #c3c3c3;
+}
+
 /* Checkbox */
 .checkbox-container {
     display: inline-block;
@@ -753,6 +926,9 @@ h4.input-required:after{
     clear: both;
     position: relative;
 }
+.ab-tools .input-wrap{
+    margin: 0;
+}
 
 .input-wrap.button-wrap{
     text-align: center;
@@ -822,6 +998,24 @@ h4.input-required:after{
     float:right;
     clear: both;
 }
+.ab-tools .input-extra-link{
+    display: inline-block;
+    color: rgba(245, 245, 245, 0.64);
+    float: none;
+    text-decoration: none;
+    padding: 7px 0 0 0.15rem;
+    font-size: 1.2rem;
+}
+
+.ab-tools .input-extra-link:focus{
+    outline: none;
+}
+.ab-tools .input-extra-link:active,
+.ab-tools .input-extra-link:hover{
+    color: #fff;
+    text-shadow: 1px 1px 1px #000;
+}
+
 
 #sendMaxAmount{
     cursor: pointer;
@@ -904,6 +1098,19 @@ dialog[open]{
     border-radius:4px;
 }
 
+span.dialog-close{
+    display:inline-block;
+    position: absolute;
+    top: 4px;
+    right: 8px;
+    cursor: pointer;
+    color: #dcdcdcba;
+    font-size:1.25rem
+}
+span.dialog-close:hover,
+span.dialog-close:active{
+    color: #fff;
+}
 .default-dialog.dialog-warning{
     background: #d67c2e;
 }
@@ -1135,7 +1342,9 @@ input.path-input-button{
 
 .scroll-list-wrap{
     min-height: 300px;
+    /* max-height: 350px; */
     margin-bottom: 1rem;
+    overflow: hidden;
 }
 
 .list-tables .search,
@@ -1314,13 +1523,15 @@ input.path-input-button{
 .addressBookDetail-data dd,
 .transferDetail dd
 {
-    margin: 0 0 1rem 0;
+    margin: .25rem 0 1rem 0;
     overflow:hidden;
     text-overflow: ellipsis;
-    /* font-weight:600; */
     color: #ffffff;
     text-shadow: -1px -1px 1px #0a0a0a82;
-    /* font-size: 1rem; */
+    padding: 4px 8px;
+    border-radius: 3px;
+    background: #3333339e;
+    box-shadow: inset 0px 0px 5px #7b7b7b;
 }
 
 .transferDetail{
@@ -1565,7 +1776,7 @@ progress.light{
 
 .action-buttons{
     position: fixed;
-    bottom: 2.5em;
+    bottom: 2.05em;
     left: 0;
     width: 100%;
     text-align: center;
@@ -1575,6 +1786,11 @@ progress.light{
     display: grid;
     width:100%;
     margin-bottom: 1.2rem;
+}
+
+.splitted-area.ab-tools{
+    margin-bottom: .5rem;
+    max-width:99%;
 }
 
 .splitted-2{

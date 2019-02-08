@@ -22,7 +22,7 @@ const ERROR_WALLET_EXEC = `Failed to start ${config.walletServiceBinaryFilename}
 const ERROR_WALLET_PASSWORD = 'Failed to load your wallet, please check your password';
 const ERROR_WALLET_IMPORT = 'Import failed, please check that you have entered all information correctly';
 const ERROR_WALLET_CREATE = 'Wallet can not be created, please check your input and try again';
-const ERROR_RPC_TIMEOUT = 'Unable to communicate with selected node, please try again using different node';
+const ERROR_RPC_TIMEOUT = 'Unable to communicate with selected node, please try again in a few seconds or switch to another node address';
 const INFO_FUSION_DONE = 'Wallet optimization completed, your balance may appear incorrect for a while.';
 const INFO_FUSION_SKIPPED = 'Wallet already optimized. No further optimization is needed.';
 const ERROR_FUSION_FAILED = 'Unable to optimize your wallet, please try again in a few seconds';
@@ -238,8 +238,8 @@ WalletShellManager.prototype._spawnService = function (walletFile, password, onE
         if (onError) onError(ERROR_WALLET_EXEC);
         log.error(`${config.walletServiceBinaryFilename} is not running`);
         // remove config when failed
-        try {fs.unlinkSync(wsession.get('walletConfig'));} catch (e) { }
-        
+        try { fs.unlinkSync(wsession.get('walletConfig')); } catch (e) { }
+
         return false;
     }
 
@@ -651,12 +651,12 @@ WalletShellManager.prototype._fusionSendTx = function (threshold, counter) {
                     return resp;
                 }));
             }).catch((err) => {
-                if(typeof err === 'string') {
-                    if(!err.toLocaleLowerCase().includes('index is out of range')){
+                if (typeof err === 'string') {
+                    if (!err.toLocaleLowerCase().includes('index is out of range')) {
                         console.log(err);
                         return reject(new Error(err));
                     }
-                }else if (typeof err === 'object') {
+                } else if (typeof err === 'object') {
                     if (!err.message.toLowerCase().includes('index is out of range')) {
                         console.log(err);
                         return reject(new Error(err));
@@ -723,6 +723,7 @@ WalletShellManager.prototype.optimizeWallet = function () {
                 })
             );
         }).catch((err) => {
+            // todo handle this differently!
             log.debug('fusion error');
             console.log(err);
             return reject((err.message));
@@ -752,7 +753,7 @@ WalletShellManager.prototype.networkStateUpdate = function (state) {
                 try { process.kill(pid, 'SIGKILL'); } catch (e) { }
                 // remove config
                 try { fs.unlinkSync(wsession.get('walletConfig')); } catch (e) { }
-                
+
             }
             setTimeout(() => {
                 log.debug(`respawning ${config.walletServiceBinaryFilename}`);

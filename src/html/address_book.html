@@ -2,40 +2,33 @@
         <section class="section" id="section-addressbook">
             <div class="section-contents">
                 <div class="div-title">
-                    <h2 class="title">Address Book</h2>
+                        <h2 class="title">Address Book</h2>
                 </div>
                 <div class="div-addressbook-input default-inputs">
-                    <div class="scroll-list-wrap addressbook-list list-tables">
-                        <div id="addressbooks">
-                            <input tabindex="0" class="text-block search noenter" placeholder="Search by name, wallet address or payment id" />
-                            <div class="address-table-wrapper">
-                            <table class="custom-table addressbook-table" id="addressbook-table">
-                            <thead>
-                                <tr>
-                                    <th class="sort" data-sort="addressName">Name</th>
-                                    <th class="sort" data-sort="addressWallet">Wallet Address</th>
-                                    <th class="sort" data-sort="addressPaymentId">Payment ID</th>
-                                </tr>
-                            </thead>
-                              <tbody class="list">
-                                <tr title="click for detail..." class="addressbook-item" 
-                                    data-hash="fake-hash"
-                                     data-nameval="x" 
-                                     data-walletval="x" 
-                                    data-paymentidval="x"
-                                    data-qrcodeval="x">
-                                  <td class="addressName"></td>
-                                  <td class="addressWallet"></td>
-                                  <td class="addressPaymentId"></td>
-                                </tr>
-                              </tbody>
-                            </table>
+                    <div class="splitted-area splitted-2 ab-tools">
+                        <div class="splitted-content first">
+                            <div class="input-wrap">
+                                <h4 class="text-spaced input-required">Search</h4>
+                                <input tabindex="0" id="ab-search" class="text-block search noenter" placeholder="Search by name, wallet address or payment id" />
                             </div>
-                            <ul class="pagination"></ul>
-                          </div>
+                        </div>                            
+                        <div class="splitted-content last">
+                            <div class="input-wrap">
+                                <h4 class="text-spaced input-required">Select address book</h4>
+                                <select id="addressBookSelector" name="loadedAddressBook" class="text-block wtl">
+                                    <option value="default">Default/Builtin Address Book</option>
+                                </select>
+                                <a href="#" tabindex="0" id="addAddressBook" class="input-extra-link" title="Create new address book">
+                                    <i class="fas fa-plus-circle"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="scroll-list-wrap addressbook-list list-tables">
+                        <div id="abGrid" class="ag-theme-balham ab-table-wrapper  ab-list-table" style="height: 428px;width:100%;">
+                        </div>
                     </div>
                 </div>
-
                 <!-- <div class="input-wrap button-wrap" style="margin-top: 0;"> -->
                 <div class="action-buttons">
                     <button type="button" class="form-bt button-green" data-section="section-addressbook-add">Add New Entry</button>

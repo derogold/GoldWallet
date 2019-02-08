@@ -1,5 +1,4 @@
 /*jshint bitwise: false*/
-/* globals List */
 /* global AbortController */
 const os = require('os');
 const net = require('net');
@@ -18,20 +17,25 @@ const AgGrid = require('ag-grid-community');
 const wsmanager = new WalletShellManager();
 const wsession = new WalletShellSession();
 const settings = new Store({ name: 'Settings' });
-const abook = new Store({
-    name: 'AddressBook',
-    encryptionKey: config.addressBookObfuscateEntries ? config.addressBookObfuscationKey : null
-});
+const WalletShellAddressbook = require('./ws_addressbook');
+// const abook = new Store({
+//     name: 'AddressBook',
+//     encryptionKey: config.addressBookObfuscateEntries ? config.addressBookObfuscationKey : null
+// });
+
+const ADDRESS_BOOK_DIR = remote.app.getPath('userData');
+const ADDRESS_BOOK_DEFAULT_PATH = path.join(ADDRESS_BOOK_DIR, '/SharedAddressBook.json');
+let addressBook = new WalletShellAddressbook(ADDRESS_BOOK_DEFAULT_PATH);
 
 const win = remote.getCurrentWindow();
 const Menu = remote.Menu;
-
 const WS_VERSION = settings.get('version', 'unknown');
 const DEFAULT_WALLET_PATH = remote.app.getPath('documents');
 
+
 let WALLET_OPEN_IN_PROGRESS = false;
 //let FUSION_IN_PROGRESS = false;
-let COMPLETION_ADDRBOOK;
+//let COMPLETION_ADDRBOOK;
 
 /*  dom elements vars; */
 // main section link
@@ -60,6 +64,9 @@ let addressBookInputWallet;
 let addressBookInputPaymentId;
 let addressBookInputUpdate;
 let addressBookButtonSave;
+// new abook
+let addressBookButtonAdd;
+let addressBookSelector;
 // open wallet page
 let walletOpenInputPath;
 let walletOpenInputPassword;
@@ -153,7 +160,8 @@ function populateElementVars() {
     addressBookInputPaymentId = document.getElementById('input-addressbook-paymentid');
     addressBookInputUpdate = document.getElementById('input-addressbook-update');
     addressBookButtonSave = document.getElementById('button-addressbook-save');
-
+    addressBookButtonAdd = document.getElementById('addAddressBook');
+    addressBookSelector = document.getElementById('addressBookSelector');
     // open wallet page
     walletOpenInputPath = document.getElementById('input-load-path');
     walletOpenInputPassword = document.getElementById('input-load-password');
@@ -301,25 +309,26 @@ function showIntegratedAddressForm() {
     if (dialog.hasAttribute('open')) dialog.close();
 
     let iaform = `<div class="transaction-panel">
-    <h4>Generate Integrated Address:</h4>
-    <div class="input-wrap">
-    <label>Wallet Address</label>
-    <textarea id="genInputAddress" class="default-textarea" placeholder="Required, put any valid ${config.assetTicker} address..">${ownAddress}</textarea>
-    </div>
-    <div class="input-wrap">
-    <label>Payment Id (<a id="makePaymentId" class="wallet-tool inline-tool" title="generate random payment id...">generate</a>)</label>
-    <input id="genInputPaymentId" type="text" required="required" class="text-block" placeholder="Required, enter a valid payment ID, or click generate to get random ID" />
-    </div>
-    <div class="input-wrap">
-    <textarea data-cplabel="Integrated address" placeholder="Fill the form &amp; click generate, integrated address will appear here..." rows="3" id="genOutputIntegratedAddress" class="default-textarea ctcl" readonly="readonly"></textarea>
-    </div>
-    <div class="input-wrap">
-        <span class="form-ew form-msg text-spaced-error hidden" id="text-gia-error"></span>
-    </div>
-    <div class="div-panel-buttons">
-        <button id="doGenIntegratedAddr" type="button" class="button-green dialog-close-default">Generate</button>
-        <button  data-target="#ab-dialog" type="button" class="button-gray dialog-close-default">Close</button>
-    </div>
+        <h4>Generate Integrated Address:</h4>
+        <div class="input-wrap">
+        <label>Wallet Address</label>
+        <textarea id="genInputAddress" class="default-textarea" placeholder="Required, put any valid ${config.assetTicker} address..">${ownAddress}</textarea>
+        </div>
+        <div class="input-wrap">
+        <label>Payment Id (<a id="makePaymentId" class="wallet-tool inline-tool" title="generate random payment id...">generate</a>)</label>
+        <input id="genInputPaymentId" type="text" required="required" class="text-block" placeholder="Required, enter a valid payment ID, or click generate to get random ID" />
+        </div>
+        <div class="input-wrap">
+        <textarea data-cplabel="Integrated address" placeholder="Fill the form &amp; click generate, integrated address will appear here..." rows="3" id="genOutputIntegratedAddress" class="default-textarea ctcl" readonly="readonly"></textarea>
+        </div>
+        <div class="input-wrap">
+            <span class="form-ew form-msg text-spaced-error hidden" id="text-gia-error"></span>
+        </div>
+        <div class="div-panel-buttons">
+            <button id="doGenIntegratedAddr" type="button" class="button-green dialog-close-default">Generate</button>
+            <button  data-target="#ab-dialog" type="button" class="button-gray dialog-close-default">Close</button>
+        </div>
+    </div>    
     `;
     dialog.innerHTML = iaform;
     dialog.showModal();
@@ -464,7 +473,7 @@ function changeSection(sectionId, isSettingRedir) {
 function initNodeSelection(nodeAddr) {
     let forceNew = nodeAddr ? true : false;
     if (forceNew) settings.set('node_address', nodeAddr);
-
+    walletOpenInputNode.dataset.updating = 0;
     // selected node
     let selected = settings.get('node_address');
     // custom node list
@@ -585,47 +594,6 @@ function initSettingVal(values) {
         settings.set('pubnodes_custom', cnodes);
     }
 }
-// address book completions
-function initAddressCompletion() {
-    var nodeAddress = [];
-
-    Object.keys(abook.get()).forEach((key) => {
-        let et = abook.get(key);
-        nodeAddress.push(`${et.name}###${et.address}###${(et.paymentId ? et.paymentId : '')}`);
-    });
-
-    try {
-        if (COMPLETION_ADDRBOOK) COMPLETION_ADDRBOOK.destroy();
-    } catch (e) {
-        console.log(e);
-    }
-
-    COMPLETION_ADDRBOOK = new autoComplete({
-        selector: 'input[id="input-send-address"]',
-        minChars: 1,
-        cache: false,
-        source: function (term, suggest) {
-            term = term.toLowerCase();
-            var choices = nodeAddress;
-            var matches = [];
-            for (var i = 0; i < choices.length; i++)
-                if (~choices[i].toLowerCase().indexOf(term)) matches.push(choices[i]);
-            suggest(matches);
-        },
-        renderItem: function (item, search) {
-            search = search.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-            var re = new RegExp("(" + search.split(' ').join('|') + ")", "gi");
-            var spl = item.split("###");
-            var wname = spl[0];
-            var waddr = spl[1];
-            var wpayid = spl[2];
-            return `<div class="autocomplete-suggestion" data-paymentid="${wpayid}" data-val="${waddr}">${wname.replace(re, "<b>$1</b>")}<br><span class="autocomplete-wallet-addr">${waddr.replace(re, "<b>$1</b>")}<br>Payment ID: ${(wpayid ? wpayid.replace(re, "<b>$1</b>") : 'N/A')}</span></div>`;
-        },
-        onSelect: function (e, term, item) {
-            document.getElementById('input-send-payid').value = item.getAttribute('data-paymentid');
-        }
-    });
-}
 
 // generic form message reset
 function formMessageReset() {
@@ -651,22 +619,6 @@ function formMessageSet(target, status, txt) {
     }
 }
 
-// sample address book, only on first use
-function insertSampleAddresses() {
-    let flag = 'addressBookFirstUse';
-    if (!settings.get(flag, true)) return;
-    const sampleData = config.addressBookSampleEntries;
-    if (sampleData && Array.isArray(sampleData)) {
-        sampleData.forEach((item) => {
-            let ahash = wsutil.b2sSum(item.address + item.paymentId);
-            let aqr = wsutil.genQrDataUrl(item.address);
-            item.qrCode = aqr;
-            abook.set(ahash, item);
-        });
-    }
-    settings.set(flag, false);
-    initAddressCompletion();
-}
 // utility: blank tx filler
 function setTxFiller(show) {
     show = show || false;
@@ -687,7 +639,6 @@ function showInitialPage() {
     // other initiations here
     formMessageReset();
     initSettingVal(); // initial settings value
-    initAddressCompletion();
 
     // no more first RUN :-)
     // if (!settings.has('firstRun') || settings.get('firstRun') !== 0) {
@@ -739,127 +690,205 @@ function handleSettings() {
     });
 }
 
-function handleAddressBook() {
-    function listAddressBook(force) {
-        force = force || false;
-        insertSampleAddresses();
-        let currentLength = document.querySelectorAll('.addressbook-item:not([data-hash="fake-hash"])').length;
-        let abookLength = abook.size;
-        let perPage = 9;
-
-        if (currentLength >= abookLength && !force) return;
-
-        let listOpts = {
-            valueNames: [
-                { data: ['hash', 'nameval', 'walletval', 'paymentidval', 'qrcodeval'] },
-                'addressName', 'addressWallet', 'addressPaymentId'
-            ],
-            indexAsync: true
-        };
-
-        if (abookLength > perPage) {
-            listOpts.page = perPage;
-            listOpts.pagination = true;
-        }
-
-        const addressList = new List('addressbooks', listOpts);
-        addressList.clear();
-        Object.keys(abook.get()).forEach((key) => {
-            let et = abook.get(key);
-            addressList.add({
-                hash: key,
-                addressName: et.name,
-                addressWallet: et.address,
-                addressPaymentId: et.paymentId || '-',
-                nameval: et.name,
-                walletval: et.address,
-                paymentidval: et.paymentId || '-',
-                qrcodeval: et.qrCode || ''
-            });
-        });
-
-        addressList.remove('hash', 'fake-hash');
+// address book completions
+function initAddressCompletion(data) {
+    var addresses = [];
+    if (data) {
+        addresses = Object.entries(data).map(([k, v]) => `${v.name}###${v.address}###${v.paymentId ? v.paymentId : ''}`);
     }
 
-    function displayAddressBookEntry() {
+    try {
+        if (window.COMPLETION_ADDRBOOK) window.COMPLETION_ADDRBOOK.destroy();
+    } catch (e) {
+        console.log(e);
+    }
+
+    window.COMPLETION_ADDRBOOK = new autoComplete({
+        selector: 'input[id="input-send-address"]',
+        minChars: 1,
+        cache: false,
+        source: function (term, suggest) {
+            term = term.toLowerCase();
+            var choices = addresses;
+            var matches = [];
+            for (var i = 0; i < choices.length; i++)
+                if (~choices[i].toLowerCase().indexOf(term)) matches.push(choices[i]);
+            suggest(matches);
+        },
+        renderItem: function (item, search) {
+            search = search.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+            var re = new RegExp("(" + search.split(' ').join('|') + ")", "gi");
+            var spl = item.split("###");
+            var wname = spl[0];
+            var waddr = spl[1];
+            var wpayid = spl[2];
+            return `<div class="autocomplete-suggestion" data-paymentid="${wpayid}" data-val="${waddr}">${wname.replace(re, "<b>$1</b>")}<br><span class="autocomplete-wallet-addr">${waddr.replace(re, "<b>$1</b>")}<br>Payment ID: ${(wpayid ? wpayid.replace(re, "<b>$1</b>") : 'N/A')}</span></div>`;
+        },
+        onSelect: function (e, term, item) {
+            document.getElementById('input-send-payid').value = item.getAttribute('data-paymentid');
+        }
+    });
+}
+function updateAddressBookSelector(selected) {
+    selected = selected || null;
+    if (!selected) {
+        let ab = wsession.get('addressBook');
+        if (ab) selected = ab.path;
+    }
+    if (!selected || selected.endsWith('SharedAddressBook.json')) {
+        selected = 'default';
+    } else {
+        selected = path.basename(selected);
+    }
+
+    let knownAb = settings.get('address_books', []);
+    // update addressbook selector
+    addressBookSelector.options.length = 0;
+    let abopts = document.createElement('option');
+    abopts.value = 'default';
+    abopts.text = 'Default/builtin Address Book';
+    abopts.setAttribute('selected', 'selected');
+    addressBookSelector.add(abopts, null);
+    knownAb.forEach((v) => {
+        let abpath = path.join(ADDRESS_BOOK_DIR, v.filename);
+        if (wsutil.isFileExist(abpath)) {
+            let opt = document.createElement('option');
+            opt.text = v.name;
+            opt.value = v.filename;
+            opt.dataset.name = v.name;
+            if (v.filename === selected) {
+                abopts.removeAttribute('selected');
+                opt.setAttribute('selected', 'selected');
+            }
+            addressBookSelector.add(opt, null);
+        }
+    });
+    addressBookSelector.value = selected;
+}
+
+function handleAddressBook() {
+    // address book list
+    function renderList(data) {
+        if (!window.ABGRID) {
+            let columnDefs = [
+                { headerName: 'Key', field: 'key', hide: true },
+                {
+                    headerName: 'Name',
+                    field: 'value.name',
+                    width: 200,
+                    suppressSizeToFit: true,
+                    autoHeight: true,
+                    checkboxSelection: true,
+                    headerCheckboxSelection: true,
+                    headerCheckboxSelectionFilteredOnly: true,
+                    sortingOrder: ['asc', 'desc']
+                },
+                { headerName: "Wallet Address", field: "value.address", sortingOrder: ['asc', 'desc'] },
+                { headerName: "Payment ID", field: "value.paymentId", sortingOrder: ['asc', 'desc'] }
+            ];
+
+            let gridOptions = {
+                columnDefs: columnDefs,
+                rowData: data,
+                pagination: false,
+                paginationPageSize: 20,
+                cacheQuickFilter: true,
+                enableSorting: true,
+                suppressRowClickSelection: true,
+                rowClass: 'ab-item',
+                rowSelection: 'multiple',
+                onSelectionChanged: function (e) {
+                    let rowCount = e.api.getSelectedNodes().length;
+                    let rowCountEl = document.querySelector('#abRowCount');
+
+                    if (rowCount <= 0) {
+                        rowCountEl.textContent = 'No item selected';//`Total entries: ${data.length}`;
+                        rowCountEl.classList.remove('ab-delselected');
+                    } else {
+                        rowCountEl.textContent = `Delete ${rowCount} selected item(s)`;
+                        rowCountEl.classList.add('ab-delselected');
+                    }
+                },
+                onRowClicked: renderItem
+            };
+            let abGrid = document.getElementById('abGrid');
+            window.ABGRID = new AgGrid.Grid(abGrid, gridOptions);
+            window.ABOPTSAPI = gridOptions;
+
+            gridOptions.onGridReady = function () {
+                abGrid.style.width = "100%";
+                let sp = document.createElement('span');
+                sp.setAttribute('id', 'abRowCount');
+                sp.textContent = 'No item selected';
+                let agPanel = document.querySelector('#abGrid .ag-paging-panel');
+                agPanel.prepend(sp);
+
+                setTimeout(function () {
+                    window.ABOPTSAPI.api.doLayout();
+                    window.ABOPTSAPI.api.sizeColumnsToFit();
+                }, 100);
+            };
+
+            window.addEventListener('resize', () => {
+                if (window.ABOPTSAPI) {
+                    window.ABOPTSAPI.api.sizeColumnsToFit();
+                }
+            });
+
+            let abfilter = document.getElementById('ab-search');
+            abfilter.addEventListener('input', function () {
+                if (window.ABOPTSAPI) {
+                    window.ABOPTSAPI.api.setQuickFilter(this.value);
+                }
+            });
+        } else {
+            window.ABOPTSAPI.api.setRowData(data);
+            window.ABOPTSAPI.api.deselectAll();
+            window.ABOPTSAPI.api.resetQuickFilter();
+            window.ABOPTSAPI.api.sizeColumnsToFit();
+        }
+    }
+
+    // display address book item
+    function renderItem(e) {
+        let data = e.data;
         let dialog = document.getElementById('ab-dialog');
         if (dialog.hasAttribute('open')) dialog.close();
+
         let tpl = `
              <div class="div-transactions-panel">
                  <h4>Address Detail</h4>
                  <div class="addressBookDetail">
                      <div class="addressBookDetail-qr">
-                         <img src="${this.dataset.qrcodeval}" />
+                         <img src="${data.value.qrCode}" />
                      </div>
                      <div class="addressBookDetail-data">
                          <dl>
                              <dt>Name:</dt>
-                             <dd data-cplabel="Wallet Name" class="tctcl" title="click to copy">${this.dataset.nameval}</dd>
+                             <dd data-cplabel="Wallet Name" class="tctcl" title="click to copy">${data.value.name}</dd>
                              <dt>Wallet Address:</dt>
-                             <dd data-cplabel="Wallet address" class="tctcl" title="click to copy">${this.dataset.walletval}</dd>
+                             <dd data-cplabel="Wallet address" class="tctcl" title="click to copy">${data.value.address}</dd>
                              <dt>Payment Id:</dt>
-                             <dd  data-cplabel="Payment ID" class="tctcl" title="click to copy">${this.dataset.paymentidval ? this.dataset.paymentidval : '-'}</dd>
+                             <dd  data-cplabel="Payment ID" class="${data.value.paymentId ? 'tctcl' : 'noclass'}" title="${data.value.paymentId ? 'click to copy' : 'n/a'}">${data.value.paymentId ? data.value.paymentId : '-'}</dd>
                          </dl>
                      </div>
                  </div>
              </div>
              <div class="div-panel-buttons">
-                     <button data-addressid="${this.dataset.hash}" type="button" class="form-bt button-green" id="button-addressbook-panel-edit">Edit</button>
-                     <button type="button" class="form-bt button-red" id="button-addressbook-panel-delete">Delete</button>
-                     <button data-addressid="${this.dataset.hash}" type="button" class="form-bt button-gray" id="button-addressbook-panel-close">Close</button>
+                    <button data-addressid="${data.key}" type="button" class="form-bt button-green ab-send" id="button-addressbook-panel-send">Send ${config.assetTicker}</button>
+                    <button data-addressid="${data.key}" type="button" class="form-bt button-green ab-edit" id="button-addressbook-panel-edit">Edit</button>
+                    <button data-addressid="${data.key}" type="button" class="form-bt button-red ab-delete" id="button-addressbook-panel-delete">Delete</button>
+                    <!-- <button data-target="#ab-dialog" type="button" class="form-bt button-gray dialog-close-default"">Close</button> -->
              </div>
+             <span title="Close this dialog (esc)" class="dialog-close dialog-close-default" data-target="#ab-dialog"><i class="fas fa-window-close"></i></span>
         `;
 
         wsutil.innerHTML(dialog, tpl);
-        // get new dialog
         dialog = document.getElementById('ab-dialog');
         dialog.showModal();
-        document.getElementById('button-addressbook-panel-close').addEventListener('click', () => {
-            let abdialog = document.getElementById('ab-dialog');
-            abdialog.close();
-            wsutil.clearChild(abdialog);
-        });
-
-        let deleteBtn = document.getElementById('button-addressbook-panel-delete');
-        deleteBtn.addEventListener('click', () => {
-            let tardel = this.dataset.nameval;
-            let tarhash = this.dataset.hash;
-            if (!confirm(`Are you sure you want to delete ${tardel} from the address book?`)) {
-                return;
-            } else {
-                abook.delete(tarhash);
-                let abdialog = document.getElementById('ab-dialog');
-                abdialog.close();
-                wsutil.clearChild(abdialog);
-                listAddressBook(true);
-                wsutil.showToast('Address book entry was deleted');
-            }
-        });
-
-        let editBtn = document.getElementById('button-addressbook-panel-edit');
-        editBtn.addEventListener('click', () => {
-            let origHash = this.dataset.hash;
-            let entry = abook.get(origHash);
-            if (!entry) {
-                wsutil.showToast('Invalid address book entry');
-            } else {
-                const nameField = document.getElementById('input-addressbook-name');
-                const walletField = document.getElementById('input-addressbook-wallet');
-                const payidField = document.getElementById('input-addressbook-paymentid');
-                const updateField = document.getElementById('input-addressbook-update');
-                nameField.value = entry.name;
-                nameField.dataset.oldhash = origHash;
-                walletField.value = entry.address;
-                payidField.value = entry.paymentId;
-                updateField.value = 1;
-            }
-            changeSection('section-addressbook-add');
-            let axdialog = document.getElementById('ab-dialog');
-            axdialog.close();
-            wsutil.clearChild(axdialog);
-        });
     }
 
+    // disable payment id input for non standard adress
     function setAbPaymentIdState(addr) {
         if (addr.length > 99) {
             addressBookInputPaymentId.value = '';
@@ -879,6 +908,155 @@ function handleAddressBook() {
         setAbPaymentIdState(val);
     });
 
+    // add new address book file
+    addressBookButtonAdd.addEventListener('click', () => {
+        let dialog = document.getElementById('ab-dialog');
+        if (dialog.hasAttribute('open')) dialog.close();
+        let tpl = `
+            <div class="div-transactions-panel">
+                <h4>Create New Address Book</h4>
+                <p class="form-help">Fill this form to create a new, password protected address book</p>
+                <div class="input-wrap">
+                    <label>Address Book Name:</label>
+                    <input id="pAddressbookName" type="text" required="required" class="text-block" placeholder="Required, any label to identify this address book, example: My Contact" />
+                </div>
+                <div class="input-wrap">
+                    <label>Password:</label>
+                    <input id="pAddressbookPass" type="password" required="required" class="text-block" placeholder="Required, password to open this address book" />
+                    <button data-pf="pAddressbookPass" tabindex="-1" class="togpass notabindex"><i class="fas fa-eye"></i></button>
+                </div>
+                <div class="input-wrap">
+                    <span class="form-ew form-msg text-spaced-error hidden" id="text-paddressbook-error"></span>
+                </div>
+                <div class="div-panel-buttons">
+                    <button id="createNewAddressBook" type="button" class="button-green">Create & activate</button>
+                    <!-- <button data-target="#ab-dialog" type="button" class="button-gray dialog-close-default">Close</button> -->
+                </div>
+                <span title="Close this dialog (esc)" class="dialog-close dialog-close-default" data-target="#ab-dialog"><i class="fas fa-window-close"></i></span>
+            </div>             
+        `;
+
+        wsutil.innerHTML(dialog, tpl);
+        dialog = document.getElementById('ab-dialog');
+        dialog.showModal();
+    });
+
+    wsutil.liveEvent('#button-addressbook-panel-send', 'click', () => {
+        wsutil.showToast('Sorry, this feature is under development :-)');
+    });
+
+    wsutil.liveEvent('#createNewAddressBook', 'click', () => {
+        let addrBookNameEl = document.getElementById('pAddressbookName');
+        let addrBookPassEl = document.getElementById('pAddressbookPass');
+        let name = addrBookNameEl.value.trim() || null;
+        let pass = addrBookPassEl.value.trim() || null;
+        if (!name || !pass) {
+            formMessageReset();
+            formMessageSet('paddressbook', 'error', "Address book name & password can not be left blank!");
+            return;
+        }
+
+        let addrFilename = `ab-${wsutil.fnvhash(name + pass)}.json`;
+        let addrPath = path.join(ADDRESS_BOOK_DIR, addrFilename);
+        if (wsutil.isFileExist(addrPath)) {
+            formMessageReset();
+            formMessageSet('paddressbook', 'error', "Same filename exists, please use different filename!");
+            return;
+        }
+        let knownAb = settings.get('address_books', []);
+        knownAb.push({
+            name: name,
+            filename: addrFilename,
+        });
+        settings.set('address_books', knownAb);
+
+        // finally create & load new adddressbook
+        loadAddressBook({ path: addrPath, name: name, pass: pass });
+        // close dialog
+        let axdialog = document.getElementById('ab-dialog');
+        axdialog.close();
+        wsutil.clearChild(axdialog);
+        // display message
+        wsutil.showToast('New address book has been created');
+    });
+
+    // switch address book file
+    addressBookSelector.addEventListener('change', () => {
+        let filename = addressBookSelector.value;
+        let name = addressBookSelector.options[addressBookSelector.selectedIndex].text;
+
+        if (filename !== 'default') {
+            let dialog = document.getElementById('ab-dialog');
+            if (dialog.hasAttribute('open')) dialog.close();
+            let tpl = `
+                <div class="div-transactions-panel">
+                    <h4>Enter password for to open ${name}</h4>
+                    <div class="input-wrap">
+                        <label>Password:</label>
+                        <input id="pAddressbookOpenName" type="hidden" value="${name}" />
+                        <input id="pAddressbookOpenFilename" type="hidden" value="${filename}" />
+                        <input id="pAddressbookOpenPass" type="password" required="required" class="text-block" placeholder="Required, password to open this address book" />
+                        <button data-pf="pAddressbookPass" tabindex="-1" class="togpass notabindex"><i class="fas fa-eye"></i></button>
+                    </div>
+                    <div class="input-wrap">
+                        <span class="form-ew form-msg text-spaced-error hidden" id="text-paddressbookopen-error"></span>
+                    </div>
+                    <div class="div-panel-buttons">
+                        <button id="loadAddressBook" type="button" class="button-green">Open</button>
+                        <!-- <button data-target="#ab-dialog" type="button" class="button-gray dialog-close-default">Close</button> -->
+                    </div>
+                    <span id="addressBookSwitcherClose" title="Close this dialog (esc)" class="dialog-close dialog-close-defaultx" data-target="#ab-dialog"><i class="fas fa-window-close"></i></span>
+                </div>             
+            `;
+            wsutil.innerHTML(dialog, tpl);
+            dialog = document.getElementById('ab-dialog');
+            dialog.showModal();
+        } else {
+            loadAddressBook({ name: 'default' });
+        }
+    });
+
+    wsutil.liveEvent('#addressBookSwitcherClose', 'click', () => {
+        let dialog = document.getElementById('ab-dialog');
+        if (dialog.hasAttribute('open')) dialog.close();
+        updateAddressBookSelector();
+    });
+
+    wsutil.liveEvent('#loadAddressBook', 'click', () => {
+        formMessageReset();
+        let name = document.getElementById('pAddressbookOpenName').value || null;
+        let pass = document.getElementById('pAddressbookOpenPass').value || null;
+        let filename = document.getElementById('pAddressbookOpenFilename').value || null;
+        let abpath = path.join(ADDRESS_BOOK_DIR, filename);
+
+
+        if (!pass || !name || !filename) {
+            formMessageSet('paddressbookopen', 'error', "Please enter your password!");
+            return;
+        }
+        // try to load
+        loadAddressBook({ name: name, pass: pass, path: abpath });
+        setTimeout(() => {
+            let err = wsession.get('addressBookErr');
+            if (false !== err) {
+                //console.log(err);
+                formMessageSet('paddressbookopen', 'error', err);
+                // fallback to builtin
+                loadAddressBook({ name: 'default' });
+                return;
+            } else {
+                // update node selector
+                // close dialog
+                let axdialog = document.getElementById('ab-dialog');
+                axdialog.close();
+                wsutil.clearChild(axdialog);
+                // show msg
+                wsutil.showToast(`Address book: ${name} loaded`);
+            }
+        }, 500);
+    });
+
+    // insert address book entry
     addressBookButtonSave.addEventListener('click', () => {
         formMessageReset();
         let nameValue = addressBookInputName.value ? addressBookInputName.value.trim() : '';
@@ -908,44 +1086,185 @@ function handleAddressBook() {
         let entryName = nameValue.trim();
         let entryAddr = addressValue.trim();
         let entryPaymentId = paymentIdValue.trim();
-        let entryHash = wsutil.b2sSum(entryAddr + entryPaymentId);
+        let entryHash = wsutil.fnvhash(entryAddr + entryPaymentId);
 
-        if (abook.has(entryHash) && !isUpdate) {
+        let abook = wsession.get('addressBook');
+        let addressBookData = abook.data;
+        if (addressBookData.hasOwnProperty(entryHash) && !isUpdate) {
             formMessageSet('addressbook', 'error', "This combination of address and payment ID already exist, please enter new address or different payment id.");
             return;
         }
 
-        try {
-            abook.set(entryHash, {
-                name: entryName,
-                address: entryAddr,
-                paymentId: entryPaymentId,
-                qrCode: wsutil.genQrDataUrl(entryAddr)
-            });
-            let oldHash = addressBookInputName.dataset.oldhash || '';
-            let isNew = (oldHash.length && oldHash !== entryHash);
+        let newAddress = {
+            name: entryName,
+            address: entryAddr,
+            paymentId: entryPaymentId,
+            qrCode: wsutil.genQrDataUrl(entryAddr)
+        };
+        abook.data[entryHash] = newAddress;
 
-            if (isUpdate && isNew) {
-                abook.delete(oldHash);
-            }
-        } catch (e) {
-            formMessageSet('addressbook', 'error', "Address book entry can not be saved, please try again");
-            return;
+        // update but address+payid is new
+        let oldHash = addressBookInputName.dataset.oldhash || '';
+        let isNew = (oldHash.length && oldHash !== entryHash);
+
+        if (isUpdate && isNew) {
+            delete abook.data[oldHash];
         }
+        wsession.set('addressBook', abook);
+        let newItem = Object.entries({ entryHash: newAddress }).map(([key, value]) => ({ key, value }));
+        window.ABOPTSAPI.api.updateRowData({ add: newItem });
+        let rowData = Object.entries(abook.data).map(([key, value]) => ({ key, value }));
+        window.ABOPTSAPI.api.setRowData(rowData);
         addressBookInputName.value = '';
         addressBookInputName.dataset.oldhash = '';
         addressBookInputWallet.value = '';
         addressBookInputPaymentId.value = '';
         addressBookInputUpdate.value = 0;
-        listAddressBook(true);
-        initAddressCompletion();
+
         formMessageReset();
         changeSection('section-addressbook');
         wsutil.showToast('Address book entry has been saved.');
+        setTimeout(() => {
+            addressBook.save(abook);
+            initAddressCompletion(abook.data);
+        }, 500);
     });
-    // entry detail
-    wsutil.liveEvent('.addressbook-item', 'click', displayAddressBookEntry);
-    listAddressBook();
+
+    // edit entry
+    wsutil.liveEvent('.ab-edit', 'click', function (e) {
+        let origHash = e.target.dataset.addressid;
+        let entry = wsession.get('addressBook').data[origHash] || null;
+        if (!entry) {
+            wsutil.showToast('Invalid address book entry');
+        } else {
+            const nameField = document.getElementById('input-addressbook-name');
+            const walletField = document.getElementById('input-addressbook-wallet');
+            const payidField = document.getElementById('input-addressbook-paymentid');
+            const updateField = document.getElementById('input-addressbook-update');
+            nameField.value = entry.name;
+            nameField.dataset.oldhash = origHash;
+            walletField.value = entry.address;
+            payidField.value = entry.paymentId;
+            updateField.value = 1;
+        }
+        changeSection('section-addressbook-add');
+        let axdialog = document.getElementById('ab-dialog');
+        axdialog.close();
+        wsutil.clearChild(axdialog);
+    });
+
+    // delete entry
+    wsutil.liveEvent('.ab-delete', 'click', function (e) {
+        if (!confirm('Are you sure?')) return;
+
+        let et = e.target.dataset.addressid;
+        let addressBookData = wsession.get('addressBook');
+        if (!addressBookData.data) {
+            wsutil.showToast('Invalid address book data');
+            return;
+        }
+
+        let entry = addressBookData.data[et] || null;
+        if (!entry) {
+            wsutil.showToast('Invalid address book entry');
+            return;
+        }
+
+        delete addressBookData.data[et];
+        wsession.set('addressBook', addressBookData);
+        let rowData = Object.entries(addressBookData.data).map(([key, value]) => ({ key, value }));
+        window.ABOPTSAPI.api.setRowData(rowData);
+        let axdialog = document.getElementById('ab-dialog');
+        axdialog.close();
+        wsutil.clearChild(axdialog);
+        wsutil.showToast('Address book entry has been deleted');
+        setTimeout(() => {
+            addressBook.save(addressBookData);
+            initAddressCompletion(addressBookData.data);
+        }, 500);
+    });
+
+    // delete selected
+    wsutil.liveEvent('.ab-delselected', 'click', function () {
+        if (!confirm('Are you sure?')) return;
+        let nodes = window.ABOPTSAPI.api.getSelectedNodes();
+        if (nodes.length) {
+            let addressBookData = wsession.get('addressBook');
+            if (!addressBookData.data) {
+                wsutil.showToast('Invalid address book data');
+                return;
+            }
+
+            nodes.forEach((e) => {
+                let entry = addressBookData.data[e.data.key] || null;
+                if (entry) {
+                    delete addressBookData.data[e.data.key];
+                }
+            });
+            wsession.set('addressBook', addressBookData);
+            let rowData = Object.entries(addressBookData.data).map(([key, value]) => ({ key, value }));
+            window.ABOPTSAPI.api.setRowData(rowData);
+            window.ABOPTSAPI.api.deselectAll();
+            wsutil.showToast(`${nodes.length} entries has been deleted`);
+            setTimeout(() => {
+                addressBook.save(addressBookData);
+                initAddressCompletion(addressBookData.data);
+            }, 800);
+        }
+    });
+
+    function loadAddressBook(params) {
+        params = params || false;
+        wsession.set('addressBookErr', false);
+        if (params) {
+            // new address book, reset ab object + session
+            wsession.set('addressBook', null);
+            if (params.name === 'default') {
+                //console.log('fallback load default');
+                addressBook = new WalletShellAddressbook(ADDRESS_BOOK_DEFAULT_PATH);
+            } else {
+                addressBook = new WalletShellAddressbook(params.path, params.name, params.pass);
+            }
+        }
+
+        let currentAddressBook = wsession.get('addressBook');
+        let abdata = [];
+        if (null === currentAddressBook) {
+            // new session, load from file
+            try {
+                addressBook.load()
+                    .then((addressData) => {
+                        wsession.set('addressBook', addressData);
+                        updateAddressBookSelector(addressData.path);
+                        abdata = addressData.data;
+                        let ibdata = Object.entries(abdata).map(([key, value]) => ({ key, value }));
+                        renderList(ibdata);
+                        setTimeout(() => {
+                            initAddressCompletion(abdata);
+                        }, 800);
+                        wsession.set('addressBookErr', false);
+                    }).catch((e) => {
+                        // todo handle error
+                        wsession.set('addressBookErr', e.message);
+                    });
+            } catch (e) {
+                // todo handle error
+                wsession.set('addressBookErr', e.message);
+            }
+        } else {
+            // address book already opened
+            abdata = currentAddressBook.data;
+            let ibdata = Object.entries(abdata).map(([key, value]) => ({ key, value }));
+            updateAddressBookSelector(abdata.path);
+            renderList(ibdata);
+            setTimeout(() => {
+                initAddressCompletion(abdata);
+            }, 800);
+            wsession.set('addressBookErr', false);
+        }
+    }
+    // startup
+    loadAddressBook();
 }
 
 function handleWalletOpen() {
@@ -1058,6 +1377,12 @@ function handleWalletOpen() {
 
     walletOpenButtonOpen.addEventListener('click', () => {
         formMessageReset();
+
+        if (parseInt(walletOpenInputNode.dataset.updating, 10) === 1) {
+            wsutil.showToast('Node list update in progress, please wait...');
+            return;
+        }
+
         let nodeAddressValue = walletOpenInputNode.value;
         let nodeAddress = nodeAddressValue.split(':');
 
@@ -1492,12 +1817,14 @@ function handleSendTransfer() {
     }
     sendInputAddress.addEventListener('change', (event) => {
         let addr = event.target.value || '';
-        if (!addr.length) initAddressCompletion();
+        let abdata = wsession.get('addressBook').data || null;
+        if (!addr.length) initAddressCompletion(abdata);
         setPaymentIdState(addr);
     });
     sendInputAddress.addEventListener('keyup', (event) => {
         let addr = event.target.value || '';
-        if (!addr.length) initAddressCompletion();
+        let abdata = wsession.get('addressBook').data || null;
+        if (!addr.length) initAddressCompletion(abdata);
         setPaymentIdState(addr);
     });
 
@@ -1627,19 +1954,20 @@ function handleSendTransfer() {
                 let txhashUrl = `<a class="external" title="view in block explorer" href="${config.blockExplorerUrl.replace('[[TX_HASH]]', result.transactionHash)}">${result.transactionHash}</a>`;
                 let okMsg = `Transaction sent!<br>Tx. hash: ${txhashUrl}.<br>Your balance may appear incorrect while transaction not fully confirmed.`;
                 formMessageSet('send', 'success', okMsg);
+                // TODO: rewrite this for new address book backend
                 // check if it's new address, if so save it
-                let newId = wsutil.b2sSum(recipientAddress + paymentId);
-                if (!abook.has(newId)) {
-                    let now = new Date().toISOString();
-                    let newName = `unnamed (${now.split('T')[0].replace(/-/g, '')}_${now.split('T')[1].split('.')[0].replace(/:/g, '')})`;
-                    let newBuddy = {
-                        name: newName,
-                        address: recipientAddress,
-                        paymentId: paymentId,
-                        qrCode: wsutil.genQrDataUrl(recipientAddress)
-                    };
-                    abook.set(newId, newBuddy);
-                }
+                // let newId = wsutil.fnvhash(recipientAddress + paymentId);
+                // if (!abook.has(newId)) {
+                //     let now = new Date().toISOString();
+                //     let newName = `unnamed (${now.split('T')[0].replace(/-/g, '')}_${now.split('T')[1].split('.')[0].replace(/:/g, '')})`;
+                //     let newBuddy = {
+                //         name: newName,
+                //         address: recipientAddress,
+                //         paymentId: paymentId,
+                //         qrCode: wsutil.genQrDataUrl(recipientAddress)
+                //     };
+                //     abook.set(newId, newBuddy);
+                // }
                 sendInputAddress.value = '';
                 sendInputPaymentId.value = '';
                 sendInputAmount.value = '';
@@ -2172,8 +2500,10 @@ function initHandlers() {
     // generic dialog closer
     wsutil.liveEvent('.dialog-close-default', 'click', (event) => {
         let el = event.target;
-        if (el.dataset.target) {
-            let tel = document.querySelector(el.dataset.target);
+        if (!el) return;
+        let target = el.dataset.target || el.closest('span').dataset.target;
+        if (target) {
+            let tel = document.querySelector(target);
             tel.close();
         }
     });
@@ -2197,22 +2527,32 @@ function initHandlers() {
         el.addEventListener('keyup', handleFormEnter.bind(this, el));
     }
 
-    let tp = document.querySelectorAll('.togpass');
-    for (var xi = 0; xi < tp.length; xi++) {
-        tp[xi].addEventListener('click', function (e) {
-            let targetId = e.currentTarget.dataset.pf;
-            if (!targetId) return;
-            let target = document.getElementById(targetId);
-            if (!target) return;
-            if (target.type === "password") {
-                target.type = 'text';
-                e.currentTarget.firstChild.dataset.icon = 'eye-slash';
-            } else {
-                target.type = 'password';
-                e.currentTarget.firstChild.dataset.icon = 'eye';
-            }
-        });
-    }
+    wsutil.liveEvent('.togpass', 'click', (e) => {
+        let tg = e.target.classList.contains('.togpas') ? e.target : e.target.closest('.togpass');
+        if (!tg) return;
+        let targetId = tg.dataset.pf || null;
+        if (!targetId) return;
+        let target = document.getElementById(targetId);
+        target.type = (target.type === "password" ? 'text' : 'password');
+        tg.firstChild.dataset.icon = (target.type === 'password' ? 'eye-slash' : 'eye');
+    });
+
+    // let tp = document.querySelectorAll('.togpass');
+    // for (var xi = 0; xi < tp.length; xi++) {
+    //     tp[xi].addEventListener('click', function (e) {
+    //         let targetId = e.currentTarget.dataset.pf;
+    //         if (!targetId) return;
+    //         let target = document.getElementById(targetId);
+    //         if (!target) return;
+    //         if (target.type === "password") {
+    //             target.type = 'text';
+    //             e.currentTarget.firstChild.dataset.icon = 'eye-slash';
+    //         } else {
+    //             target.type = 'password';
+    //             e.currentTarget.firstChild.dataset.icon = 'eye';
+    //         }
+    //     });
+    // }
 
     // allow paste by mouse
     const pasteMenu = Menu.buildFromTemplate([
@@ -2358,7 +2698,7 @@ function initKeyBindings() {
 function fetchWait(url, timeout) {
     let controller = new AbortController();
     let signal = controller.signal;
-    timeout = timeout || 4000;
+    timeout = timeout || 8600;
     return Promise.race([
         fetch(url, { signal }),
         new Promise((_, reject) =>
@@ -2379,6 +2719,7 @@ function fetchNodeInfo() {
     opt.setAttribute('selected', true);
     walletOpenInputNode.add(opt, null);
     walletOpenInputNode.setAttribute('disabled', true);
+    walletOpenInputNode.dataset.updating = 1;
     walletOpenNodeLabel.innerHTML = '<i class="fas fa-sync fa-spin"></i> Updating node list, please wait...';
     walletOpenSelectBox.dataset.loading = "1";
 
@@ -2389,7 +2730,7 @@ function fetchNodeInfo() {
         return aliveNodes;
     }
 
-    // todo: also check block height
+    // todo: also check block height?
     let nodes = settings.get('pubnodes_data');
     let reqs = [];
     nodes.forEach(h => {
@@ -2410,11 +2751,13 @@ function fetchNodeInfo() {
                     let feeAmount = parseInt(json.amount, 10) > 0 ? `Fee: ${wsutil.amountForMortal(json.amount)} ${config.assetTicker}` : "FREE";
                     out.label = `${h.split(':')[0]} | ${feeAmount}`;
                     return callback(null, out);
-                }).catch(() => callback(null, null));
+                }).catch(() => {
+                    callback(null, null);
+                });
         });
     });
 
-    async.parallelLimit(reqs, 6, function (error, results) {
+    async.parallelLimit(reqs, 8, function (error, results) {
         if (results) {
             let res = results.filter(val => val);
             if (res.length) {
@@ -2426,6 +2769,8 @@ function fetchNodeInfo() {
         }
     });
 }
+
+
 
 // spawn event handlers
 document.addEventListener('DOMContentLoaded', () => {

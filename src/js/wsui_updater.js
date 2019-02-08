@@ -346,7 +346,7 @@ function updateQr(address) {
         return;
     }
 
-    let walletHash = wsutil.b2sSum(address);
+    let walletHash = wsutil.fnvhash(address);
     wsession.set('walletHash', walletHash);
 
     let oldImg = document.getElementById('qr-gen-img');
