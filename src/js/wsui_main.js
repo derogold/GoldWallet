@@ -1237,7 +1237,7 @@ function handleAddressBook() {
             let rowData = Object.entries(addressBookData.data).map(([key, value]) => ({ key, value }));
             window.ABOPTSAPI.api.setRowData(rowData);
             window.ABOPTSAPI.api.deselectAll();
-            wsutil.showToast(`${nodes.length} entries have been deleted`);
+            wsutil.showToast(`Address book item(s) have been deleted`);
             setTimeout(() => {
                 addressBook.save(addressBookData);
                 initAddressCompletion(addressBookData.data);
