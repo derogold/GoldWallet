@@ -266,6 +266,7 @@ function doNodeListUpdate() {
                     log.debug('Public node list has been updated');
                     let mo = (today.getMonth() + 1);
                     settings.set('pubnodes_date', `${today.getFullYear()}-${mo}-${today.getDate()}`);
+                    settings.delete('pubnodes_tested');
                 } catch (e) {
                     log.debug(`Failed to update public node list: ${e.message}`);
                     storeNodeList();
@@ -362,7 +363,7 @@ app.on('ready', () => {
     // remove old settings format if exist
     try { settings.delete('pubnodes_checked'); } catch (e) { }
     // remove tested nodes list, forcing re-test every start up
-    settings.delete('pubnodes_tested');
+    // settings.delete('pubnodes_tested');
 
     createWindow();
     // try to target center pos of primary display

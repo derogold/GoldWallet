@@ -77,6 +77,7 @@ let walletOpenNodeLabel;
 let walletOpenSelectBox;
 let walletOpenSelectOpts;
 let addCustomNode;
+let refreshNodeList;
 // show/export keys page
 let overviewShowKeyButton;
 let showkeyButtonExportKey;
@@ -172,6 +173,7 @@ function populateElementVars() {
     walletOpenSelectBox = document.getElementById('fake-select');
     walletOpenSelectOpts = document.getElementById('fakeNodeOptions');
     addCustomNode = document.getElementById('addCustomNode');
+    refreshNodeList = document.getElementById('updateNodeList');
     // show/export keys page
     overviewShowKeyButton = document.getElementById('button-show-reveal');
     showkeyButtonExportKey = document.getElementById('button-show-export');
@@ -484,14 +486,17 @@ function initNodeSelection(nodeAddr) {
     walletOpenInputNode.removeAttribute('disabled');
     walletOpenSelectBox.dataset.loading = "0";
     walletOpenInputNode.options.length = 0;
+    let fallback = false;
     // shuffle nodes
     if (aliveNodes.length) {
         let rndMethod = wsutil.arrShuffle([0, 1]);
         aliveNodes = wsutil.arrShuffle(aliveNodes, rndMethod);
     } else {
         // if no tested node on the list, fallback to default, untested list
+        // 
         if (settings.has('pubnodes_data')) {
             customNodes = customNodes.concat(settings.get('pubnodes_data'));
+            fallback = true;
         }
     }
 
@@ -512,7 +517,11 @@ function initNodeSelection(nodeAddr) {
             let fakeOpt = document.createElement('li');
             fakeOpt.setAttribute('class', 'fake-options');
             fakeOpt.dataset.value = node;
-            fakeOpt.innerHTML = `<span class="node-address">${node}</span> <span class="node-info">(Custom Node)</span>`;
+            if (!fallback) {
+                fakeOpt.innerHTML = `<span class="node-address">${node}</span> <span class="node-info">(Custom Node)</span>`;
+            } else {
+                fakeOpt.innerHTML = `<span class="node-address">${node}</span> <span class="node-info">(Fee: N/A)</span>`;
+            }
 
             if (node === selected) {
                 opt.setAttribute('selected', true);
@@ -686,7 +695,7 @@ function handleSettings() {
         formMessageReset();
         let goTo = wsession.get('loadedWalletAddress').length ? 'section-overview' : 'section-welcome';
         changeSection(goTo, true);
-        wsutil.showToast('Settings has been updated.', 8000);
+        wsutil.showToast('Settings have been updated.', 8000);
     });
 }
 
@@ -775,7 +784,7 @@ function handleAddressBook() {
                 {
                     headerName: 'Name',
                     field: 'value.name',
-                    width: 200,
+                    width: 240,
                     suppressSizeToFit: true,
                     autoHeight: true,
                     checkboxSelection: true,
@@ -855,6 +864,13 @@ function handleAddressBook() {
         let dialog = document.getElementById('ab-dialog');
         if (dialog.hasAttribute('open')) dialog.close();
 
+        let sendTrtl = '';
+        let myaddress = wsession.get('loadedWalletAddress');
+        let isSynced = wsession.get('synchronized') || false;
+        if (myaddress && isSynced) {
+            sendTrtl = `<button data-addressid="${data.key}" type="button" class="form-bt button-green ab-send" id="button-addressbook-panel-send">Send ${config.assetTicker}</button>`;
+        }
+
         let tpl = `
              <div class="div-transactions-panel">
                  <h4>Address Detail</h4>
@@ -875,7 +891,7 @@ function handleAddressBook() {
                  </div>
              </div>
              <div class="div-panel-buttons">
-                    <button data-addressid="${data.key}" type="button" class="form-bt button-green ab-send" id="button-addressbook-panel-send">Send ${config.assetTicker}</button>
+                    ${sendTrtl}
                     <button data-addressid="${data.key}" type="button" class="form-bt button-green ab-edit" id="button-addressbook-panel-edit">Edit</button>
                     <button data-addressid="${data.key}" type="button" class="form-bt button-red ab-delete" id="button-addressbook-panel-delete">Delete</button>
                     <!-- <button data-target="#ab-dialog" type="button" class="form-bt button-gray dialog-close-default"">Close</button> -->
@@ -941,8 +957,21 @@ function handleAddressBook() {
         dialog.showModal();
     });
 
-    wsutil.liveEvent('#button-addressbook-panel-send', 'click', () => {
-        wsutil.showToast('Sorry, this feature is under development :-)');
+    wsutil.liveEvent('#button-addressbook-panel-send', 'click', (e) => {
+        let origHash = e.target.dataset.addressid;
+        let entry = wsession.get('addressBook').data[origHash] || null;
+        if (!entry) {
+            wsutil.showToast('Invalid address book entry');
+        }
+        changeSection('section-send');
+        sendInputAddress.value = entry.address;
+        if (entry.paymentId.length) {
+            sendInputPaymentId.value = entry.paymentId;
+        }
+        // close dialog
+        let axdialog = document.getElementById('ab-dialog');
+        axdialog.close();
+        wsutil.clearChild(axdialog);
     });
 
     wsutil.liveEvent('#createNewAddressBook', 'click', () => {
@@ -977,7 +1006,7 @@ function handleAddressBook() {
         axdialog.close();
         wsutil.clearChild(axdialog);
         // display message
-        wsutil.showToast('New address book has been created');
+        wsutil.showToast('New address book have been created');
     });
 
     // switch address book file
@@ -996,7 +1025,7 @@ function handleAddressBook() {
                         <input id="pAddressbookOpenName" type="hidden" value="${name}" />
                         <input id="pAddressbookOpenFilename" type="hidden" value="${filename}" />
                         <input id="pAddressbookOpenPass" type="password" required="required" class="text-block" placeholder="Required, password to open this address book" />
-                        <button data-pf="pAddressbookPass" tabindex="-1" class="togpass notabindex"><i class="fas fa-eye"></i></button>
+                        <button data-pf="pAddressbookOpenPass" tabindex="-1" class="togpass notabindex"><i class="fas fa-eye"></i></button>
                     </div>
                     <div class="input-wrap">
                         <span class="form-ew form-msg text-spaced-error hidden" id="text-paddressbookopen-error"></span>
@@ -1013,6 +1042,7 @@ function handleAddressBook() {
             dialog.showModal();
         } else {
             loadAddressBook({ name: 'default' });
+            wsutil.showToast(`Loaded address book switched to: Default/builtin`);
         }
     });
 
@@ -1039,7 +1069,6 @@ function handleAddressBook() {
         setTimeout(() => {
             let err = wsession.get('addressBookErr');
             if (false !== err) {
-                //console.log(err);
                 formMessageSet('paddressbookopen', 'error', err);
                 // fallback to builtin
                 loadAddressBook({ name: 'default' });
@@ -1051,7 +1080,7 @@ function handleAddressBook() {
                 axdialog.close();
                 wsutil.clearChild(axdialog);
                 // show msg
-                wsutil.showToast(`Address book: ${name} loaded`);
+                wsutil.showToast(`Loaded address book switched to: ${name}`);
             }
         }, 500);
     });
@@ -1111,10 +1140,13 @@ function handleAddressBook() {
             delete abook.data[oldHash];
         }
         wsession.set('addressBook', abook);
-        let newItem = Object.entries({ entryHash: newAddress }).map(([key, value]) => ({ key, value }));
-        window.ABOPTSAPI.api.updateRowData({ add: newItem });
+        //let newItem = Object.entries({ entryHash: newAddress }).map(([key, value]) => ({ key, value }));
+        //window.ABOPTSAPI.api.updateRowData({ add: newItem });
         let rowData = Object.entries(abook.data).map(([key, value]) => ({ key, value }));
         window.ABOPTSAPI.api.setRowData(rowData);
+        window.ABOPTSAPI.api.deselectAll();
+        window.ABOPTSAPI.api.resetQuickFilter();
+        window.ABOPTSAPI.api.sizeColumnsToFit();
         addressBookInputName.value = '';
         addressBookInputName.dataset.oldhash = '';
         addressBookInputWallet.value = '';
@@ -1123,7 +1155,7 @@ function handleAddressBook() {
 
         formMessageReset();
         changeSection('section-addressbook');
-        wsutil.showToast('Address book entry has been saved.');
+        wsutil.showToast('Address book entry have been saved.');
         setTimeout(() => {
             addressBook.save(abook);
             initAddressCompletion(abook.data);
@@ -1177,7 +1209,7 @@ function handleAddressBook() {
         let axdialog = document.getElementById('ab-dialog');
         axdialog.close();
         wsutil.clearChild(axdialog);
-        wsutil.showToast('Address book entry has been deleted');
+        wsutil.showToast('Address book entry have been deleted');
         setTimeout(() => {
             addressBook.save(addressBookData);
             initAddressCompletion(addressBookData.data);
@@ -1205,7 +1237,7 @@ function handleAddressBook() {
             let rowData = Object.entries(addressBookData.data).map(([key, value]) => ({ key, value }));
             window.ABOPTSAPI.api.setRowData(rowData);
             window.ABOPTSAPI.api.deselectAll();
-            wsutil.showToast(`${nodes.length} entries has been deleted`);
+            wsutil.showToast(`${nodes.length} entries have been deleted`);
             setTimeout(() => {
                 addressBook.save(addressBookData);
                 initAddressCompletion(addressBookData.data);
@@ -1220,7 +1252,6 @@ function handleAddressBook() {
             // new address book, reset ab object + session
             wsession.set('addressBook', null);
             if (params.name === 'default') {
-                //console.log('fallback load default');
                 addressBook = new WalletShellAddressbook(ADDRESS_BOOK_DEFAULT_PATH);
             } else {
                 addressBook = new WalletShellAddressbook(params.path, params.name, params.pass);
@@ -1367,12 +1398,21 @@ function handleWalletOpen() {
         initNodeSelection(nodeAddressVal);
         let dialog = document.getElementById('ab-dialog');
         if (dialog.hasAttribute('open')) dialog.close();
-        wsutil.showToast('New custom node has been added');
+        wsutil.showToast('New custom node have been added');
     });
 
     addCustomNode.addEventListener('click', (e) => {
         e.preventDefault();
         addCustomNodeForm();
+    });
+
+    refreshNodeList.addEventListener('click', () => {
+        if (!navigator.onLine) {
+            wsutil.showToast('Network connectivity problem detected, node list update can not be performed');
+            return;
+        }
+        if (!confirm("Refreshing node data may took a while to complete, are you sure?")) return;
+        fetchNodeInfo(true);
     });
 
     walletOpenButtonOpen.addEventListener('click', () => {
@@ -1601,7 +1641,7 @@ function handleWalletCreate() {
                 settings.set('recentWallet', walletFile);
                 walletOpenInputPath.value = walletFile;
                 changeSection('section-overview-load');
-                wsutil.showToast('Wallet has been created, you can now open your wallet!', 12000);
+                wsutil.showToast('Wallet have been created, you can now open your wallet!', 12000);
             }).catch((err) => {
                 formMessageSet('create', 'error', err.message);
                 return;
@@ -1675,7 +1715,7 @@ function handleWalletImportKeys() {
                 settings.set('recentWallet', walletFile);
                 walletOpenInputPath.value = walletFile;
                 changeSection('section-overview-load');
-                wsutil.showToast('Wallet has been imported, you can now open your wallet!', 12000);
+                wsutil.showToast('Wallet have been imported, you can now open your wallet!', 12000);
             }).catch((err) => {
                 formMessageSet('import', 'error', err);
                 return;
@@ -1739,7 +1779,7 @@ function handleWalletImportSeed() {
                 settings.set('recentWallet', walletFile);
                 walletOpenInputPath.value = walletFile;
                 changeSection('section-overview-load');
-                wsutil.showToast('Wallet has been imported, you can now open your wallet!', 12000);
+                wsutil.showToast('Wallet have been imported, you can now open your wallet!', 12000);
             }).catch((err) => {
                 formMessageSet('import-seed', 'error', err);
                 return;
@@ -1954,20 +1994,31 @@ function handleSendTransfer() {
                 let txhashUrl = `<a class="external" title="view in block explorer" href="${config.blockExplorerUrl.replace('[[TX_HASH]]', result.transactionHash)}">${result.transactionHash}</a>`;
                 let okMsg = `Transaction sent!<br>Tx. hash: ${txhashUrl}.<br>Your balance may appear incorrect while transaction not fully confirmed.`;
                 formMessageSet('send', 'success', okMsg);
-                // TODO: rewrite this for new address book backend
-                // check if it's new address, if so save it
-                // let newId = wsutil.fnvhash(recipientAddress + paymentId);
-                // if (!abook.has(newId)) {
-                //     let now = new Date().toISOString();
-                //     let newName = `unnamed (${now.split('T')[0].replace(/-/g, '')}_${now.split('T')[1].split('.')[0].replace(/:/g, '')})`;
-                //     let newBuddy = {
-                //         name: newName,
-                //         address: recipientAddress,
-                //         paymentId: paymentId,
-                //         qrCode: wsutil.genQrDataUrl(recipientAddress)
-                //     };
-                //     abook.set(newId, newBuddy);
-                // }
+                // save to address book if it's new address
+                let entryHash = wsutil.fnvhash(recipientAddress + paymentId);
+                let abook = wsession.get('addressBook');
+                let addressBookData = abook.data;
+                if (!addressBookData.hasOwnProperty(entryHash)) {
+                    let now = new Date().toISOString().split('T');
+                    let newAddress = {
+                        name: `NEW (${now[0]} ${now[1].split('.')[0]})`,
+                        address: recipientAddress,
+                        paymentId: paymentId,
+                        qrCode: wsutil.genQrDataUrl(recipientAddress)
+                    };
+                    abook.data[entryHash] = newAddress;
+                    wsession.set('addressBook', abook);
+                    let rowData = Object.entries(abook.data).map(([key, value]) => ({ key, value }));
+                    window.ABOPTSAPI.api.setRowData(rowData);
+                    window.ABOPTSAPI.api.deselectAll();
+                    window.ABOPTSAPI.api.resetQuickFilter();
+                    window.ABOPTSAPI.api.sizeColumnsToFit();
+                    setTimeout(() => {
+                        addressBook.save(abook);
+                        initAddressCompletion(abook.data);
+                    }, 500);
+                }
+
                 sendInputAddress.value = '';
                 sendInputPaymentId.value = '';
                 sendInputAmount.value = '';
@@ -2698,7 +2749,7 @@ function initKeyBindings() {
 function fetchWait(url, timeout) {
     let controller = new AbortController();
     let signal = controller.signal;
-    timeout = timeout || 8600;
+    timeout = timeout || 5200;
     return Promise.race([
         fetch(url, { signal }),
         new Promise((_, reject) =>
@@ -2710,7 +2761,8 @@ function fetchWait(url, timeout) {
     ]);
 }
 
-function fetchNodeInfo() {
+function fetchNodeInfo(force) {
+    force = force || false;
     // disable node selection during update
     walletOpenInputNode.options.length = 0;
     let opt = document.createElement('option');
@@ -2725,14 +2777,16 @@ function fetchNodeInfo() {
 
     window.ELECTRON_ENABLE_SECURITY_WARNINGS = false;
     let aliveNodes = settings.get('pubnodes_tested', []);
-    if (aliveNodes.length) {
+    if (aliveNodes.length && !force) {
         initNodeSelection(settings.get('node_address'));
         return aliveNodes;
     }
 
     // todo: also check block height?
     let nodes = settings.get('pubnodes_data');
+
     let reqs = [];
+    //let hrstart = process.hrtime();
     nodes.forEach(h => {
         let out = {
             host: h,
@@ -2756,13 +2810,18 @@ function fetchNodeInfo() {
                 });
         });
     });
-
-    async.parallelLimit(reqs, 8, function (error, results) {
+    const parLimit = 18;
+    async.parallelLimit(reqs, parLimit, function (error, results) {
         if (results) {
             let res = results.filter(val => val);
             if (res.length) {
                 settings.set('pubnodes_tested', res);
             }
+            //let hrend = process.hrtime(hrstart);
+            // console.info('Execution time (hr): %ds %dms', hrend[0], hrend[1] / 1000000);
+            // console.info(`parlimit: ${parLimit}`);
+            // console.log(`total nodes: ${nodes.length}`);
+            // console.log(`alive nodes: ${res.length}`);
             initNodeSelection();
         } else {
             initNodeSelection();
@@ -2770,14 +2829,17 @@ function fetchNodeInfo() {
     });
 }
 
-
-
 // spawn event handlers
 document.addEventListener('DOMContentLoaded', () => {
     // remove any leftover wallet config
     try { fs.unlinkSync(wsession.get('walletConfig')); } catch (e) { }
     initHandlers();
-    fetchNodeInfo();
+    if (navigator.onLine) {
+        fetchNodeInfo();
+    } else {
+        console.log('connection borked');
+        initNodeSelection();
+    }
     showInitialPage();
     initKeyBindings();
     if (!remote.app.debug) {

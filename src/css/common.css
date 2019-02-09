@@ -347,7 +347,7 @@ select option:nth-child(odd) {
     left:0;
 }
 .fake-node-options ul{
-    height: 230px;
+    max-height: 160px;
     width:100%;
     overflow: hidden;
     overflow-y: scroll;
@@ -992,11 +992,15 @@ h4.input-required:after{
     color: #fffb00;
 }
 .input-extra-link{
-    display: block;
+    display: inline-block;
     padding: 0 12px;
-    font-size: 1rem;
+    font-size: 0.85rem;
     float:right;
-    clear: both;
+    text-decoration: none;
+    text-transform: uppercase;
+}
+.input-extra-link:hover{
+    text-decoration: underline;
 }
 .ab-tools .input-extra-link{
     display: inline-block;
@@ -1776,7 +1780,7 @@ progress.light{
 
 .action-buttons{
     position: fixed;
-    bottom: 2.05em;
+    bottom: 2.5em;
     left: 0;
     width: 100%;
     text-align: center;
