@@ -1300,7 +1300,7 @@ function handleAddressBook() {
             wsession.set('addressBookErr', false);
         }
     }
-    // startup
+    // startup, load default address book
     loadAddressBook();
 }
 
@@ -2335,49 +2335,36 @@ function handleTransactions() {
         });
 
         let dialog = document.getElementById('ab-dialog');
+        let outData = [];
+        let outType = '';
         switch (mode) {
             case 'in':
-                let txin = txlist.filter((obj) => { return obj.txType === "in"; });
-                if (!txin.length) {
-                    wsutil.showToast('Transaction export failed, incoming transactions not available!');
-                    if (dialog.hasAttribute('open')) dialog.close();
-                    return;
-                }
-
-                csvWriter.writeRecords(txin).then(() => {
-                    if (dialog.hasAttribute('open')) dialog.close();
-                    wsutil.showToast(`Transaction list exported to ${filename}`);
-                }).catch((err) => {
-                    if (dialog.hasAttribute('open')) dialog.close();
-                    wsutil.showToast(`Transaction export failed, ${err.message}`);
-                });
+                outData = txlist.filter((obj) => obj.txType === "in");
+                outType = "incoming";
                 break;
             case 'out':
-                let txout = txlist.filter((obj) => { return obj.txType === "out"; });
-                if (!txout.length) {
-                    wsutil.showToast('Transaction export failed, outgoing transactions not available!');
-                    if (dialog.hasAttribute('open')) dialog.close();
-                    return;
-                }
-
-                csvWriter.writeRecords(txout).then(() => {
-                    if (dialog.hasAttribute('open')) dialog.close();
-                    wsutil.showToast(`Transaction list exported to ${filename}`);
-                }).catch((err) => {
-                    if (dialog.hasAttribute('open')) dialog.close();
-                    wsutil.showToast(`Transaction export failed, ${err.message}`);
-                });
+                outData = txlist.filter((obj) => { return obj.txType === "out"; });
+                outType = "outgoing";
                 break;
             default:
-                csvWriter.writeRecords(txlist).then(() => {
-                    if (dialog.hasAttribute('open')) dialog.close();
-                    wsutil.showToast(`Transaction list exported to ${filename}`);
-                }).catch((err) => {
-                    if (dialog.hasAttribute('open')) dialog.close();
-                    wsutil.showToast(`Transaction export failed, ${err.message}`);
-                });
+                outData = txlist;
+                outType = 'all';
                 break;
         }
+
+        if (!outData.length) {
+            wsutil.showToast(`Transaction export failed, ${outType} transactions is not available!`);
+            if (dialog.hasAttribute('open')) dialog.close();
+            return;
+        }
+
+        csvWriter.writeRecords(outData).then(() => {
+            if (dialog.hasAttribute('open')) dialog.close();
+            wsutil.showToast(`Transaction list exported to ${filename}`);
+        }).catch((err) => {
+            if (dialog.hasAttribute('open')) dialog.close();
+            wsutil.showToast(`Transaction export failed, ${err.message}`);
+        });
     }
 
     wsutil.liveEvent('button.export-txtype', 'click', (event) => {
@@ -2621,23 +2608,6 @@ function initHandlers() {
         target.type = (target.type === "password" ? 'text' : 'password');
         tg.firstChild.dataset.icon = (target.type === 'password' ? 'eye-slash' : 'eye');
     });
-
-    // let tp = document.querySelectorAll('.togpass');
-    // for (var xi = 0; xi < tp.length; xi++) {
-    //     tp[xi].addEventListener('click', function (e) {
-    //         let targetId = e.currentTarget.dataset.pf;
-    //         if (!targetId) return;
-    //         let target = document.getElementById(targetId);
-    //         if (!target) return;
-    //         if (target.type === "password") {
-    //             target.type = 'text';
-    //             e.currentTarget.firstChild.dataset.icon = 'eye-slash';
-    //         } else {
-    //             target.type = 'password';
-    //             e.currentTarget.firstChild.dataset.icon = 'eye';
-    //         }
-    //     });
-    // }
 
     // allow paste by mouse
     const pasteMenu = Menu.buildFromTemplate([
