@@ -1049,7 +1049,9 @@ function handleAddressBook() {
             dialog.showModal();
         } else {
             loadAddressBook({ name: 'default' });
-            wsutil.showToast(`Address book switched to: Default/builtin`);
+            if(window.addressBookInitialize){
+                wsutil.showToast(`Address book switched to: Default/builtin`);
+            }
         }
     });
 
@@ -1086,7 +1088,9 @@ function handleAddressBook() {
                 axdialog.close();
                 wsutil.clearChild(axdialog);
                 // show msg
-                wsutil.showToast(`Address book switched to: ${name}`);
+                if(window.addressBookInitialize){
+                    wsutil.showToast(`Address book switched to: ${name}`);
+                }
             }
         }, 100);
     });
@@ -1302,6 +1306,16 @@ function handleAddressBook() {
     }
     // startup, load default address book
     loadAddressBook();
+    // chromium select lag workaround
+    setTimeout(() => {
+        let event = new MouseEvent('change', {
+            view: window,
+            bubbles: false,
+            cancelable: true
+        });
+        addressBookSelector.dispatchEvent(event);
+        window.addressBookInitialize = true;
+    }, 300);
 }
 
 function handleWalletOpen() {
