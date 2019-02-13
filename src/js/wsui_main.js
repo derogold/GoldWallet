@@ -18,10 +18,6 @@ const wsmanager = new WalletShellManager();
 const wsession = new WalletShellSession();
 const settings = new Store({ name: 'Settings' });
 const WalletShellAddressbook = require('./ws_addressbook');
-// const abook = new Store({
-//     name: 'AddressBook',
-//     encryptionKey: config.addressBookObfuscateEntries ? config.addressBookObfuscationKey : null
-// });
 
 const ADDRESS_BOOK_DIR = remote.app.getPath('userData');
 const ADDRESS_BOOK_DEFAULT_PATH = path.join(ADDRESS_BOOK_DIR, '/SharedAddressBook.json');
@@ -52,6 +48,7 @@ let firstTab;
 let settingsInputServiceBin;
 let settingsInputMinToTray;
 let settingsInputCloseToTray;
+let settingsInputExcludeOfflineNodes;
 let settingsButtonSave;
 // overview page
 let overviewWalletAddress;
@@ -124,6 +121,7 @@ let thtml;
 let dmswitch;
 let kswitch;
 let iswitch;
+let pubnodes_fallbacks = [];
 
 function populateElementVars() {
     // misc
@@ -147,6 +145,7 @@ function populateElementVars() {
     settingsInputServiceBin = document.getElementById('input-settings-path');
     settingsInputMinToTray = document.getElementById('checkbox-tray-minimize');
     settingsInputCloseToTray = document.getElementById('checkbox-tray-close');
+    settingsInputExcludeOfflineNodes = document.getElementById('pubnodes-exclude-offline');
     settingsButtonSave = document.getElementById('button-settings-save');
 
     // overview pages
@@ -392,59 +391,56 @@ function switchTab() {
 }
 
 // section switcher
-function changeSection(sectionId, isSettingRedir) {
+function changeSection(sectionId, targetRedir) {
+    wsutil.showToast('');
+
     if (WALLET_OPEN_IN_PROGRESS) {
         wsutil.showToast('Opening wallet in progress, please wait...');
         return;
     }
 
-    formMessageReset();
-    isSettingRedir = isSettingRedir === true ? true : false;
+    targetRedir = targetRedir === true ? true : false;
     let targetSection = sectionId.trim();
-    let untoast = false;
-    if (targetSection === 'section-welcome') {
-        targetSection = 'section-overview';
-        untoast = true;
-    }
 
     let isSynced = wsession.get('synchronized') || false;
     let isServiceReady = wsession.get('serviceReady') || false;
     let needServiceReady = ['section-transactions', 'section-send', 'section-overview'];
     let needServiceStopped = 'section-welcome';
     let needSynced = ['section-send'];
-    if (needSynced.indexOf(targetSection) >= 0 && wsession.get('fusionProgress')) {
+
+    let origTarget = targetSection;
+    let finalTarget = targetSection;
+    let toastMsg = '';
+
+
+    if (needSynced.includes(targetSection) && wsession.get('fusionProgress')) {
+        // fusion in progress, return early
         wsutil.showToast('Wallet optimization in progress, please wait');
         return;
     }
 
-    let finalTarget = targetSection;
-    let toastMsg = '';
-
-    if (needServiceReady.indexOf(targetSection) >= 0 && !isServiceReady) {
+    if (needServiceReady.includes(targetSection) && !isServiceReady) {
         // no access to wallet, send, tx when no wallet opened
         finalTarget = 'section-welcome';
-        toastMsg = "Please create/open your wallet!";
-    } else if (needServiceStopped.indexOf(targetSection) >= 0 && isServiceReady) {
-        finalTarget = 'section-overview';
-    } else if (needSynced.indexOf(targetSection) >= 0 && !isSynced) {
-        // just return early
+        let notoast = finalTarget.concat(['section-overview']);
+        if (!notoast.includes(origTarget)) {
+            toastMsg = "Please create/open your wallet!";
+        }
+    } else if (needSynced.includes(targetSection) && !isSynced) {
+        // need synced, return early
         wsutil.showToast("Please wait until the syncing completes!");
         return;
+    } else if (needServiceStopped.includes(targetSection) && isServiceReady) {
+        finalTarget = 'section-overview';
     } else {
         finalTarget = targetSection;
         toastMsg = '';
     }
 
-    if (finalTarget === 'section-overview-load') {
-        if (walletOpenSelectBox.dataset.loading === "0") {
-            initNodeSelection(settings.get('node_address'));
-        }
-    }
-
     let section = document.getElementById(finalTarget);
     if (section.classList.contains('is-shown')) {
-        if (toastMsg.length && !isSettingRedir && !untoast) wsutil.showToast(toastMsg);
-        return; // don't do anything if section unchanged
+        if (toastMsg.length && !targetRedir) wsutil.showToast(toastMsg);
+        return;
     }
 
     // navbar active section indicator, only for main section
@@ -456,13 +452,20 @@ function changeSection(sectionId, isSettingRedir) {
         if (newActiveNavbarButton) newActiveNavbarButton.classList.add('btn-active');
     }
 
+    // re-init node selection
+    if (finalTarget === 'section-overview-load' && walletOpenSelectBox.dataset.loading === "0") {
+        initNodeSelection(settings.get('node_address'));
+    }
+
     // toggle section
+    formMessageReset();
     const activeSection = document.querySelector('.is-shown');
     if (activeSection) activeSection.classList.remove('is-shown');
     section.classList.add('is-shown');
     section.dispatchEvent(new Event('click')); // make it focusable
+
     // show msg when needed
-    if (toastMsg.length && !isSettingRedir && !untoast) wsutil.showToast(toastMsg);
+    if (toastMsg.length && !targetRedir) wsutil.showToast(toastMsg);
     // notify section was changed
     let currentButton = document.querySelector(`button[data-section="${finalButtonTarget}"]`);
     if (currentButton) {
@@ -472,6 +475,7 @@ function changeSection(sectionId, isSettingRedir) {
         });
     }
 }
+
 function initNodeSelection(nodeAddr) {
     let forceNew = nodeAddr ? true : false;
     if (forceNew) settings.set('node_address', nodeAddr);
@@ -480,24 +484,31 @@ function initNodeSelection(nodeAddr) {
     let selected = settings.get('node_address');
     // custom node list
     let customNodes = settings.get('pubnodes_custom', []);
-    // conntested node list
-    let aliveNodes = settings.get('pubnodes_tested', []);
+    // nodes completed fee info check
+    let testedNodes = settings.get('pubnodes_tested', []);
     // remove node update progress, replace current list
     walletOpenInputNode.removeAttribute('disabled');
     walletOpenSelectBox.dataset.loading = "0";
     walletOpenInputNode.options.length = 0;
     let fallback = false;
+    let timeoutStr = 'timeout';
+    let onlines = testedNodes.filter((v) => v.label.indexOf(timeoutStr) < 0);
+    let offlines = [];
+    if (!settings.get('pubnodes_exclude_offline', false)) {
+        offlines = testedNodes.filter((v) => v.label.indexOf(timeoutStr) >= 0);
+    }
+
     // shuffle nodes
-    if (aliveNodes.length) {
+    if (onlines.length) {
         let rndMethod = wsutil.arrShuffle([0, 1]);
-        aliveNodes = wsutil.arrShuffle(aliveNodes, rndMethod);
+        testedNodes = wsutil.arrShuffle(onlines, rndMethod);
     } else {
-        // if no tested node on the list, fallback to default, untested list
-        // 
-        if (settings.has('pubnodes_data')) {
-            customNodes = customNodes.concat(settings.get('pubnodes_data'));
-            fallback = true;
+        if (pubnodes_fallbacks.length) {
+            customNodes = pubnodes_fallbacks;
+        } else {
+            customNodes = customNodes.concat(settings.get('pubnodes_data', []));
         }
+        fallback = true;
     }
 
     // for visual selector
@@ -533,8 +544,10 @@ function initNodeSelection(nodeAddr) {
         });
     }
 
-    if (aliveNodes.length) {
-        aliveNodes.forEach(node => {
+    // merge back
+    let remoteNodes = onlines.concat(offlines);
+    if (remoteNodes.length) {
+        remoteNodes.forEach(node => {
             let all_labels = node.label.split('|');
             if (all_labels.length === 2) {
                 let opt = document.createElement('option');
@@ -559,8 +572,8 @@ function initNodeSelection(nodeAddr) {
     }
 
     if (!selectedLabel.length) {
-        if (aliveNodes.length) {
-            selected = aliveNodes[0];
+        if (remoteNodes.length) {
+            selected = remoteNodes[0];
             let opt = walletOpenInputNode.querySelector('option[value="' + selected.host + '"]');
             opt.setAttribute('selected', true);
             walletOpenInputNode.value = selected.host;
@@ -574,7 +587,7 @@ function initNodeSelection(nodeAddr) {
     walletOpenInputNode.dispatchEvent(event);
 
     customNodes = null;
-    aliveNodes = null;
+    testedNodes = null;
 }
 
 // initial settings value or updater
@@ -588,10 +601,12 @@ function initSettingVal(values) {
         settings.set('node_address', values.node_address);
         settings.set('tray_minimize', values.tray_minimize);
         settings.set('tray_close', values.tray_close);
+        settings.set('pubnodes_exclude_offline', values.pubnodes_exclude_offline);
     }
     settingsInputServiceBin.value = settings.get('service_bin');
     settingsInputMinToTray.checked = settings.get('tray_minimize');
     settingsInputCloseToTray.checked = settings.get('tray_close');
+    settingsInputExcludeOfflineNodes.checked = settings.get('pubnodes_exclude_offline');
 
     // if custom node, save it
     let mynode = `${settings.get('daemon_host')}:${settings.get('daemon_port')}`;
@@ -648,17 +663,8 @@ function showInitialPage() {
     // other initiations here
     formMessageReset();
     initSettingVal(); // initial settings value
-
-    // no more first RUN :-)
-    // if (!settings.has('firstRun') || settings.get('firstRun') !== 0) {
-    //     changeSection('section-settings');
-    //     settings.set('firstRun', 0);
-    // } else {
-    //     changeSection('section-welcome');
-    // }
-    settings.set('firstRun', 0);
     changeSection('section-welcome');
-
+    settings.set('firstRun', 0);
     let versionInfo = document.getElementById('walletShellVersion');
     if (versionInfo) versionInfo.innerHTML = WS_VERSION;
     let tsVersionInfo = document.getElementById('turtleServiceVersion');
@@ -687,7 +693,8 @@ function handleSettings() {
             daemon_port: settings.get('daemon_port'),
             node_address: settings.get('node_address'),
             tray_minimize: settingsInputMinToTray.checked,
-            tray_close: settingsInputCloseToTray.checked
+            tray_close: settingsInputCloseToTray.checked,
+            pubnodes_exclude_offline: settingsInputExcludeOfflineNodes.checked
         };
 
         initSettingVal(vals);
@@ -1042,7 +1049,7 @@ function handleAddressBook() {
             dialog.showModal();
         } else {
             loadAddressBook({ name: 'default' });
-            wsutil.showToast(`Loaded address book switched to: Default/builtin`);
+            wsutil.showToast(`Address book switched to: Default/builtin`);
         }
     });
 
@@ -1074,15 +1081,14 @@ function handleAddressBook() {
                 loadAddressBook({ name: 'default' });
                 return;
             } else {
-                // update node selector
                 // close dialog
                 let axdialog = document.getElementById('ab-dialog');
                 axdialog.close();
                 wsutil.clearChild(axdialog);
                 // show msg
-                wsutil.showToast(`Loaded address book switched to: ${name}`);
+                wsutil.showToast(`Address book switched to: ${name}`);
             }
-        }, 500);
+        }, 100);
     });
 
     // insert address book entry
@@ -1140,22 +1146,22 @@ function handleAddressBook() {
             delete abook.data[oldHash];
         }
         wsession.set('addressBook', abook);
-        //let newItem = Object.entries({ entryHash: newAddress }).map(([key, value]) => ({ key, value }));
-        //window.ABOPTSAPI.api.updateRowData({ add: newItem });
         let rowData = Object.entries(abook.data).map(([key, value]) => ({ key, value }));
         window.ABOPTSAPI.api.setRowData(rowData);
         window.ABOPTSAPI.api.deselectAll();
         window.ABOPTSAPI.api.resetQuickFilter();
         window.ABOPTSAPI.api.sizeColumnsToFit();
+        wsutil.showToast('Address book entry have been saved.');
+        changeSection('section-addressbook');
+
+        // reset
         addressBookInputName.value = '';
         addressBookInputName.dataset.oldhash = '';
         addressBookInputWallet.value = '';
         addressBookInputPaymentId.value = '';
         addressBookInputUpdate.value = 0;
-
         formMessageReset();
-        changeSection('section-addressbook');
-        wsutil.showToast('Address book entry have been saved.');
+
         setTimeout(() => {
             addressBook.save(abook);
             initAddressCompletion(abook.data);
@@ -1411,7 +1417,7 @@ function handleWalletOpen() {
             wsutil.showToast('Network connectivity problem detected, node list update can not be performed');
             return;
         }
-        if (!confirm("Refreshing node data may took a while to complete, are you sure?")) return;
+        if (!confirm("Refreshing node list may take a while to complete, are you sure?")) return;
         fetchNodeInfo(true);
     });
 
@@ -1448,7 +1454,8 @@ function handleWalletOpen() {
             daemon_port: parseInt(nodeAddress[1], 10),
             node_address: nodeAddressValue,
             tray_minimize: settings.get('tray_minimize'),
-            tray_close: settings.get('tray_close')
+            tray_close: settings.get('tray_close'),
+            pubnodes_exclude_offline: settingsInputExcludeOfflineNodes.checked
         };
         initSettingVal(settingVals);
 
@@ -2568,7 +2575,14 @@ function initHandlers() {
             if (key === 'Enter') {
                 let section = el.closest('.section');
                 let target = section.querySelector('button:not(.notabindex)');
-                if (target) target.dispatchEvent(new Event('click'));
+                if (target) {
+                    let event = new MouseEvent('click', {
+                        view: window,
+                        bubbles: true,
+                        cancelable: true
+                    });
+                    target.dispatchEvent(event);
+                }
             }
         }, 400);
     }
@@ -2577,6 +2591,26 @@ function initHandlers() {
         let el = genericEnterableInputs[oi];
         el.addEventListener('keyup', handleFormEnter.bind(this, el));
     }
+
+
+    wsutil.liveEvent('dialog input:not(.noenter)', 'keyup', (e) => {
+        let key = this.event.key;
+        if (enterHandler) clearTimeout(enterHandler);
+        enterHandler = setTimeout(() => {
+            if (key === 'Enter') {
+                let section = e.target.closest('dialog');
+                let target = section.querySelector('button:not(.notabindex)');
+                if (target) {
+                    let event = new MouseEvent('click', {
+                        view: window,
+                        bubbles: true,
+                        cancelable: true
+                    });
+                    target.dispatchEvent(event);
+                }
+            }
+        });
+    });
 
     wsutil.liveEvent('.togpass', 'click', (e) => {
         let tg = e.target.classList.contains('.togpas') ? e.target : e.target.closest('.togpass');
@@ -2653,7 +2687,7 @@ function initHandlers() {
 function initKeyBindings() {
     let walletOpened;
     // switch tab: ctrl+tab
-    Mousetrap.bind(['ctrl+tab', 'command+tab'], switchTab);
+    Mousetrap.bind(['ctrl+tab', 'command+tab', 'ctrl+pagedown'], switchTab);
     Mousetrap.bind(['ctrl+o', 'command+o'], () => {
         walletOpened = wsession.get('serviceReady') || false;
         if (walletOpened) {
@@ -2749,13 +2783,14 @@ function initKeyBindings() {
 function fetchWait(url, timeout) {
     let controller = new AbortController();
     let signal = controller.signal;
-    timeout = timeout || 5200;
+    timeout = timeout || 6800;
     return Promise.race([
         fetch(url, { signal }),
-        new Promise((_, reject) =>
+        new Promise((resolve) =>
             setTimeout(() => {
-                controller.abort();
-                return reject(new Error('timeout'));
+                let fakeout = { "address": "", "amount": 0, "status": "KO" };
+                window.FETCHNODESIG = controller;
+                return resolve(fakeout);
             }, timeout)
         )
     ]);
@@ -2797,12 +2832,23 @@ function fetchNodeInfo(force) {
         reqs.push(function (callback) {
             return fetchWait(url)
                 .then((response) => {
-                    return response.json();
+                    if (response.hasOwnProperty('status')) { // fake/timeout response
+                        try { window.FETCHNODESIG.abort(); } catch (e) { }
+                        return response;
+                    } else {
+                        return response.json();
+                    }
                 }).then(json => {
                     if (!json || !json.hasOwnProperty("address") || !json.hasOwnProperty("amount")) {
                         return callback(null, null);
                     }
-                    let feeAmount = parseInt(json.amount, 10) > 0 ? `Fee: ${wsutil.amountForMortal(json.amount)} ${config.assetTicker}` : "FREE";
+
+                    let feeAmount = "";
+                    if (json.status === "KO") {
+                        feeAmount = 'Fee: unknown/timeout';
+                    } else {
+                        feeAmount = parseInt(json.amount, 10) > 0 ? `Fee: ${wsutil.amountForMortal(json.amount)} ${config.assetTicker}` : "FREE";
+                    }
                     out.label = `${h.split(':')[0]} | ${feeAmount}`;
                     return callback(null, out);
                 }).catch(() => {
@@ -2810,18 +2856,19 @@ function fetchNodeInfo(force) {
                 });
         });
     });
-    const parLimit = 18;
+    const parLimit = 12;
     async.parallelLimit(reqs, parLimit, function (error, results) {
         if (results) {
             let res = results.filter(val => val);
             if (res.length) {
                 settings.set('pubnodes_tested', res);
             }
+
             //let hrend = process.hrtime(hrstart);
             // console.info('Execution time (hr): %ds %dms', hrend[0], hrend[1] / 1000000);
             // console.info(`parlimit: ${parLimit}`);
-            // console.log(`total nodes: ${nodes.length}`);
-            // console.log(`alive nodes: ${res.length}`);
+            // console.info(`total nodes: ${nodes.length}`);
+            // console.info(`alive nodes: ${res.length}`);
             initNodeSelection();
         } else {
             initNodeSelection();

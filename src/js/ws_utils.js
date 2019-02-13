@@ -65,8 +65,15 @@ exports.innerHTML = (parentEl, html) => {
 
 exports.showToast = (msg, duration, elId) => {
     duration = duration || 3500;
-    elId = elId || 'belekok';
+    elId = elId || 'belekok';    
     let blekok = document.getElementById(elId);
+
+    if (!msg.length) {
+        try { clearTimeout(window.TOASTT); } catch (_) { }
+        blekok.classList.add('off');
+        return;
+    }
+
     let openedDialog = document.querySelector('dialog[open]');
 
     if (typeof window.TOASTT !== 'undefined' && window.TOASTT !== null) {
