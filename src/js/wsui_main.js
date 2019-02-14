@@ -382,7 +382,6 @@ function switchTab() {
         skippedSections = ['section-send'];
     }
 
-
     while (skippedSections.indexOf(nextSection) >= 0) {
         nextTab = nextTab.nextElementSibling;
         nextSection = nextTab.dataset.section.trim();
@@ -442,6 +441,10 @@ function changeSection(sectionId, targetRedir) {
         if (toastMsg.length && !targetRedir) wsutil.showToast(toastMsg);
         return;
     }
+
+    // reset quick filters
+    if (finalTarget === 'section-transactions') window.TXOPTSAPI.api.setQuickFilter('');
+    if (finalTarget === 'section-addressbook') window.ABOPTSAPI.api.setQuickFilter('');
 
     // navbar active section indicator, only for main section
     let finalButtonTarget = (finalTarget === 'section-welcome' ? 'section-overview' : finalTarget);
@@ -1049,7 +1052,7 @@ function handleAddressBook() {
             dialog.showModal();
         } else {
             loadAddressBook({ name: 'default' });
-            if(window.addressBookInitialize){
+            if (window.addressBookInitialize) {
                 wsutil.showToast(`Address book switched to: Default/builtin`);
             }
         }
@@ -1088,7 +1091,7 @@ function handleAddressBook() {
                 axdialog.close();
                 wsutil.clearChild(axdialog);
                 // show msg
-                if(window.addressBookInitialize){
+                if (window.addressBookInitialize) {
                     wsutil.showToast(`Address book switched to: ${name}`);
                 }
             }
@@ -2044,7 +2047,16 @@ function handleSendTransfer() {
                 sendInputPaymentId.value = '';
                 sendInputAmount.value = '';
             }).catch((err) => {
-                formMessageSet('send', 'error', `Failed to send transaction:<br><small>${err}</small>`);
+                err = err.message || err;
+                let msg = `${err}`;
+                if (err.includes('ESOCKETTIMEDOUT')) {
+                    msg = `Transaction was sent but failed to get transaction hash.
+                    Please wait for a few blocks, check your balance and transaction history before resending!`;
+                } else if (err.includes('size is too big')) {
+                    msg = `Failed to send Transaction:
+                    Transaction size is too big. Please optimize your wallet, or try sending in smaller amount`;
+                }
+                formMessageSet('send', 'error', `${msg}`);
             });
             wsutil.clearChild(md);
         });
@@ -2169,7 +2181,9 @@ function handleTransactions() {
                 rowClass: 'txlist-item',
                 paginationPageSize: 20,
                 cacheQuickFilter: true,
-                enableSorting: true
+                enableSorting: true,
+                onRowClicked: showTransaction
+
             };
             let txGrid = document.getElementById('txGrid');
             window.TXGRID = new AgGrid.Grid(txGrid, gridOptions);
@@ -2199,7 +2213,8 @@ function handleTransactions() {
                 }
             });
         } else {
-            window.TXOPTSAPI.api.updateRowData({ add: txs, addIndex: 0 });
+            window.TXOPTSAPI.api.updateRowData({ add: txs });
+            //window.TXOPTSAPI.api.updateRowData({ add: txs, addIndex: 0 });
             window.TXOPTSAPI.api.resetQuickFilter();
             sortDefault();
         }
@@ -2231,10 +2246,7 @@ function handleTransactions() {
     txButtonRefresh.addEventListener('click', listTransactions);
 
     function showTransaction(el) {
-        let row = el.classList.contains('txlist-item') ? el : el.closest('.txlist-item');
-        let txdata = wsession.get('txList');
-        let index = row.getAttribute('row-id');
-        let tx = txdata[index];
+        let tx = el.data;
         let txdate = new Date(tx.timestamp * 1000).toUTCString();
         let txhashUrl = `<a class="external" title="view in block explorer" href="${config.blockExplorerUrl.replace('[[TX_HASH]]', tx.transactionHash)}">View in block explorer</a>`;
         let dialogTpl = `
@@ -2277,11 +2289,11 @@ function handleTransactions() {
         dialog.showModal();
     }
     // tx detail
-    wsutil.liveEvent('.txlist-item', 'click', (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        return showTransaction(event.target);
-    }, document.getElementById('txGrid'));
+    // wsutil.liveEvent('.txlist-item', 'click', (event) => {
+    //     event.preventDefault();
+    //     event.stopPropagation();
+    //     return showTransaction(event.target);
+    // }, document.getElementById('txGrid'));
 
     // sort
     txButtonSortAmount.addEventListener('click', (event) => {

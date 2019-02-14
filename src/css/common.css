@@ -758,7 +758,7 @@ text-align: center;
     border-right:none;
 }
 
-#abGrid *:focus{
+#abGrid *:focus, #txGrid *:focus{
     outline: none;
 }
 
@@ -1701,12 +1701,10 @@ padding: 10px 0 0 0;
     cursor:pointer;
 }
 
-.transaction-list-table .txlist-item:nth-child(odd) {
-    background-color: rgba(0, 0, 0, 0.35);
-}
 
-.transaction-list-table .txlist-item:nth-child(even) {
-    background-color: rgba(0, 0, 0, 0.5);
+
+#txGrid .ag-row-odd{
+    background-color: rgba(0, 0, 0, 0.35);
 }
 
 .transaction-list-table .txlist-item span{
@@ -1742,7 +1740,6 @@ padding: 10px 0 0 0;
     padding:10px 0;
 }
 
-
 .transaction-list-table .txinfo p{
     margin: 0;
     overflow: hidden;
@@ -1755,9 +1752,19 @@ padding: 10px 0 0 0;
     color: rgba(255,255,255,0.5);
 }
 
+
+#txGrid .ag-row-hover .tx-ov-info{
+    color: rgba(255,255,255,0.75);
+}
+
+
 .transaction-list-table .tx-date{
     font-size: 0.90rem;
     font-weight:bold;
+}
+
+#txGrid .ag-row-hover .tx-date{
+    color:#fff;
 }
 
 progress.light{
