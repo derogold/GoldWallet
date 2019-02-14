@@ -35,6 +35,7 @@ const DEFAULT_SETTINGS = {
     pubnodes_date: null,
     pubnodes_data: config.remoteNodeListFallback,
     pubnodes_custom: ['127.0.0.1:11898'],
+    pubnodes_exclude_offline: false,
     tray_minimize: false,
     tray_close: false,
     darkmode: true,
@@ -72,6 +73,11 @@ function createWindow() {
         show: false,
         backgroundColor: bgColor,
         center: true,
+        webPreferences: {
+            // allow code inside this window to use use native window.open()
+            nativeWindowOpen: true,
+            nodeIntegrationInWorker: true,
+        },
     };
 
     win = splash.initSplashScreen({
@@ -261,6 +267,7 @@ function doNodeListUpdate() {
                     log.debug('Public node list has been updated');
                     let mo = (today.getMonth() + 1);
                     settings.set('pubnodes_date', `${today.getFullYear()}-${mo}-${today.getDate()}`);
+                    settings.delete('pubnodes_tested');
                 } catch (e) {
                     log.debug(`Failed to update public node list: ${e.message}`);
                     storeNodeList();
@@ -357,7 +364,7 @@ app.on('ready', () => {
     // remove old settings format if exist
     try { settings.delete('pubnodes_checked'); } catch (e) { }
     // remove tested nodes list, forcing re-test every start up
-    settings.delete('pubnodes_tested');
+    // settings.delete('pubnodes_tested');
 
     createWindow();
     // try to target center pos of primary display

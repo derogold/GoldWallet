@@ -346,7 +346,7 @@ function updateQr(address) {
         return;
     }
 
-    let walletHash = wsutil.b2sSum(address);
+    let walletHash = wsutil.fnvhash(address);
     wsession.set('walletHash', walletHash);
 
     let oldImg = document.getElementById('qr-gen-img');
@@ -378,7 +378,11 @@ function resetFormState() {
                     el.checked = settings.get(el.dataset.initial);
                 }
             }
-        } else {
+        } else if(el.dataset.default) {
+            if (!el.dataset.noclear) {
+                el.value = el.dataset.default;
+            }
+        }else {
             if (!el.dataset.noclear) el.value = '';
         }
     }

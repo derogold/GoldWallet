@@ -1,4 +1,4 @@
-## Porting WalletShell for Other Currency
+## Porting WalletShell for Another Currency
 
 > Note that this is only valid/possible for `turtle-service` compatible currency (e.g. a TurtleCoin fork).
 

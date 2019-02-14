@@ -3,67 +3,53 @@
 ![WalletShell Screens](https://i.imgur.com/41Ujq0S.gif "WalletShell Screens")
 
 ### Features:
-This wallet contains the basic functions required to manage your TurtleCoin assets:
 
-* Wallet creation
-  * Create new wallet
-  * Import from private keys OR mnemonic seed
-* Basic wallet operation
+This wallet contains the basic functions required to mvanage your TurtleCoin assets:
+
+* Wallet creation:
+  * Create new wallet.
+  * Import/recover from private keys OR mnemonic seed.
+* Basic wallet operation/transactions:
   * Open an existing  wallet
   * Display wallet address & balance
-  * Display private keys/seed
-  * Export private keys/seed
-  * Transactions listing/sorting/searching
-  * Display transaction detail
+  * Display & Backup private keys/seed
+  * Sending/transferring. Integrated Address or Payment ID are supported. Also provides address lookup from your addressbook.
+  * Transactions history listing/sorting/searching/detail.
+  * Incoming transaction notification.
   * Export incoming, outgoing, or all transactions to csv file.
-  * Incoming Transaction notification
-  * Send TurtleCoin to single recipient address, allow to set payment id and custom fee. Provides address lookup from addressbook.
-  * Perform wallet optimization by creating fusion transactions
-  * Provides utility to generate payment id and integrated address
-* Address book
-  * Add/Edit/Delete address entry (label/name, address and payment id)
-  * Listing/sorting/searching existing entries
-  * Allow to store same wallet address with different payment id
+  * Perform wallet optimization.
+  * Utilities: generate payment id and integrated address.
+* Address book:
+  * Add/Edit/Delete address entry.
+  * Listing/sorting/searching existing entries.
+  * Allow to store same wallet address with different payment id.
   * Autosave address after sending to new/unknown recipient
-* Misc
-  * Provides setting to set local or public node address
+  * Allow to optionally create password protected address book.
+* Misc:
   * Option to use system tray (on closing/minimizing wallet)
   * Provides list of public nodes, fetch/updated daily from [turtlecoin-nodes-json](https://github.com/turtlecoin/turtlecoin-nodes-json) repo.
-  * Custom node address that is not on the list will be added/remembered for future use
+  * Allow to add custom node address.
   * Theme: Dark & Light Mode
   * [Keyboard shortcuts](docs/shortcut.md)
-
-
-### Notes
-
-WalletShell relies on `turtle-service` to manage wallet container &amp; rpc communication.
-
-Release installer & packaged archives includes a ready to use `turtle-service` binary, which is unmodified copy TurtleCoin release archive.
-
-On first launch, WalletShell will try to detect location/path of bundled `turtle-service` binary, but if autodetection failed, you can manually set path to the `turtle-service` binary on the Settings screen.
-
-If you don't trust the bundled `turtle-service` file, you can compare the checksum (sha256sum) against one from the official release, or simply download and use the binary from official TurtleCoin release, which is available here: https://github.com/turtlecoin/turtlecoin/releases. Then,  make sure to update your `turtle-service` path setting.
 
 ### Download &amp; Run WalletShell
 
 #### Windows:
-1. Download the latest installer here: https://github.com/turtlecoin//turtle-wallet-electron/releases
+1. Download the latest installer here: https://github.com/turtlecoin/turtle-wallet-electron/releases/latest
 2. Run the installer (`walletshell-<version>-win-setup.exe`) and follow the installation wizard.
 3. Launch WalletShell via start menu or desktop shortcut.
 
 #### GNU/Linux (AppImage):
-1. Download latest AppImage bundle here: https://github.com/turtlecoin//turtle-wallet-electron/releases
+1. Download latest AppImage bundle here: https://github.com/turtlecoin/turtle-wallet-electron/releases/latest
 2. Make it executable, either via GUI file manager or command line, e.g. `chmod +x walletshell-<version>-linux.AppImage`
-3. Run/execute the file, double click in file manager, or run via shell/command line.
-
-See: https://docs.appimage.org/user-guide/run-appimages.html
+3. Run/execute the file, double click in file manager, or run via shell/command line (See: https://docs.appimage.org/user-guide/run-appimages.html)
 
 #### macOS
-1. Download latest archive here: https://github.com/turtlecoin//turtle-wallet-electron/releases
+1. Download latest archive here: https://github.com/turtlecoin/turtle-wallet-electron/releases/latest
 2. Extract downloaded zip archived
 3. Run the executable binary (`WalletShell.app/Contents/MacOs/WalletShell`)
 
-### Build
+### Building/Packaging WalletShell
 You need to have `Node.js` and `npm` installed, go to https://nodejs.org and find out how to get it installed on your platform.
 
 Once you have Node+npm installed:
@@ -104,7 +90,10 @@ $ npm run dist-mac
 
 Resulting packages or installer can be found inside `dist/` directory.
 
-### Porting for other coin
+### Using WalletShell
+Please visit our wiki page: [WalletShell User Guide](wiki).
+
+### Porting for another coin
 Please see [this guide](docs/porting.md) if you want to adapt WalletShell to be use for your own TurtleCoin fork.
 
 ![WalletShell](docs/walletshell.png)
