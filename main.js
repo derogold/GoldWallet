@@ -73,7 +73,8 @@ function createWindow() {
         show: false,
         backgroundColor: bgColor,
         center: true,
-        autoHideMenuBar: true,
+        autoHideMenuBar: false,
+        menuBarVisibility: false,
         webPreferences: {
             nativeWindowOpen: true,
             nodeIntegrationInWorker: true,
@@ -375,6 +376,10 @@ app.on('ready', () => {
     if (tx > 0 && ty > 0) win.setPosition(parseInt(tx, 10), parseInt(ty, 10));
 });
 
+app.on('browser-window-created',function(e,window) {
+    window.setMenuBarVisibility(false);
+    window.setAutoHideMenuBar(false);
+});
 // Quit when all windows are closed.
 app.on('window-all-closed', () => {
     //if (platform !== 'darwin')
