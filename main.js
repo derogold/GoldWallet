@@ -73,8 +73,8 @@ function createWindow() {
         show: false,
         backgroundColor: bgColor,
         center: true,
+        autoHideMenuBar: true,
         webPreferences: {
-            // allow code inside this window to use use native window.open()
             nativeWindowOpen: true,
             nodeIntegrationInWorker: true,
         },

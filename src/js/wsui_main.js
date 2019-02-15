@@ -283,6 +283,10 @@ function setDarkMode(dark) {
     }, 2000);
 }
 
+function closeDialog() {
+    let d = document.querySelector('dialog[open]');
+    if (d) d.close();
+}
 
 
 function genPaymentId(ret) {
@@ -292,12 +296,10 @@ function genPaymentId(ret) {
     if (ret) return payId.toUpperCase();
 
     let dialogTpl = `<div class="transaction-panel">
-    <h4>Generated Payment ID:</h4>
-    <textarea data-cplabel="Payment ID" title="click to copy" class="ctcl default-textarea" rows="1" readonly="readonly">${payId.toUpperCase()}</textarea>
-    <div class="div-panel-buttons">
-        <button  data-target="#ab-dialog" type="button" class="button-gray dialog-close-default">Close</button>
-    </div>
-    `;
+            <h4>Generated Payment ID:</h4>
+            <textarea data-cplabel="Payment ID" title="click to copy" class="ctcl default-textarea" rows="1" readonly="readonly">${payId.toUpperCase()}</textarea>
+            <span title="Close this dialog (esc)" class="dialog-close dialog-close-default" data-target="#ab-dialog"><i class="fas fa-window-close"></i></span>
+        </div>`;
     let dialog = document.getElementById('ab-dialog');
     if (dialog.hasAttribute('open')) dialog.close();
     dialog.innerHTML = dialogTpl;
@@ -309,26 +311,28 @@ function showIntegratedAddressForm() {
     let ownAddress = wsession.get('loadedWalletAddress');
     if (dialog.hasAttribute('open')) dialog.close();
 
-    let iaform = `<div class="transaction-panel">
+    let iaform = `
+    <div class="transaction-panel">
         <h4>Generate Integrated Address:</h4>
         <div class="input-wrap">
-        <label>Wallet Address</label>
-        <textarea id="genInputAddress" class="default-textarea" placeholder="Required, put any valid ${config.assetTicker} address..">${ownAddress}</textarea>
+            <label>Wallet Address</label>
+            <textarea id="genInputAddress" class="default-textarea" placeholder="Required, put any valid ${config.assetTicker} address..">${ownAddress}</textarea>
         </div>
         <div class="input-wrap">
-        <label>Payment Id (<a id="makePaymentId" class="wallet-tool inline-tool" title="generate random payment id...">generate</a>)</label>
-        <input id="genInputPaymentId" type="text" required="required" class="text-block" placeholder="Required, enter a valid payment ID, or click generate to get random ID" />
+            <label>Payment Id (<a id="makePaymentId" class="wallet-tool inline-tool" title="generate random payment id...">generate</a>)</label>
+            <input id="genInputPaymentId" type="text" required="required" class="text-block" placeholder="Required, enter a valid payment ID, or click generate to get random ID" />
         </div>
         <div class="input-wrap">
-        <textarea data-cplabel="Integrated address" placeholder="Fill the form &amp; click generate, integrated address will appear here..." rows="3" id="genOutputIntegratedAddress" class="default-textarea ctcl" readonly="readonly"></textarea>
+            <textarea data-cplabel="Integrated address" placeholder="Fill the form &amp; click generate, integrated address will appear here..." rows="3" id="genOutputIntegratedAddress" class="default-textarea ctcl" readonly="readonly"></textarea>
         </div>
         <div class="input-wrap">
             <span class="form-ew form-msg text-spaced-error hidden" id="text-gia-error"></span>
         </div>
         <div class="div-panel-buttons">
-            <button id="doGenIntegratedAddr" type="button" class="button-green dialog-close-default">Generate</button>
-            <button  data-target="#ab-dialog" type="button" class="button-gray dialog-close-default">Close</button>
+            <button id="doGenIntegratedAddr" type="button" class="button-green">Generate</button>
+            <!-- <button  data-target="#ab-dialog" type="button" class="button-gray dialog-close-default">Close</button> -->
         </div>
+        <span title="Close this dialog (esc)" class="dialog-close dialog-close-default" data-target="#ab-dialog"><i class="fas fa-window-close"></i></span>
     </div>    
     `;
     dialog.innerHTML = iaform;
@@ -339,12 +343,10 @@ function showKeyBindings() {
     let dialog = document.getElementById('ab-dialog');
     if (dialog.hasAttribute('open')) dialog.close();
     let shortcutstInfo = document.getElementById('shortcuts-main').innerHTML;
-    let keybindingTpl = `<div class="transaction-panel">${shortcutstInfo}
-<div class="div-panel-buttons">
-    <button  data-target="#ab-dialog" type="button" class="button-gray dialog-close-default">Close</button>
-</div>
-</div>
-`;
+    let keybindingTpl = `
+        <div class="transaction-panel">${shortcutstInfo}
+            <span title="Close this dialog (esc)" class="dialog-close dialog-close-default" data-target="#ab-dialog"><i class="fas fa-window-close"></i></span>
+        </div>`;
     dialog.innerHTML = keybindingTpl;
     dialog.showModal();
 }
@@ -356,9 +358,10 @@ function showAbout() {
     let info = `
         <div class="transaction-panel">
             ${infoContent}
-            <div class="div-panel-buttons">
+            <!-- <div class="div-panel-buttons">
                 <button  data-target="#ab-dialog" type="button" class="button-gray dialog-close-default">Close</button>
-            </div>
+            </div> -->
+            <span title="Close this dialog (esc)" class="dialog-close dialog-close-default" data-target="#ab-dialog"><i class="fas fa-window-close"></i></span>
         </div>`;
     dialog.innerHTML = info;
     dialog.showModal();
@@ -443,8 +446,12 @@ function changeSection(sectionId, targetRedir) {
     }
 
     // reset quick filters
-    if (finalTarget === 'section-transactions') window.TXOPTSAPI.api.setQuickFilter('');
-    if (finalTarget === 'section-addressbook') window.ABOPTSAPI.api.setQuickFilter('');
+    if (finalTarget === 'section-transactions' && window.TXOPTSAPI) {
+        window.TXOPTSAPI.api.setQuickFilter('');
+    }
+    if (finalTarget === 'section-addressbook' && window.ABOPTSAPI) {
+        window.ABOPTSAPI.api.setQuickFilter('');
+    }
 
     // navbar active section indicator, only for main section
     let finalButtonTarget = (finalTarget === 'section-welcome' ? 'section-overview' : finalTarget);
@@ -882,7 +889,7 @@ function handleAddressBook() {
         }
 
         let tpl = `
-             <div class="div-transactions-panel">
+        <div class="div-transactions-panel">
                  <h4>Address Detail</h4>
                  <div class="addressBookDetail">
                      <div class="addressBookDetail-qr">
@@ -899,15 +906,13 @@ function handleAddressBook() {
                          </dl>
                      </div>
                  </div>
-             </div>
-             <div class="div-panel-buttons">
+                <div class="div-panel-buttons">
                     ${sendTrtl}
                     <button data-addressid="${data.key}" type="button" class="form-bt button-green ab-edit" id="button-addressbook-panel-edit">Edit</button>
                     <button data-addressid="${data.key}" type="button" class="form-bt button-red ab-delete" id="button-addressbook-panel-delete">Delete</button>
-                    <!-- <button data-target="#ab-dialog" type="button" class="form-bt button-gray dialog-close-default"">Close</button> -->
-             </div>
-             <span title="Close this dialog (esc)" class="dialog-close dialog-close-default" data-target="#ab-dialog"><i class="fas fa-window-close"></i></span>
-        `;
+                </div>
+                <span title="Close this dialog (esc)" class="dialog-close dialog-close-default" data-target="#ab-dialog"><i class="fas fa-window-close"></i></span>
+            </div>`;
 
         wsutil.innerHTML(dialog, tpl);
         dialog = document.getElementById('ab-dialog');
@@ -956,7 +961,6 @@ function handleAddressBook() {
                 </div>
                 <div class="div-panel-buttons">
                     <button id="createNewAddressBook" type="button" class="button-green">Create & activate</button>
-                    <!-- <button data-target="#ab-dialog" type="button" class="button-gray dialog-close-default">Close</button> -->
                 </div>
                 <span title="Close this dialog (esc)" class="dialog-close dialog-close-default" data-target="#ab-dialog"><i class="fas fa-window-close"></i></span>
             </div>             
@@ -1042,7 +1046,6 @@ function handleAddressBook() {
                     </div>
                     <div class="div-panel-buttons">
                         <button id="loadAddressBook" type="button" class="button-green">Open</button>
-                        <!-- <button data-target="#ab-dialog" type="button" class="button-gray dialog-close-default">Close</button> -->
                     </div>
                     <span id="addressBookSwitcherClose" title="Close this dialog (esc)" class="dialog-close dialog-close-defaultx" data-target="#ab-dialog"><i class="fas fa-window-close"></i></span>
                 </div>             
@@ -1345,29 +1348,31 @@ function handleWalletOpen() {
         });
         cnode += '</ul>';
 
-        let iaform = `<div class="transaction-panel">
-            <h4>Custom daemon/node address:</h4>
-            <div class="splitted-area splitted-2">
-                <div class="splitted-content first">
-                    <p>Your Custom Nodes:</p>
-                    ${cnode}
-                </div>
-                <div class="splitted-content last">
-                    <div class="input-wrap f-right">
-                    <label>Add New Custom Node</label>
-                    <input type="text" id="customNodeAddress" placeholder="my.example.com:${config.daemonDefaultRpcPort}" class="text-block" />
-                    <span class="form-help">Required, example: my.example-domain.com:${config.daemonDefaultRpcPort}, 123.123.123.123:${config.daemonDefaultRpcPort}</span>
+        let iaform = `
+            <div class="transaction-panel">
+                <h4>Custom daemon/node address:</h4>
+                <div class="splitted-area splitted-2">
+                    <div class="splitted-content first">
+                        <p>Your Custom Nodes:</p>
+                        ${cnode}
                     </div>
-                    <div class="input-wrap">
-                        <span class="form-ew form-msg text-spaced-error hidden" id="text-customnode-error"></span>
+                    <div class="splitted-content last">
+                        <div class="input-wrap f-right">
+                            <label>Add New Custom Node</label>
+                            <input type="text" id="customNodeAddress" placeholder="my.example.com:${config.daemonDefaultRpcPort}" class="text-block" />
+                            <span class="form-help">Required, example: my.example-domain.com:${config.daemonDefaultRpcPort}, 123.123.123.123:${config.daemonDefaultRpcPort}</span>
+                        </div>
+                        <div class="input-wrap">
+                            <span class="form-ew form-msg text-spaced-error hidden" id="text-customnode-error"></span>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="div-panel-buttons">
-                <button id="saveCustomNode" type="button" class="button-green">Save & activate</button>
-                <button  data-target="#ab-dialog" type="button" class="button-gray dialog-close-default">Close</button>
-            </div>
-            `;
+                <div class="div-panel-buttons">
+                    <button id="saveCustomNode" type="button" class="button-green">Save & activate</button>
+                    <!-- <button  data-target="#ab-dialog" type="button" class="button-gray dialog-close-default">Close</button> -->
+                </div>
+                <span title="Close this dialog (esc)" class="dialog-close dialog-close-default" data-target="#ab-dialog"><i class="fas fa-window-close"></i></span>
+            </div>`;
         dialog.innerHTML = iaform;
         dialog.showModal();
     }
@@ -1996,10 +2001,11 @@ function handleSendTransfer() {
                         <dd class="dd-ib">${total} ${config.assetTicker}</dd>
                     </dl>
                 </div>
-            </div>
-            <div class="div-panel-buttons">
-                <button data-target='#tf-dialog' type="button" class="form-bt button-red dialog-close-default" id="button-send-ko">Cancel</button>
-                <button data-target='#tf-dialog' type="button" class="form-bt button-green" id="button-send-ok">OK, Send it!</button>
+                <div class="div-panel-buttons">
+                    <button data-target='#tf-dialog' type="button" class="form-bt button-red dialog-close-default" id="button-send-ko">Cancel</button>
+                    <button data-target='#tf-dialog' type="button" class="form-bt button-green" id="button-send-ok">OK, Send it!</button>
+                </div>
+                <span title="Close this dialog (esc)" class="dialog-close dialog-close-default" data-target="#ab-dialog"><i class="fas fa-window-close"></i></span>
             </div>`;
 
         let dialog = document.getElementById('tf-dialog');
@@ -2277,9 +2283,7 @@ function handleTransactions() {
                         </tbody>
                     </table>
                     <p class="text-center">${txhashUrl}</p>
-                </div>
-                <div class="div-panel-buttons">
-                    <button data-target="#tx-dialog" type="button" class="form-bt button-red dialog-close-default" id="button-transactions-panel-close">Close</button>
+                    <span title="Close this dialog (esc)" class="dialog-close dialog-close-default" data-target="#ab-dialog"><i class="fas fa-window-close"></i></span>
                 </div>
             `;
 
@@ -2570,13 +2574,8 @@ function initHandlers() {
 
     // generic dialog closer
     wsutil.liveEvent('.dialog-close-default', 'click', (event) => {
-        let el = event.target;
-        if (!el) return;
-        let target = el.dataset.target || el.closest('span').dataset.target;
-        if (target) {
-            let tel = document.querySelector(target);
-            tel.close();
-        }
+        let d = document.querySelector('dialog[open]');
+        if (d) d.close();
     });
 
     var enterHandler;
