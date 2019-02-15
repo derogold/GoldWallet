@@ -91,7 +91,7 @@ $ npm run dist-mac
 Resulting packages or installer can be found inside `dist/` directory.
 
 ### Using WalletShell
-Please visit our wiki page: [WalletShell User Guide](wiki).
+Please visit our wiki page: [WalletShell User Guide](../../wiki).
 
 ### Porting for another coin
 Please see [this guide](docs/porting.md) if you want to adapt WalletShell to be use for your own TurtleCoin fork.
