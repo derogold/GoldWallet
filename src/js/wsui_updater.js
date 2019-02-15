@@ -378,11 +378,11 @@ function resetFormState() {
                     el.checked = settings.get(el.dataset.initial);
                 }
             }
-        } else if(el.dataset.default) {
+        } else if (el.dataset.default) {
             if (!el.dataset.noclear) {
                 el.value = el.dataset.default;
             }
-        }else {
+        } else {
             if (!el.dataset.noclear) el.value = '';
         }
     }
