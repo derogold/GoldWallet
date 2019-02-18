@@ -232,7 +232,7 @@ WalletShellManager.prototype._spawnService = function (walletFile, password, onE
         log.warn('Failed to create config file, fallback to cmd args ');
     }
 
-    
+
 
     let wsm = this;
     log.debug('Starting service...');
@@ -272,7 +272,7 @@ WalletShellManager.prototype._spawnService = function (walletFile, password, onE
     }
 
     let TEST_OK = false;
-    let MAX_CHECK = 20;
+    let MAX_CHECK = 38;
     function testConnection(retry) {
         wsm.serviceApi.getAddress().then((address) => {
             log.debug('Got an address, connection ok!');
@@ -321,7 +321,7 @@ WalletShellManager.prototype._spawnService = function (walletFile, password, onE
                     let nextTry = retry + 1;
                     log.debug(`retrying testconn (${nextTry})`);
                     testConnection(nextTry);
-                }, 1200);
+                }, 1000);
             }
         });
     }
@@ -329,7 +329,7 @@ WalletShellManager.prototype._spawnService = function (walletFile, password, onE
     setTimeout(function () {
         log.debug('performing connection test');
         testConnection(0);
-    }, 15000);
+    }, 5000);
 };
 
 WalletShellManager.prototype.stopService = function () {
@@ -608,6 +608,43 @@ WalletShellManager.prototype.sendTransaction = function (params) {
             return resolve(result);
         }).catch((err) => {
             return reject(err);
+        });
+    });
+};
+
+WalletShellManager.prototype.rescanWallet = function (scanHeight) {
+    let wsm = this;
+
+    function resetSession() {
+        wsession.set('walletUnlockedBalance', 0);
+        wsession.set('walletLockedBalance', 0);
+        wsession.set('synchronized', false);
+        wsession.set('txList', []);
+        wsession.set('txLen', 0);
+        wsession.set('txLastHash', null);
+        wsession.set('txLastTimestamp', null);
+        wsession.set('txNew', []);
+        let fakeBlock = -300;
+        let resetdata = {
+            type: 'blockUpdated',
+            data: {
+                blockCount: fakeBlock,
+                displayBlockCount: fakeBlock,
+                knownBlockCount: fakeBlock,
+                displayKnownBlockCount: fakeBlock,
+                syncPercent: fakeBlock
+            }
+        };
+        wsm.notifyUpdate(resetdata);
+    }
+
+    return new Promise((resolve) => {
+        wsm.serviceApi.reset({ scanHeight: scanHeight }).then(() => {
+            resetSession();
+            return resolve(true);
+        }).catch(() => {
+            resetSession();
+            return resolve(false);
         });
     });
 };

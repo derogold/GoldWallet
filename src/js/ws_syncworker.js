@@ -6,7 +6,7 @@ log.transports.file.maxSize = 5 * 1024 * 1024;
 log.transports.console.level = 'debug';
 log.transports.file.level = 'debug';
 
-const CHECK_INTERVAL = 8 * 1000;
+const CHECK_INTERVAL = 4 * 1000;
 var LAST_BLOCK_COUNT = 1;
 var LAST_KNOWN_BLOCK_COUNT = 1;
 
@@ -43,19 +43,19 @@ function checkBlockUpdate() {
     if (!SERVICE_CFG || STATE_SAVING || wsapi === null) return;
     if (STATE_PENDING_SAVE && (PENDING_SAVE_SKIP_COUNTER < PENDING_SAVE_SKIP_MAX)) {
         PENDING_SAVE_SKIP_COUNTER += 1;
-        logDebug('checkBlockUpdate: there is pending saveWallet, delaying block update check');
+        logDebug('-> blockUpdater: saveWallet in progress, delaying block update check');
         return;
     }
 
     PENDING_SAVE_SKIP_COUNTER = 0;
-    logDebug('checkBlockUpdate: fetching block update');
+    logDebug('-> blockUpdater: fetching block update');
     //let svc = new WalletShellApi(SERVICE_CFG);
     wsapi.getStatus().then((blockStatus) => {
         STATE_PENDING_SAVE = false;
         let lastConStatus = STATE_CONNECTED;
         let conFailed = parseInt(blockStatus.knownBlockCount, 10) === 1;
         if (conFailed) {
-            logDebug('checkBlockUpdate: Got bad known block count, mark connection as broken');
+            logDebug('-> blockUpdater: Got bad known block count, mark connection as broken');
             if (lastConStatus !== conFailed) {
                 let fakeStatus = {
                     blockCount: -200,
@@ -78,13 +78,13 @@ function checkBlockUpdate() {
         FAILED_COUNTER = 0;
         let blockCount = parseInt(blockStatus.blockCount, 10);
         let knownBlockCount = parseInt(blockStatus.knownBlockCount, 10);
-        if (blockCount <= LAST_BLOCK_COUNT && knownBlockCount <= LAST_KNOWN_BLOCK_COUNT && TX_SKIPPED_COUNT < 10) {
-            logDebug(`checkBlockUpdate: no update, skip block notifier (${TX_SKIPPED_COUNT})`);
+        if (blockCount <= LAST_BLOCK_COUNT && knownBlockCount <= LAST_KNOWN_BLOCK_COUNT && TX_SKIPPED_COUNT < 8) {
+            logDebug(`-> blockUpdater: no update, skip block notifier (${TX_SKIPPED_COUNT})`);
             TX_SKIPPED_COUNT += 1;
             return;
         }
         TX_SKIPPED_COUNT = 0;
-        logDebug('checkBlockUpdate: block updated, notify block update');
+        logDebug('-> blockUpdater: block updated, notify block update');
         let txcheck = (LAST_KNOWN_BLOCK_COUNT < knownBlockCount || LAST_BLOCK_COUNT < knownBlockCount);
         LAST_BLOCK_COUNT = blockCount;
         LAST_KNOWN_BLOCK_COUNT = knownBlockCount;
@@ -112,7 +112,7 @@ function checkBlockUpdate() {
 
         // don't check tx if block count not updated
         if (!txcheck && TX_CHECK_STARTED) {
-            logDebug('checkBlockUpdate: Tx check skipped');
+            logDebug('-> blockUpdater: Tx check skipped');
             return;
         }
 
@@ -120,9 +120,9 @@ function checkBlockUpdate() {
 
     }).catch((err) => {
         FAILED_COUNTER++;
-        logDebug(`checkBlockUpdate: FAILED, ${err.message} | failed count: ${FAILED_COUNTER}`);
+        logDebug(`-> blockUpdater: FAILED, ${err.message} | failed count: ${FAILED_COUNTER}`);
         if (FAILED_COUNTER >= 12) {
-            logDebug('checkBlockUpdate: too many timeout, mark connection as broken');
+            logDebug('-> blockUpdater: too many timeout, mark connection as broken');
 
             let fakeStatus = {
                 blockCount: -200,
@@ -153,7 +153,7 @@ function checkTransactionsUpdate() {
         });
 
         if (LAST_BLOCK_COUNT > 1) {
-            logDebug('checkTransactionsUpdate: checking tx update');
+            logDebug('-> txUpdater: checking tx update');
             let currentBLockCount = LAST_BLOCK_COUNT - 1;
             let startIndex = (!TX_CHECK_STARTED ? 1 : TX_LAST_INDEX);
             let searchCount = currentBLockCount;
@@ -170,7 +170,7 @@ function checkTransactionsUpdate() {
                 firstBlockIndex: startIndexWithMargin,
                 blockCount: searchCountWithMargin
             };
-            logDebug(`checkTransactionsUpdate: args=${JSON.stringify(trx_args)}`);
+            logDebug(`-> txUpdater: args=${JSON.stringify(trx_args)}`);
             wsapi.getTransactions(trx_args).then((trx) => {
                 process.send({
                     type: 'transactionUpdated',
@@ -178,7 +178,7 @@ function checkTransactionsUpdate() {
                 });
                 return true;
             }).catch((err) => {
-                logDebug(`checkTransactionsUpdate: getTransactions FAILED, ${err.message}`);
+                logDebug(`-> txUpdater: getTransactions FAILED, ${err.message}`);
                 return false;
             });
             TX_CHECK_STARTED = true;
@@ -186,7 +186,7 @@ function checkTransactionsUpdate() {
             TX_LAST_COUNT = currentBLockCount;
         }
     }).catch((err) => {
-        logDebug(`checkTransactionsUpdate: getBalance FAILED, ${err.message}`);
+        logDebug(`-> txUpdater: getBalance FAILED, ${err.message}`);
         return false;
     });
 }
@@ -194,38 +194,27 @@ function checkTransactionsUpdate() {
 function delayReleaseSaveState() {
     setTimeout(() => {
         STATE_SAVING = false;
-    }, 3000);
+    }, 2000);
 }
 
-// function doExit() {
-//     if (taskWorker === undefined || taskWorker === null) {
-//         try {
-//             clearInterval(taskWorker);
-//             process.exit(0);
-//         } catch (e) {
-//             logDebug(`FAILED, ${e.message}`);
-//         }
-//     }
-// }
 
 function saveWallet() {
     if (!SERVICE_CFG) return;
     if (STATE_PENDING_SAVE) {
-        logDebug('saveWallet: skipped, last save operation still pending');
+        logDebug('-> saveWallet: skipped, last save operation still pending');
         return;
     }
     STATE_SAVING = true;
-    logDebug(`saveWallet: trying to save wallet`);
+    logDebug(`-> saveWallet: trying to save wallet`);
     setTimeout(() => {
         wsapi.save().then(() => {
-            logDebug(`saveWallet: OK`);
+            logDebug(`-> saveWallet: OK`);
             STATE_SAVING = false;
             STATE_PENDING_SAVE = false;
             //if(exit) doExit();
             return true;
-        }).catch((err) => {
+        }).catch(() => {
             STATE_PENDING_SAVE = true;
-            logDebug(`saveWallet: FAILED, ${err.message}`);
             delayReleaseSaveState();
             //if (exit) doExit();
             return false;
@@ -236,9 +225,9 @@ function saveWallet() {
 function workOnTasks() {
     taskWorker = setInterval(() => {
         if (STATE_PAUSED) return;
-        logDebug(`Running wallet synchronization tasks`);
+        logDebug(`Wallet sync tasks...`);
         checkBlockUpdate();
-        if (SAVE_COUNTER > 20) {
+        if (SAVE_COUNTER > 30) {
             saveWallet();
             SAVE_COUNTER = 0;
         }
