@@ -17,6 +17,7 @@ This wallet contains the basic functions required to mvanage your TurtleCoin ass
   * Transactions history listing/sorting/searching/detail.
   * Incoming transaction notification.
   * Export incoming, outgoing, or all transactions to csv file.
+  * Rescan wallet from specific block height.
   * Perform wallet optimization.
   * Utilities: generate payment id and integrated address.
 * Address book:
@@ -48,6 +49,9 @@ This wallet contains the basic functions required to mvanage your TurtleCoin ass
 1. Download latest archive here: https://github.com/turtlecoin/turtle-wallet-electron/releases/latest
 2. Extract downloaded zip archived
 3. Run the executable binary (`WalletShell.app/Contents/MacOs/WalletShell`)
+
+### Using WalletShell
+Please visit our wiki page: [WalletShell User Guide](../../wiki).
 
 ### Building/Packaging WalletShell
 You need to have `Node.js` and `npm` installed, go to https://nodejs.org and find out how to get it installed on your platform.
@@ -89,9 +93,6 @@ $ npm run dist-mac
 ```
 
 Resulting packages or installer can be found inside `dist/` directory.
-
-### Using WalletShell
-Please visit our wiki page: [WalletShell User Guide](../../wiki).
 
 ### Porting for another coin
 Please see [this guide](docs/porting.md) if you want to adapt WalletShell to be use for your own TurtleCoin fork.
