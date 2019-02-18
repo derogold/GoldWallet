@@ -81,9 +81,6 @@ WalletShellSession.prototype.set = function (key, val) {
     if (!this.keys.includes(key)) {
         throw new Error(`Invalid session key: ${key}`);
     }
-    // if (!this.sessDefault.hasOwnProperty(key) || !this.stickyVals.hasOwnProperty(key)) {
-    //     throw new Error(`Invalid session key: ${key}`);
-    // }
 
     let sessData = this.get(); // all current data obj
     sessData[key] = val; // update value

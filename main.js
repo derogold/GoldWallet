@@ -30,8 +30,6 @@ const DEFAULT_REMOTE_NODE = config.remoteNodeListFallback
     .sort((a, b) => a.sort - b.sort)
     .map((a) => a.value)[0];
 
-log.debug(DEFAULT_REMOTE_NODE);
-
 const DEFAULT_SETTINGS = {
     service_bin: DEFAULT_SERVICE_BIN,
     service_host: '127.0.0.1',

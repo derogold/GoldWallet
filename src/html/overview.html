@@ -29,9 +29,19 @@
                 </div>
             </div>
             <div class="input-wrap button-wrap">
-                <button tabindex="0" type="button" class="form-bt  button-green" id="button-overview-closewallet">Close Wallet</button>
-                <button tabindex="0" type="button" class="form-bt button-green" title="Backup your private keys, you really MUST do this!" data-section="section-overview-show" id="button-overview-showkeys">Private keys</button>
-                <button tabindex="0" type="button" class="form-bt button-green" title="Perform wallet optimization. Try this if you get error when sending big transaction." id="button-send-optimize">Optimize</button>
+                <button tabindex="0" type="button" class="form-bt button-green" 
+                    data-section="section-overview-show" 
+                    title="Backup your private keys, you really MUST do this! (ctrl+e)" 
+                    id="button-overview-showkeys">Backup Keys</button>
+                <button tabindex="0" type="button" class="form-bt button-green" 
+                    title="Rescan transactions from specific block height. Only do this if you know what you are doing"
+                    id="button-overview-rescan">Rescan</button>
+                <button tabindex="0" type="button" class="form-bt button-green"
+                    title="Perform wallet optimization. Try this if you get &quot;Transaction size too big&quot; error when sending funds" 
+                    id="button-send-optimize">Optimize</button>
+                <button tabindex="0" type="button" class="form-bt  button-green" 
+                    title="Close current wallet, so you can open another wallet (ctrl+x)"
+                    id="button-overview-closewallet">Close</button>
                 <div id="fusionProgress" class="fusion-progress hidden">
                     <i class="fas fa-cogs fa-spin"></i> Wallet optimization in progress <i class="fas fa-cogs fa-spin"></i>
                 </div>

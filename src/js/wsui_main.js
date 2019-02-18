@@ -51,8 +51,10 @@ let settingsButtonSave;
 // overview page
 let overviewWalletAddress;
 let overviewWalletCloseButton;
+let overviewWalletRescanButton;
 let overviewPaymentIdGen;
 let overviewIntegratedAddressGen;
+
 // addressbook page
 let addressBookInputName;
 let addressBookInputWallet;
@@ -151,7 +153,7 @@ function populateElementVars() {
     overviewWalletCloseButton = document.getElementById('button-overview-closewallet');
     overviewPaymentIdGen = document.getElementById('payment-id-gen');
     overviewIntegratedAddressGen = document.getElementById('integrated-wallet-gen');
-
+    overviewWalletRescanButton = document.getElementById('button-overview-rescan');
     // addressbook page
     addressBookInputName = document.getElementById('input-addressbook-name');
     addressBookInputWallet = document.getElementById('input-addressbook-wallet');
@@ -501,7 +503,7 @@ function initNodeSelection(nodeAddr) {
     // shuffle nodes
     if (onlines.length) {
         let rndMethod = wsutil.arrShuffle([0, 1]);
-        testedNodes = wsutil.arrShuffle(onlines, rndMethod);
+        onlines = wsutil.arrShuffle(onlines, rndMethod);
     } else {
         if (pubnodes_fallbacks.length) {
             customNodes = pubnodes_fallbacks;
@@ -1324,7 +1326,7 @@ function handleWalletOpen() {
         let extras = document.querySelectorAll('.wallet-open-extra');
         if (isInProgress) {
             walletOpenButtons.classList.add('hidden');
-            extras.forEach((x) => {x.classList.add('hidden');});
+            extras.forEach((x) => { x.classList.add('hidden'); });
         } else {
             walletOpenButtons.classList.remove('hidden');
             extras.forEach((x) => { x.classList.remove('hidden'); });
@@ -1576,6 +1578,64 @@ function handleWalletOpen() {
         if (eid === 'fake-selected-node' || eid === 'fake-select') return;
         if (isChild(e.target, walletOpenSelectBox)) return;
         walletOpenSelectOpts.classList.add('hidden');
+    });
+}
+
+function handleWalletRescan() {
+    overviewWalletRescanButton.addEventListener('click', (event) => {
+        event.preventDefault();
+        let walletOpened = wsession.get('serviceReady') || false;
+        if (!walletOpened) return;
+
+        let dialogTpl = `<div class="transaction-panel">
+            <h4>Rescan Wallet</h4>
+            <p class="form-help">
+                Re-scan the blockchain to search transactions belongs to your wallet address.
+                Do this if you think there are missing transactions data or if you put wrong scan height value during import.
+            </p>
+            <div class="input-wrap">
+                <label>Starting block height:</label>
+                <input type="number" min="0" step="1" class="text-block" 
+                        id="rescanScanHeight" value="1" 
+                        title="First block index to be scanned"
+                        />
+            </div>
+            <div class="input-wrap">
+                <span class="form-ew form-msg text-spaced-error hidden" id="text-rescanheight-error"></span>
+            </div>
+            <div class="div-panel-buttons">
+                <button type="button" class="form-bt button-green" id="button-rescan-start">Start Rescan</button>
+            </div>
+            <span title="Close this dialog (esc)" class="dialog-close dialog-close-default" data-target="#ab-dialog"><i class="fas fa-window-close"></i></span>
+        </div>`;
+        let dialog = document.getElementById('ab-dialog');
+        if (dialog.hasAttribute('open')) dialog.close();
+        dialog.innerHTML = dialogTpl;
+        dialog.showModal();
+    });
+
+    wsutil.liveEvent('#button-rescan-start', 'click', () => {
+        let scanHeightEl = document.getElementById('rescanScanHeight');
+        let scanHeight = scanHeightEl.value.length ? parseInt(scanHeightEl.value, 10) : -1;
+        formMessageReset();
+        if (scanHeight < 0) {
+            formMessageSet('rescanheight', 'error', 'Please specify a valid scan height');
+            return;
+        }
+        let confirmMsg = 'Rescanning process may take a long time to complete, are you sure?';
+        if (scanHeight === 0) {
+            confirmMsg = 'Setting scan height to 0 will fully reset your wallet. Rescanning process may take a long time to complete, are you sure?';
+        }
+        if (!confirm(confirmMsg)) return;
+        wsmanager.rescanWallet(scanHeight).then(() => {
+            resetTransactions();
+            wsutil.showToast('Rescan OK, your wallet will be re-synchronize');
+        }).catch(() => {
+            resetTransactions();
+            wsutil.showToast('Rescan OK, your wallet will be re-synchronize');
+        });
+        let d = document.querySelector('dialog[open]');
+        if (d) d.close();
     });
 }
 
@@ -2193,14 +2253,13 @@ function handleTransactions() {
                     window.TXOPTSAPI.api.doLayout();
                     window.TXOPTSAPI.api.sizeColumnsToFit();
                     sortDefault();
-                }, 100);
+                }, 10);
             };
 
             window.addEventListener('resize', () => {
                 if (window.TXOPTSAPI) {
                     window.TXOPTSAPI.api.sizeColumnsToFit();
                 }
-
             });
 
             let txfilter = document.getElementById('tx-search');
@@ -2646,6 +2705,8 @@ function initHandlers() {
     handleWalletOpen();
     // close wallet
     handleWalletClose();
+    // rescan/reset wallet
+    handleWalletRescan();
     // create wallet
     handleWalletCreate();
     // export keys/seed
