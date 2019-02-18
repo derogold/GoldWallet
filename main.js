@@ -24,6 +24,14 @@ const WALLETSHELL_VERSION = app.getVersion() || '0.3.x';
 const SERVICE_FILENAME = (platform === 'win32' ? `${config.walletServiceBinaryFilename}.exe` : config.walletServiceBinaryFilename);
 const SERVICE_OSDIR = (platform === 'win32' ? 'win' : (platform === 'darwin' ? 'osx' : 'lin'));
 const DEFAULT_SERVICE_BIN = path.join(process.resourcesPath, 'bin', SERVICE_OSDIR, SERVICE_FILENAME);
+
+const DEFAULT_REMOTE_NODE = config.remoteNodeListFallback
+    .map((a) => ({ sort: Math.random(), value: a }))
+    .sort((a, b) => a.sort - b.sort)
+    .map((a) => a.value)[0];
+
+log.debug(DEFAULT_REMOTE_NODE);
+
 const DEFAULT_SETTINGS = {
     service_bin: DEFAULT_SERVICE_BIN,
     service_host: '127.0.0.1',
@@ -31,7 +39,7 @@ const DEFAULT_SETTINGS = {
     service_password: crypto.randomBytes(32).toString('hex'),
     daemon_host: config.remoteNodeDefaultHost,
     daemon_port: config.daemonDefaultRpcPort,
-    node_address: `${config.remoteNodeDefaultHost}:${config.daemonDefaultRpcPort}`,
+    node_address: DEFAULT_REMOTE_NODE,
     pubnodes_date: null,
     pubnodes_data: config.remoteNodeListFallback,
     pubnodes_custom: ['127.0.0.1:11898'],

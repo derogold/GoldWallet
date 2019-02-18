@@ -40,8 +40,7 @@ config.remoteNodeListUpdateUrl = 'https://raw.githubusercontent.com/turtlecoin/t
 config.remoteNodeListFallback = [
   'turtlenode.co:11898',
   'nodes.hashvault.pro:11898',
-  'public.turtlenode.io:11898',
-  'public.turtlenode.net:11898',
+  'turtle.mine.nu:11898',
 ];
 
 // your currency name
