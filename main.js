@@ -24,6 +24,14 @@ const WALLETSHELL_VERSION = app.getVersion() || '0.3.x';
 const SERVICE_FILENAME = (platform === 'win32' ? `${config.walletServiceBinaryFilename}.exe` : config.walletServiceBinaryFilename);
 const SERVICE_OSDIR = (platform === 'win32' ? 'win' : (platform === 'darwin' ? 'osx' : 'lin'));
 const DEFAULT_SERVICE_BIN = path.join(process.resourcesPath, 'bin', SERVICE_OSDIR, SERVICE_FILENAME);
+
+const DEFAULT_REMOTE_NODE = config.remoteNodeListFallback
+    .map((a) => ({ sort: Math.random(), value: a }))
+    .sort((a, b) => a.sort - b.sort)
+    .map((a) => a.value)[0];
+
+log.debug(DEFAULT_REMOTE_NODE);
+
 const DEFAULT_SETTINGS = {
     service_bin: DEFAULT_SERVICE_BIN,
     service_host: '127.0.0.1',
@@ -31,7 +39,7 @@ const DEFAULT_SETTINGS = {
     service_password: crypto.randomBytes(32).toString('hex'),
     daemon_host: config.remoteNodeDefaultHost,
     daemon_port: config.daemonDefaultRpcPort,
-    node_address: `${config.remoteNodeDefaultHost}:${config.daemonDefaultRpcPort}`,
+    node_address: DEFAULT_REMOTE_NODE,
     pubnodes_date: null,
     pubnodes_data: config.remoteNodeListFallback,
     pubnodes_custom: ['127.0.0.1:11898'],
@@ -42,6 +50,7 @@ const DEFAULT_SETTINGS = {
     service_config_format: config.walletServiceConfigFormat
 };
 const DEFAULT_SIZE = { width: 840, height: 680 };
+const WIN_TITLE = `${config.appName} ${WALLETSHELL_VERSION} - ${config.appDescription}`;
 
 app.prompExit = true;
 app.prompShown = false;
@@ -63,7 +72,7 @@ function createWindow() {
     let bgColor = darkmode ? '#000000' : '#02853E';
 
     const winOpts = {
-        title: `${config.appName} ${config.appDescription}`,
+        title: WIN_TITLE,
         icon: path.join(__dirname, 'src/assets/walletshell_icon.png'),
         frame: true,
         width: DEFAULT_SIZE.width,
@@ -73,8 +82,9 @@ function createWindow() {
         show: false,
         backgroundColor: bgColor,
         center: true,
+        autoHideMenuBar: false,
+        menuBarVisibility: false,
         webPreferences: {
-            // allow code inside this window to use use native window.open()
             nativeWindowOpen: true,
             nodeIntegrationInWorker: true,
         },
@@ -185,7 +195,7 @@ function createWindow() {
     // show windosw
     win.once('ready-to-show', () => {
         //win.show();
-        win.setTitle(`${config.appName} ${config.appDescription}`);
+        win.setTitle(WIN_TITLE);
         if (platform !== 'darwin') {
             tray.setToolTip(config.appSlogan);
         }
@@ -375,6 +385,10 @@ app.on('ready', () => {
     if (tx > 0 && ty > 0) win.setPosition(parseInt(tx, 10), parseInt(ty, 10));
 });
 
+app.on('browser-window-created', function (e, window) {
+    window.setMenuBarVisibility(false);
+    window.setAutoHideMenuBar(false);
+});
 // Quit when all windows are closed.
 app.on('window-all-closed', () => {
     //if (platform !== 'darwin')
