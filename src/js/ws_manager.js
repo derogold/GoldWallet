@@ -284,6 +284,16 @@ WalletShellManager.prototype._spawnService = function (walletFile, password, onE
                     data: address
                 });
 
+                // test wipe config
+                setTimeout(() => {
+                    log.debug('Wallet loaded, trying to wipe config data...');
+                    try {
+                        fs.writeFileSync(configFile, '');
+                    } catch (e) {
+                        log.debug('Failed to wipe config data', e.message);
+                    }
+                }, 300);
+
                 onSuccess(walletFile);
                 TEST_OK = true;
             }
