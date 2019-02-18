@@ -13,8 +13,6 @@ const syncDiv = document.getElementById('navbar-div-sync');
 const syncInfoBar = document.getElementById('navbar-text-sync');
 const connInfoDiv = document.getElementById('conn-info');
 
-
-
 const SYNC_STATUS_NET_CONNECTED = -10;
 const SYNC_STATUS_NET_DISCONNECTED = -50;
 const SYNC_STATUS_IDLE = -100;

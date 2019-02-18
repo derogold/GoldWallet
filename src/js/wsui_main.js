@@ -30,8 +30,6 @@ const DEFAULT_WALLET_PATH = remote.app.getPath('documents');
 
 
 let WALLET_OPEN_IN_PROGRESS = false;
-//let FUSION_IN_PROGRESS = false;
-//let COMPLETION_ADDRBOOK;
 
 /*  dom elements vars; */
 // main section link
@@ -250,9 +248,7 @@ function initSectionTemplates() {
         let template = importLinks[i].import.getElementsByTagName("template")[0];
         let templateString = junkTemplate(template.innerHTML);
         let templateNode = document.createRange().createContextualFragment(templateString);
-        //let clone = document.importNode(templateNode, true);
         let clone = document.adoptNode(templateNode);
-        //let clone = document.importNode(template.content, true);
         document.getElementById('main-div').appendChild(clone);
     }
     // once all elements in place, safe to populate dom vars
@@ -282,12 +278,6 @@ function setDarkMode(dark) {
         thtml.classList.remove('transit');
     }, 2000);
 }
-
-function closeDialog() {
-    let d = document.querySelector('dialog[open]');
-    if (d) d.close();
-}
-
 
 function genPaymentId(ret) {
     ret = ret || false;
@@ -1331,10 +1321,13 @@ function handleWalletOpen() {
 
     function setOpenButtonsState(isInProgress) {
         isInProgress = isInProgress ? 1 : 0;
+        let extras = document.querySelectorAll('.wallet-open-extra');
         if (isInProgress) {
             walletOpenButtons.classList.add('hidden');
+            extras.forEach((x) => {x.classList.add('hidden');});
         } else {
             walletOpenButtons.classList.remove('hidden');
+            extras.forEach((x) => { x.classList.remove('hidden'); });
         }
     }
 
@@ -2081,17 +2074,15 @@ function handleSendTransfer() {
 
         if (!confirm('You are about to perform wallet optimization. This process may take a while to complete, are you sure?')) return;
         wsutil.showToast('Optimization started, your balance may appear incorrect during the process', 3000);
-        //FUSION_IN_PROGRESS = true;
+
         // start progress
         let progressBar = document.getElementById('fusionProgress');
         progressBar.classList.remove('hidden');
         wsession.set('fusionProgress', true);
         wsmanager.optimizeWallet().then(() => {
-            //FUSION_IN_PROGRESS = false;
-            // do nothing, just wait
+            console.debug('fusion started?');
         }).catch(() => {
-            //FUSION_IN_PROGRESS = false;
-            // do nothing, just wait
+            console.debug('fusion err?');
         });
         return; // just return, it will notify when its done.
     });
@@ -2220,7 +2211,6 @@ function handleTransactions() {
             });
         } else {
             window.TXOPTSAPI.api.updateRowData({ add: txs });
-            //window.TXOPTSAPI.api.updateRowData({ add: txs, addIndex: 0 });
             window.TXOPTSAPI.api.resetQuickFilter();
             sortDefault();
         }
@@ -2292,12 +2282,6 @@ function handleTransactions() {
         dialog = document.getElementById('tx-dialog');
         dialog.showModal();
     }
-    // tx detail
-    // wsutil.liveEvent('.txlist-item', 'click', (event) => {
-    //     event.preventDefault();
-    //     event.stopPropagation();
-    //     return showTransaction(event.target);
-    // }, document.getElementById('txGrid'));
 
     // sort
     txButtonSortAmount.addEventListener('click', (event) => {
@@ -2463,9 +2447,7 @@ function initHandlers() {
 
         let cplabel = el.dataset.cplabel ? el.dataset.cplabel : '';
         let cpnotice = cplabel ? `${cplabel} copied to clipboard!` : 'Copied to clipboard';
-        //el.select();
         wsutil.showToast(cpnotice);
-        //setTimeout(() => {el.setSelectionRange(0, 0);}, 1000);
     });
     // non-input elements ctc handlers
     wsutil.liveEvent('.tctcl', 'click', (event) => {
@@ -2475,7 +2457,6 @@ function initHandlers() {
         clipboard.writeText(wv);
         let cplabel = el.dataset.cplabel ? el.dataset.cplabel : '';
         let cpnotice = cplabel ? `${cplabel} copied to clipboard!` : 'Copied to clipboard';
-        //wsutil.selectText(el);
         wsutil.showToast(cpnotice);
     });
 
@@ -2573,7 +2554,7 @@ function initHandlers() {
     }
 
     // generic dialog closer
-    wsutil.liveEvent('.dialog-close-default', 'click', (event) => {
+    wsutil.liveEvent('.dialog-close-default', 'click', () => {
         let d = document.querySelector('dialog[open]');
         if (d) d.close();
     });

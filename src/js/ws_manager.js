@@ -213,6 +213,9 @@ WalletShellManager.prototype._spawnService = function (walletFile, password, onE
         '--log-file', logFile
     ]);
 
+    // fallback for network resume handler
+    let cmdArgs = serviceArgs;
+
     let configFile = wsession.get('walletConfig', null);
     if (configFile) {
         let configFormat = settings.get('service_config_format', 'ini');
@@ -228,6 +231,8 @@ WalletShellManager.prototype._spawnService = function (walletFile, password, onE
     } else {
         log.warn('Failed to create config file, fallback to cmd args ');
     }
+
+    
 
     let wsm = this;
     log.debug('Starting service...');
@@ -272,7 +277,7 @@ WalletShellManager.prototype._spawnService = function (walletFile, password, onE
         wsm.serviceApi.getAddress().then((address) => {
             log.debug('Got an address, connection ok!');
             if (!TEST_OK) {
-                wsm.serviceActiveArgs = serviceArgs;
+                wsm.serviceActiveArgs = cmdArgs;
                 // update session
                 wsession.set('loadedWalletAddress', address);
                 wsession.set('serviceReady', true);
@@ -443,7 +448,6 @@ WalletShellManager.prototype.startSyncWorker = function () {
 };
 
 WalletShellManager.prototype.stopSyncWorker = function () {
-    //if (null === this.syncWorker) return;
     log.debug('stopping syncworker');
 
     try {

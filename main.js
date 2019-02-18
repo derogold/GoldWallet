@@ -42,6 +42,7 @@ const DEFAULT_SETTINGS = {
     service_config_format: config.walletServiceConfigFormat
 };
 const DEFAULT_SIZE = { width: 840, height: 680 };
+const WIN_TITLE = `${config.appName} ${WALLETSHELL_VERSION} - ${config.appDescription}`;
 
 app.prompExit = true;
 app.prompShown = false;
@@ -63,7 +64,7 @@ function createWindow() {
     let bgColor = darkmode ? '#000000' : '#02853E';
 
     const winOpts = {
-        title: `${config.appName} ${config.appDescription}`,
+        title: WIN_TITLE,
         icon: path.join(__dirname, 'src/assets/walletshell_icon.png'),
         frame: true,
         width: DEFAULT_SIZE.width,
@@ -186,7 +187,7 @@ function createWindow() {
     // show windosw
     win.once('ready-to-show', () => {
         //win.show();
-        win.setTitle(`${config.appName} ${config.appDescription}`);
+        win.setTitle(WIN_TITLE);
         if (platform !== 'darwin') {
             tray.setToolTip(config.appSlogan);
         }
@@ -376,7 +377,7 @@ app.on('ready', () => {
     if (tx > 0 && ty > 0) win.setPosition(parseInt(tx, 10), parseInt(ty, 10));
 });
 
-app.on('browser-window-created',function(e,window) {
+app.on('browser-window-created', function (e, window) {
     window.setMenuBarVisibility(false);
     window.setAutoHideMenuBar(false);
 });
