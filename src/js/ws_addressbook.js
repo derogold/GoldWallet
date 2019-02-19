@@ -1,4 +1,3 @@
-//const path = require('path');
 const fs = require('fs');
 const GCM = require('node-crypto-gcm').GCM;
 const config = require('./ws_config');
@@ -119,4 +118,5 @@ WalletShellAddressBook.prototype.save = function (addressBookData) {
         }
     });
 };
+
 module.exports = WalletShellAddressBook;

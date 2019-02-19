@@ -12,7 +12,6 @@ const wsession = new WalletShellSession();
 const syncDiv = document.getElementById('navbar-div-sync');
 const syncInfoBar = document.getElementById('navbar-text-sync');
 const connInfoDiv = document.getElementById('conn-info');
-
 const syncStatus = {
     NET_ONLINE: -10,
     NET_OFFLINE: -50,
@@ -21,17 +20,12 @@ const syncStatus = {
     RESET: -300
 };
 
-
 const WFCLEAR_INTERVAL = 5;
 let WFCLEAR_TICK = 0;
 
 function setWinTitle(title) {
-    let defaultTitle = wsession.get('defaultTitle');
-    let newTitle = defaultTitle;
-    if (title) {
-        newTitle = `${defaultTitle} ${title}`;
-    }
-    brwin.setTitle(newTitle);
+    const defaultTitle = wsession.get('defaultTitle');
+    brwin.setTitle((title ? `${defaultTitle} ${title}` : defaultTitle));
 }
 
 function triggerTxRefresh() {
@@ -350,7 +344,6 @@ function showFeeWarning(fee) {
 
     let dialog = document.getElementById('main-dialog');
     if (dialog.hasAttribute('open')) return;
-
     dialog.classList.add('dialog-warning');
     let htmlStr = `
         <h5>Fee Info</h5>
@@ -358,20 +351,12 @@ function showFeeWarning(fee) {
         <p>The fee for sending transactions is: <strong>${fee.toFixed(config.decimalPlaces)} ${config.assetTicker} </strong>.<br>
             If you don't want to pay the node fee, please close your wallet, reopen and choose different public node (or run your own node).
         </p>
-        <p style="text-align:center;margin-top: 1.25rem;"><button  type="button" class="form-bt button-green" id="dialog-end">OK, I Understand</button></p>
+        <p style="text-align:center;margin-top: 1.25rem;"><button  type="button" class="form-bt button-green dialog-close-default" id="dialog-end">OK, I Understand</button></p>
     `;
-
-    wsutil.innerHTML(dialog, htmlStr);
-    let dialogEnd = document.getElementById('dialog-end');
-    dialogEnd.addEventListener('click', () => {
-        try {
-            dialog.classList.remove('dialog-warning');
-            document.getElementById('main-dialog').close();
-        } catch (e) { }
-    });
-    dialog = document.getElementById('main-dialog');
+    dialog.innerHTML = htmlStr;
     dialog.showModal();
     dialog.addEventListener('close', function () {
+        dialog.classList.remove('dialog-warning');
         wsutil.clearChild(dialog);
     });
 }

@@ -68,10 +68,8 @@ WalletShellManager.prototype._getSettings = function () {
 };
 
 WalletShellManager.prototype._reinitSession = function () {
+    this._wipeConfig();
     wsession.reset();
-    // remove wallet config
-    let configFile = wsession.get('walletConfig');
-    if (configFile) try { fs.unlinkSync(configFile); } catch (e) { }
     this.notifyUpdate({
         type: 'sectionChanged',
         data: 'reset-oy'
@@ -139,6 +137,10 @@ WalletShellManager.prototype._writeConfig = function (cfg) {
         return '';
     }
 };
+
+WalletShellManager.prototype._wipeConfig = function () {
+    try { fs.unlinkSync(wsession.get('walletConfig')); } catch (e) { }
+}
 
 WalletShellManager.prototype.startService = function (walletFile, password, onError, onSuccess, onDelay) {
     this.init();
@@ -242,17 +244,14 @@ WalletShellManager.prototype._spawnService = function (walletFile, password, onE
     } catch (e) {
         if (onError) onError(ERROR_WALLET_EXEC);
         log.error(`${config.walletServiceBinaryFilename} is not running`);
-        // remove config when failed
-        try { fs.unlinkSync(wsession.get('walletConfig')); } catch (e) { }
-
+        this._wipeConfig();
         return false;
     }
 
     this.serviceProcess.on('close', () => {
         this.terminateService(true);
         log.debug(`${config.walletServiceBinaryFilename} closed`);
-        // remove config when failed
-        try { fs.unlinkSync(wsession.get('walletConfig')); } catch (e) { }
+        wsm._wipeConfig();
     });
 
     this.serviceProcess.on('error', (err) => {
@@ -260,19 +259,19 @@ WalletShellManager.prototype._spawnService = function (walletFile, password, onE
         wsm.syncWorker.stopSyncWorker();
         log.error(`${config.walletServiceBinaryFilename} error: ${err.message}`);
         // remove config when failed
-        try { fs.unlinkSync(wsession.get('walletConfig')); } catch (e) { }
+        wsm._wipeConfig();
     });
 
     if (!this.serviceStatus()) {
         if (onError) onError(ERROR_WALLET_EXEC);
         log.error(`${config.walletServiceBinaryFilename} is not running`);
         // remove config when failed
-        try { fs.unlinkSync(wsession.get('walletConfig')); } catch (e) { }
+        this._wipeConfig();
         return false;
     }
 
     let TEST_OK = false;
-    let MAX_CHECK = 38;
+    let MAX_CHECK = 40;
     function testConnection(retry) {
         wsm.serviceApi.getAddress().then((address) => {
             log.debug('Got an address, connection ok!');
@@ -291,7 +290,7 @@ WalletShellManager.prototype._spawnService = function (walletFile, password, onE
 
                 // test wipe config
                 setTimeout(() => {
-                    log.debug('Wallet loaded, trying to wipe config data...');
+                    log.debug('Wallet loaded, wiping temp config...');
                     try {
                         fs.writeFileSync(configFile, '');
                     } catch (e) {
@@ -305,7 +304,7 @@ WalletShellManager.prototype._spawnService = function (walletFile, password, onE
             return true;
         }).catch((err) => {
             log.debug('Connection failed or timeout');
-            log.debug(err);
+            log.debug(err.message);
             if (retry === 10 && onDelay) onDelay(`Still no response from ${config.walletServiceBinaryFilename}, please wait a few more seconds...`);
             if (retry >= MAX_CHECK && !TEST_OK) {
                 if (wsm.serviceStatus()) {
@@ -314,7 +313,7 @@ WalletShellManager.prototype._spawnService = function (walletFile, password, onE
                 wsm.serviceActiveArgs = [];
                 onError(ERROR_RPC_TIMEOUT);
                 // remove config when failed
-                try { fs.unlinkSync(wsession.get('walletConfig')); } catch (e) { }
+                wsm._wipeConfig();
                 return false;
             } else {
                 setTimeout(function () {
@@ -329,7 +328,7 @@ WalletShellManager.prototype._spawnService = function (walletFile, password, onE
     setTimeout(function () {
         log.debug('performing connection test');
         testConnection(0);
-    }, 5000);
+    }, 4200);
 };
 
 WalletShellManager.prototype.stopService = function () {
@@ -360,7 +359,7 @@ WalletShellManager.prototype.stopService = function () {
                     wsm.terminateService(true); // force kill
                     wsm._reinitSession();
                     resolve(true);
-                }, 10000);
+                }, 8000);
             });
         } else {
             log.debug("Service is not running");
@@ -797,14 +796,13 @@ WalletShellManager.prototype.networkStateUpdate = function (state) {
         let pid = this.serviceProcess.pid || null;
         this.terminateService();
         // remove config
-        try { fs.unlinkSync(wsession.get('walletConfig')); } catch (e) { }
+        this._wipeConfig();
         // wait a bit
         setImmediate(() => {
             if (pid) {
                 try { process.kill(pid, 'SIGKILL'); } catch (e) { }
                 // remove config
-                try { fs.unlinkSync(wsession.get('walletConfig')); } catch (e) { }
-
+                this._wipeConfig();
             }
             setTimeout(() => {
                 log.debug(`respawning ${config.walletServiceBinaryFilename}`);

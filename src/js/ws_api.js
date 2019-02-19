@@ -162,8 +162,6 @@ class WalletShellApi {
                     backupKeys.mnemonicSeed = mres.mnemonicSeed;
                     return resolve(backupKeys);
                 }).catch((_err) => { /* jshint ignore:line */
-                    // return reject(err);
-                    // did trtl ever support non-deterministric wallet? I don't know
                     backupKeys.mnemonicSeed = "";
                     return resolve(backupKeys);
                 });
@@ -217,13 +215,11 @@ class WalletShellApi {
     reset(params) {
         return new Promise((resolve, reject) => {
             params = params || {};
-            //params.viewSecretKey = params.viewSecretKey || false;
             params.scanHeight = params.scanHeight || 0;
             let req_params = {};
             if (params.scanHeight && params.scanHeight > 1) {
                 req_params = { scanHeight: params.scanHeight };
             }
-            //if(params.viewSecretKey) req_params.viewSecretKey = params.viewSecretKey;
             this._sendRequest('reset', req_params).then(() => {
                 return resolve(true);
             }).catch((err) => {
