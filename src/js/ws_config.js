@@ -78,7 +78,7 @@ config.addressBookSampleEntries = [
     paymentId: '',
   }
 ];
-
+// cipher config for private address book
 config.addressBookCipherConfig = {
   algorithm: 'aes-256-gcm',
   saltLenght: 128,

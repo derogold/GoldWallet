@@ -41,8 +41,6 @@ let genericEnterableInputs;
 let genericEditableInputs;
 let firstTab;
 // settings page
-// let settingsInputDaemonAddress;
-// let settingsInputDaemonPort;
 let settingsInputServiceBin;
 let settingsInputMinToTray;
 let settingsInputCloseToTray;
@@ -54,7 +52,7 @@ let overviewWalletCloseButton;
 let overviewWalletRescanButton;
 let overviewPaymentIdGen;
 let overviewIntegratedAddressGen;
-
+let overviewShowKeyButton;
 // addressbook page
 let addressBookInputName;
 let addressBookInputWallet;
@@ -73,10 +71,9 @@ let walletOpenInputNode;
 let walletOpenNodeLabel;
 let walletOpenSelectBox;
 let walletOpenSelectOpts;
-let addCustomNode;
-let refreshNodeList;
+let walletOpenAddCustomNode;
+let walletOpenRefreshNodes;
 // show/export keys page
-let overviewShowKeyButton;
 let showkeyButtonExportKey;
 let showkeyInputViewKey;
 let showkeyInputSpendKey;
@@ -114,7 +111,6 @@ let txButtonRefresh;
 let txButtonSortAmount;
 let txButtonSortDate;
 let txInputUpdated;
-let txInputNotify;
 let txButtonExport;
 // misc
 let thtml;
@@ -140,8 +136,6 @@ function populateElementVars() {
     sectionButtons = document.querySelectorAll('[data-section]');
 
     // settings input & elements
-    // settingsInputDaemonAddress = document.getElementById('input-settings-daemon-address');
-    // settingsInputDaemonPort = document.getElementById('input-settings-daemon-port');
     settingsInputServiceBin = document.getElementById('input-settings-path');
     settingsInputMinToTray = document.getElementById('checkbox-tray-minimize');
     settingsInputCloseToTray = document.getElementById('checkbox-tray-close');
@@ -171,8 +165,8 @@ function populateElementVars() {
     walletOpenNodeLabel = document.getElementById('fake-selected-node');
     walletOpenSelectBox = document.getElementById('fake-select');
     walletOpenSelectOpts = document.getElementById('fakeNodeOptions');
-    addCustomNode = document.getElementById('addCustomNode');
-    refreshNodeList = document.getElementById('updateNodeList');
+    walletOpenAddCustomNode = document.getElementById('addCustomNode');
+    walletOpenRefreshNodes = document.getElementById('updateNodeList');
     // show/export keys page
     overviewShowKeyButton = document.getElementById('button-show-reveal');
     showkeyButtonExportKey = document.getElementById('button-show-export');
@@ -215,7 +209,6 @@ function populateElementVars() {
     txButtonSortAmount = document.getElementById('txSortAmount');
     txButtonSortDate = document.getElementById('txSortTime');
     txInputUpdated = document.getElementById('transaction-updated');
-    txInputNotify = document.getElementById('transaction-notify');
     txButtonExport = document.getElementById('transaction-export');
 }
 
@@ -322,7 +315,6 @@ function showIntegratedAddressForm() {
         </div>
         <div class="div-panel-buttons">
             <button id="doGenIntegratedAddr" type="button" class="button-green">Generate</button>
-            <!-- <button  data-target="#ab-dialog" type="button" class="button-gray dialog-close-default">Close</button> -->
         </div>
         <span title="Close this dialog (esc)" class="dialog-close dialog-close-default" data-target="#ab-dialog"><i class="fas fa-window-close"></i></span>
     </div>    
@@ -350,9 +342,6 @@ function showAbout() {
     let info = `
         <div class="transaction-panel">
             ${infoContent}
-            <!-- <div class="div-panel-buttons">
-                <button  data-target="#ab-dialog" type="button" class="button-gray dialog-close-default">Close</button>
-            </div> -->
             <span title="Close this dialog (esc)" class="dialog-close dialog-close-default" data-target="#ab-dialog"><i class="fas fa-window-close"></i></span>
         </div>`;
     dialog.innerHTML = info;
@@ -1364,7 +1353,6 @@ function handleWalletOpen() {
                 </div>
                 <div class="div-panel-buttons">
                     <button id="saveCustomNode" type="button" class="button-green">Save & activate</button>
-                    <!-- <button  data-target="#ab-dialog" type="button" class="button-gray dialog-close-default">Close</button> -->
                 </div>
                 <span title="Close this dialog (esc)" class="dialog-close dialog-close-default" data-target="#ab-dialog"><i class="fas fa-window-close"></i></span>
             </div>`;
@@ -1424,12 +1412,12 @@ function handleWalletOpen() {
         wsutil.showToast('New custom node have been added');
     });
 
-    addCustomNode.addEventListener('click', (e) => {
+    walletOpenAddCustomNode.addEventListener('click', (e) => {
         e.preventDefault();
         addCustomNodeForm();
     });
 
-    refreshNodeList.addEventListener('click', () => {
+    walletOpenRefreshNodes.addEventListener('click', () => {
         if (!navigator.onLine) {
             wsutil.showToast('Network connectivity problem detected, node list update can not be performed');
             return;
@@ -1496,10 +1484,12 @@ function handleWalletOpen() {
         function onSuccess() {
             walletOpenInputPath.value = settings.get('recentWallet');
             overviewWalletAddress.value = wsession.get('loadedWalletAddress');
+            
             wsmanager.getNodeFee();
             WALLET_OPEN_IN_PROGRESS = false;
             changeSection('section-overview');
-            setTimeout(() => {
+
+            setTimeout(()=>{
                 setOpenButtonsState(0);
             }, 300);
         }

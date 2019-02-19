@@ -80,8 +80,7 @@
     "nsis": {
       "artifactName": "${productName}-v${version}-${os}-${arch}-setup.${ext}",
       "oneClick": true,
-      "perMachine": false,
-      "allowToChangeInstallationDirectory": true
+      "perMachine": false
     },
     "mac": {
       "artifactName": "${productName}-v${version}-${os}-${arch}.${ext}",
