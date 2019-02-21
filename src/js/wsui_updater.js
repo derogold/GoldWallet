@@ -22,6 +22,7 @@ const syncStatus = {
 
 const WFCLEAR_INTERVAL = 5;
 let WFCLEAR_TICK = 0;
+let FUSION_CHECK = 0;
 
 function setWinTitle(title) {
     const defaultTitle = wsession.get('defaultTitle');
@@ -197,6 +198,24 @@ function updateSyncProgress(data) {
         WFCLEAR_TICK = 0;
     }
     WFCLEAR_TICK++;
+
+    // handle failed fusion
+    if (true === wsession.get('fusionProgress')) {
+        let lockedBalance = wsession.get('walletLockedBalance');
+        if(lockedBalance <= 0 && FUSION_CHECK === 3) {
+            fusionCompleted();
+        }
+        FUSION_CHECK++;
+    }
+}
+
+function fusionCompleted(){
+    const fusionProgressBar = document.getElementById('fusionProgress');
+    fusionProgressBar.classList.add('hidden');
+    FUSION_CHECK = 0;
+    wsession.set('fusionStarted', false);
+    wsession.set('fusionProgress', false);
+    wsutil.showToast('Optimization completed. You may need to repeat the process until your wallet is fully optimized.', 5000);
 }
 
 function updateBalance(data) {
@@ -231,13 +250,9 @@ function updateBalance(data) {
     wsession.set('walletUnlockedBalance', bUnlocked);
     wsession.set('walletLockedBalance', bLocked);
     // update fusion progress
-    const fusionProgressBar = document.getElementById('fusionProgress');
     if (true === wsession.get('fusionProgress')) {
         if (wsession.get('fusionStarted') && parseInt(bLocked, 10) <= 0) {
-            fusionProgressBar.classList.add('hidden');
-            wsession.set('fusionStarted', false);
-            wsession.set('fusionProgress', false);
-            wsutil.showToast('Optimization completed. You may need to repeat the process until your wallet is fully optimized.', 5000);
+            fusionCompleted();
         } else {
             if (parseInt(bLocked, 10) > 0) {
                 wsession.set('fusionStarted', true);
