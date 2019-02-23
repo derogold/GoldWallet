@@ -771,6 +771,41 @@ function updateAddressBookSelector(selected) {
 }
 
 function handleAddressBook() {
+    function migrateOldFormat(newBook) {
+        let oldAddressBook = path.join(remote.app.getPath('userData'), 'AddressBook.json');
+        fs.access(oldAddressBook, fs.constants.F_OK | fs.constants.W_OK, (err) => {
+            if (err) {
+                return newBook;
+            } else {
+                const oldBook = new Store({
+                    name: 'AddressBook',
+                    encryptionKey: config.addressBookObfuscateEntries ? config.addressBookObfuscationKey : null
+                });
+                let addressBookData = newBook.data;
+                Object.keys(oldBook.get()).forEach((hash) => {
+                    let item = oldBook.get(hash);
+                    let entryHash = wsutil.fnvhash(item.address + item.paymentId);
+                    if (!addressBookData.hasOwnProperty(entryHash)) {
+                        let newAddress = {
+                            name: item.name,
+                            address: item.address,
+                            paymentId: item.paymentId,
+                            qrCode: wsutil.genQrDataUrl(item.address)
+                        };
+                        newBook.data[entryHash] = newAddress;
+                    }
+                });
+                setTimeout(() => {
+                    addressBook.save(newBook);
+                    fs.rename(oldAddressBook, oldAddressBook + '.deprecated.txt', (err) => {
+                        if (err) console.error('Failed to rename old addressbook');
+                    });
+                }, 500);
+                return newBook;
+            }
+        });
+    }
+
     // address book list
     function renderList(data) {
         if (!window.ABGRID) {
@@ -1259,6 +1294,10 @@ function handleAddressBook() {
             try {
                 addressBook.load()
                     .then((addressData) => {
+                        if (!window.addressBookMigrated) {
+                            addressData = migrateOldFormat(addressData);
+                            window.addressBookMigrated = true;
+                        }
                         wsession.set('addressBook', addressData);
                         updateAddressBookSelector(addressData.path);
                         abdata = addressData.data;
@@ -1299,7 +1338,7 @@ function handleAddressBook() {
         });
         addressBookSelector.dispatchEvent(event);
         window.addressBookInitialize = true;
-    }, 300);
+    }, 2000);
 }
 
 function handleWalletOpen() {
@@ -1450,7 +1489,7 @@ function handleWalletOpen() {
             return false;
         }
 
-        if (!navigator.onLine && !nodeAddress[0].startsWith('127') && nodeAddress[0] !== 'localhost'  ) {
+        if (!navigator.onLine && !nodeAddress[0].startsWith('127') && nodeAddress[0] !== 'localhost') {
             formMessageSet('load', 'error', `Network connectivity problem detected, unable to connect to remote node`);
             return false;
         }
@@ -1483,12 +1522,12 @@ function handleWalletOpen() {
         function onSuccess() {
             walletOpenInputPath.value = settings.get('recentWallet');
             overviewWalletAddress.value = wsession.get('loadedWalletAddress');
-            
+
             wsmanager.getNodeFee();
             WALLET_OPEN_IN_PROGRESS = false;
             changeSection('section-overview');
 
-            setTimeout(()=>{
+            setTimeout(() => {
                 setOpenButtonsState(0);
             }, 300);
         }
@@ -2514,7 +2553,7 @@ function initHandlers() {
     }
 
     function handleFormEnter(el) {
-        try{ clearTimeout(window.enterHandler); }catch(_e){}
+        try { clearTimeout(window.enterHandler); } catch (_e) { }
         let key = this.event.key;
         window.enterHandler = setTimeout(() => {
             if (key === 'Enter') {
@@ -2793,7 +2832,7 @@ function initKeyBindings() {
 
 function fetchNodeInfo(force) {
     force = force || false;
-    
+
     function fetchWait(url, timeout) {
         let controller = new AbortController();
         let signal = controller.signal;
