@@ -11,7 +11,8 @@ const wsutil = require('./ws_utils');
 const config = require('./ws_config');
 const { remote } = require('electron');
 const settings = new Store({ name: 'Settings' });
-const wsession = new WalletShellSession();
+const sessConfig = {debug: remote.app.debug, walletConfig: remote.app.walletConfig};
+const wsession = new WalletShellSession(sessConfig);
 
 const SERVICE_LOG_DEBUG = wsession.get('debug');
 const SERVICE_LOG_LEVEL_DEFAULT = 0;
@@ -32,8 +33,9 @@ var WalletShellManager = function () {
         return new WalletShellManager();
     }
 
-    this.daemonHost = settings.get('daemon_host');
-    this.daemonPort = settings.get('daemon_port');
+    let nodeAddress = settings.get('node_address').split(':');
+    this.daemonHost = nodeAddress[0] || null;
+    this.daemonPort = nodeAddress[1] || null;
     this.serviceProcess = null;
     this.serviceBin = settings.get('service_bin');
     this.servicePassword = settings.get('service_password');
@@ -62,8 +64,9 @@ WalletShellManager.prototype.init = function () {
 };
 
 WalletShellManager.prototype._getSettings = function () {
-    this.daemonHost = settings.get('daemon_host');
-    this.daemonPort = settings.get('daemon_port');
+    let nodeAddress = settings.get('node_address').split(':');
+    this.daemonHost = nodeAddress[0] || null;
+    this.daemonPort = nodeAddress[1] || null;
     this.serviceBin = settings.get('service_bin');
 };
 
@@ -140,7 +143,7 @@ WalletShellManager.prototype._writeConfig = function (cfg) {
 
 WalletShellManager.prototype._wipeConfig = function () {
     try { fs.unlinkSync(wsession.get('walletConfig')); } catch (e) { }
-}
+};
 
 WalletShellManager.prototype.startService = function (walletFile, password, onError, onSuccess, onDelay) {
     this.init();
@@ -280,7 +283,7 @@ WalletShellManager.prototype._spawnService = function (walletFile, password, onE
                 // update session
                 wsession.set('loadedWalletAddress', address);
                 wsession.set('serviceReady', true);
-                wsession.set('connectedNode', `${settings.get('daemon_host')}:${settings.get('daemon_port')}`);
+                wsession.set('connectedNode', settings.get('node_address'));
                 // start the worker here?
                 wsm.startSyncWorker();
                 wsm.notifyUpdate({

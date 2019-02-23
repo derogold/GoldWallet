@@ -16,10 +16,6 @@ const IS_DEBUG = IS_DEV || process.argv[1] === 'debug' || process.argv[2] === 'd
 const LOG_LEVEL = IS_DEBUG ? 'debug' : 'warn';
 const WALLET_CFGFILE = path.join(app.getPath('userData'), 'wconfig.txt');
 
-log.transports.console.level = LOG_LEVEL;
-log.transports.file.level = LOG_LEVEL;
-log.transports.file.maxSize = 5 * 1024 * 1024;
-
 const WALLETSHELL_VERSION = app.getVersion() || '0.3.x';
 const SERVICE_FILENAME = (platform === 'win32' ? `${config.walletServiceBinaryFilename}.exe` : config.walletServiceBinaryFilename);
 const SERVICE_OSDIR = (platform === 'win32' ? 'win' : (platform === 'darwin' ? 'osx' : 'lin'));
@@ -34,11 +30,9 @@ const DEFAULT_SETTINGS = {
     service_bin: DEFAULT_SERVICE_BIN,
     service_host: '127.0.0.1',
     service_port: config.walletServiceRpcPort,
-    service_password: crypto.randomBytes(32).toString('hex'),
-    daemon_host: config.remoteNodeDefaultHost,
-    daemon_port: config.daemonDefaultRpcPort,
+    service_password: 'passwrd',
     node_address: DEFAULT_REMOTE_NODE,
-    pubnodes_date: null,
+    pubnodes_last_updated: 946697799000,
     pubnodes_data: config.remoteNodeListFallback,
     pubnodes_custom: ['127.0.0.1:11898'],
     pubnodes_exclude_offline: false,
@@ -53,10 +47,16 @@ const WIN_TITLE = `${config.appName} ${WALLETSHELL_VERSION} - ${config.appDescri
 app.prompExit = true;
 app.prompShown = false;
 app.needToExit = false;
-app.setAppUserModelId(config.appId);
 app.debug = IS_DEBUG;
+app.walletConfig = WALLET_CFGFILE;
+app.publicNodesUpdated = false;
+app.setAppUserModelId(config.appId);
 
+log.transports.console.level = LOG_LEVEL;
+log.transports.file.level = LOG_LEVEL;
+log.transports.file.maxSize = 5 * 1024 * 1024;
 log.info(`Starting WalletShell ${WALLETSHELL_VERSION}`);
+if (IS_DEV || IS_DEBUG) log.warn(`Running in ${IS_DEV ? 'dev' : 'debug'} mode`);
 
 let trayIcon = path.join(__dirname, 'src/assets/tray.png');
 let trayIconHide = path.join(__dirname, 'src/assets/trayon.png');
@@ -92,12 +92,58 @@ function createWindow() {
         windowOpts: winOpts,
         templateUrl: path.join(__dirname, "src/html/splash.html"),
         delay: 0,
-        minVisible: 3000,
+        minVisible: 800,
         splashScreenOpts: {
             width: 425,
             height: 325,
             transparent: true
         },
+    });
+
+    //load the index.html of the app.
+    win.loadURL(url.format({
+        pathname: path.join(__dirname, 'src/html/index.html'),
+        protocol: 'file:',
+        slashes: true
+    }));
+
+    // open devtools
+    if (IS_DEV) win.webContents.openDevTools();
+
+    // show windosw
+    win.once('ready-to-show', () => {
+        //win.show();
+        win.setTitle(WIN_TITLE);
+        if (platform !== 'darwin') {
+            tray.setToolTip(config.appSlogan);
+        }
+    });
+
+    win.on('close', (e) => {
+        if ((settings.get('tray_close') && !app.needToExit && platform !== 'darwin')) {
+            e.preventDefault();
+            win.hide();
+        } else if (app.prompExit) {
+            e.preventDefault();
+            if (app.prompShown) return;
+            let msg = 'Are you sure want to exit?';
+            app.prompShown = true;
+            dialog.showMessageBox({
+                type: 'question',
+                buttons: ['Yes', 'No'],
+                title: 'Exit Confirmation',
+                message: msg
+            }, function (response) {
+                app.prompShown = false;
+                if (response === 0) {
+                    app.prompExit = false;
+                    win.webContents.send('cleanup', 'Clean it up, Dad!');
+                } else {
+                    app.prompExit = true;
+                    app.needToExit = false;
+                }
+            });
+        }
     });
 
     if (platform !== 'darwin') {
@@ -123,7 +169,9 @@ function createWindow() {
 
 
         tray.on('click', () => {
-            if (settings.get('tray_minimize', false)) {
+            if(!win.isFocused() && win.isVisible()){
+                win.focus();
+            }else if (settings.get('tray_minimize', false)) {
                 if (win.isVisible()) {
                     win.hide();
                 } else {
@@ -180,52 +228,6 @@ function createWindow() {
         });
     }
 
-    //load the index.html of the app.
-    win.loadURL(url.format({
-        pathname: path.join(__dirname, 'src/html/index.html'),
-        protocol: 'file:',
-        slashes: true
-    }));
-
-    // open devtools
-    if (IS_DEV) win.webContents.openDevTools();
-
-    // show windosw
-    win.once('ready-to-show', () => {
-        //win.show();
-        win.setTitle(WIN_TITLE);
-        if (platform !== 'darwin') {
-            tray.setToolTip(config.appSlogan);
-        }
-    });
-
-    win.on('close', (e) => {
-        if ((settings.get('tray_close') && !app.needToExit && platform !== 'darwin')) {
-            e.preventDefault();
-            win.hide();
-        } else if (app.prompExit) {
-            e.preventDefault();
-            if (app.prompShown) return;
-            let msg = 'Are you sure want to exit?';
-            app.prompShown = true;
-            dialog.showMessageBox({
-                type: 'question',
-                buttons: ['Yes', 'No'],
-                title: 'Exit Confirmation',
-                message: msg
-            }, function (response) {
-                app.prompShown = false;
-                if (response === 0) {
-                    app.prompExit = false;
-                    win.webContents.send('cleanup', 'Clean it up, Dad!');
-                } else {
-                    app.prompExit = true;
-                    app.needToExit = false;
-                }
-            });
-        }
-    });
-
     win.on('closed', () => {
         win = null;
     });
@@ -248,14 +250,13 @@ function storeNodeList(pnodes) {
     pnodes = pnodes || settings.get('pubnodes_data');
     let validNodes = [];
     if (pnodes.hasOwnProperty('nodes')) {
-        pnodes.nodes.forEach(element => {
-            let item = `${element.url}:${element.port}`;
+        pnodes.nodes.forEach(addr => {
+            let item = `${addr.url}:${addr.port}`;
             validNodes.push(item);
         });
     }
     if (validNodes.length) settings.set('pubnodes_data', validNodes);
 }
-
 
 function doNodeListUpdate() {
     try {
@@ -270,12 +271,10 @@ function doNodeListUpdate() {
             res.on('end', () => {
                 try {
                     var pnodes = JSON.parse(result);
-                    let today = new Date();
                     storeNodeList(pnodes);
-                    log.debug('Public node list has been updated');
-                    let mo = (today.getMonth() + 1);
-                    settings.set('pubnodes_date', `${today.getFullYear()}-${mo}-${today.getDate()}`);
+                    settings.set('pubnodes_last_updated', new Date().getTime());
                     settings.delete('pubnodes_tested');
+                    log.debug('Public node list has been updated');
                 } catch (e) {
                     log.debug(`Failed to update public node list: ${e.message}`);
                     storeNodeList();
@@ -283,19 +282,30 @@ function doNodeListUpdate() {
             });
         }).on('error', (e) => {
             log.debug(`Failed to update public-node list: ${e.message}`);
+            storeNodeList(false);
         });
     } catch (e) {
         log.error(`Failed to update public-node list: ${e.code} - ${e.message}`);
+        storeNodeList(false);
+    }
+}
+
+function updatePublicNodes() {
+    if (config.remoteNodeListUpdateUrl) {
+        let last_updated = settings.get('pubnodes_last_updated', 946697799000);
+        let now = new Date().getTime();
+        if(Math.abs(now-last_updated) / 36e5 >= 24) {
+            //do update
+            log.info('Performing daily public-node list update.');
+            doNodeListUpdate();
+        }else{
+            log.info('Public node list up to date, skipping update');
+            storeNodeList(false); // from local cache
+        }
     }
 }
 
 function serviceBinCheck() {
-    if (!IS_DEBUG) {
-        // better to force using default service binary remove it from settings page?
-        log.warn('Using default service bin path');
-        settings.set('service_bin', DEFAULT_SERVICE_BIN);
-    }
-
     if (DEFAULT_SERVICE_BIN.startsWith('/tmp')) {
         log.warn(`AppImage env, copying service bin file`);
         let targetPath = path.join(app.getPath('userData'), SERVICE_FILENAME);
@@ -315,15 +325,21 @@ function serviceBinCheck() {
                 log.debug(`service binary copied to ${targetPath}`);
             });
         } catch (_e) { }
+    } else {
+        // don't trust user's settings, recheck
+        let svcbin = settings.get('service_bin');
+        try{
+            if(!fs.existsSync(svcbin)){
+                log.warn(`Service binary can't be found, falling back to default`);
+                settings.set('service_bin', DEFAULT_SERVICE_BIN);
+            }else{
+                log.info('Service binary found');
+            }
+        }catch(_e) {
+            log.warn('Failed to check for service binary path, falling back to default');
+            settings.set('service_bin', DEFAULT_SERVICE_BIN);
+        }
     }
-    // else 
-    // {
-    //     // don't trust user's settings :/
-    //     let svcbin = settings.get('service_bin');
-    //     if(!fs.existsSync(svcbin)){
-    //         settings.set('service_bin', DEFAULT_SERVICE_BIN);
-    //     }
-    // }
 }
 
 function initSettings() {
@@ -335,53 +351,10 @@ function initSettings() {
     settings.set('service_password', crypto.randomBytes(32).toString('hex'));
     settings.set('version', WALLETSHELL_VERSION);
     serviceBinCheck();
+    fs.unlink(WALLET_CFGFILE, (err) => {
+        if (err) log.debug(err.code === 'ENOENT' ? 'No stalled wallet config' : err.message);
+    });
 }
-
-const silock = app.requestSingleInstanceLock();
-app.on('second-instance', () => {
-    if (win) {
-        if (!win.isVisible()) win.show();
-        if (win.isMinimized()) win.restore();
-        win.focus();
-    }
-});
-if (!silock) app.quit();
-
-app.on('ready', () => {
-    initSettings();
-
-    if (IS_DEV || IS_DEBUG) log.warn(`Running in ${IS_DEV ? 'dev' : 'debug'} mode`);
-
-    global.wsession = {
-        debug: IS_DEBUG
-    };
-
-    if (config.remoteNodeListUpdateUrl) {
-        let today = new Date();
-        let last_checked = new Date(settings.get('pubnodes_date'));
-        let diff_d = parseInt((today - last_checked) / (1000 * 60 * 60 * 24), 10);
-        if (diff_d >= 1) {
-            log.info('Performing daily public-node list update.');
-            doNodeListUpdate();
-        } else {
-            log.info('Public node list up to date, skipping update');
-            storeNodeList(false); // from local cache
-        }
-    }
-
-    // remove old settings format if exist
-    try { settings.delete('pubnodes_checked'); } catch (e) { }
-    // remove tested nodes list, forcing re-test every start up
-    // settings.delete('pubnodes_tested');
-
-    createWindow();
-    // try to target center pos of primary display
-    let eScreen = require('electron').screen;
-    let primaryDisp = eScreen.getPrimaryDisplay();
-    let tx = Math.ceil((primaryDisp.workAreaSize.width - DEFAULT_SIZE.width) / 2);
-    let ty = Math.ceil((primaryDisp.workAreaSize.height - (DEFAULT_SIZE.height)) / 2);
-    if (tx > 0 && ty > 0) win.setPosition(parseInt(tx, 10), parseInt(ty, 10));
-});
 
 app.on('browser-window-created', function (e, window) {
     window.setMenuBarVisibility(false);
@@ -417,4 +390,34 @@ process.on('exit', (code) => {
 
 process.on('warning', (warning) => {
     log.warn(`${warning.code}, ${warning.name}`);
+});
+
+const silock = app.requestSingleInstanceLock();
+app.on('second-instance', () => {
+    if (win) {
+        if (!win.isVisible()) win.show();
+        if (win.isMinimized()) win.restore();
+        win.focus();
+    }
+});
+if (!silock) app.quit();
+
+app.on('ready', () => {
+    initSettings();
+    updatePublicNodes();
+    createWindow();
+    // try to target center pos of primary display
+    let eScreen = require('electron').screen;
+    let primaryDisp = eScreen.getPrimaryDisplay();
+    let tx = Math.ceil((primaryDisp.workAreaSize.width - DEFAULT_SIZE.width) / 2);
+    let ty = Math.ceil((primaryDisp.workAreaSize.height - (DEFAULT_SIZE.height)) / 2);
+    if (tx > 0 && ty > 0) {
+        try { win.setPosition(parseInt(tx, 10), parseInt(ty, 10)); } catch (_e) { }
+    }
+
+    // remove old settings cruft if exist
+    setTimeout(() => {
+        try { settings.delete('pubnodes_checked'); } catch (e) { }
+        try { settings.delete('pubnodes_date'); } catch (e) { }
+    }, 2500);
 });

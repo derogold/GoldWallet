@@ -1,5 +1,5 @@
-const path = require('path');
-const remote = require('electron').remote;
+//const path = require('path');
+//const remote = require('electron').remote;
 const Store = require('electron-store');
 const settings = new Store({ name: 'Settings' });
 const config = require('./ws_config');
@@ -8,11 +8,12 @@ const WS_VERSION = settings.get('version', 'unknown');
 const DEFAULT_TITLE = `${config.appName} ${WS_VERSION} - ${config.appDescription}`;
 const SESSION_KEY = 'wlshell';
 
-const IS_DEBUG = remote.getGlobal('wsession').debug;
-const WALLET_CFG = path.join(remote.app.getPath('userData'), 'wconfig.txt');
+//const IS_DEBUG = remote.getGlobal('wsession').debug;
+//const WALLET_CFG = path.join(remote.app.getPath('userData'), 'wconfig.txt');
 
-var WalletShellSession = function () {
-    if (!(this instanceof WalletShellSession)) return new WalletShellSession();
+var WalletShellSession = function (opts) {
+    if (!(this instanceof WalletShellSession)) return new WalletShellSession(opts);
+    opts = opts || {};
 
     this.sessKey = SESSION_KEY;
     this.eventName = 'sessionUpdated';
@@ -21,7 +22,7 @@ var WalletShellSession = function () {
         walletHash: '',
         walletUnlockedBalance: 0,
         walletLockedBalance: 0,
-        walletConfig: WALLET_CFG,
+        walletConfig: opts.walletConfig || 'wconfig.txt',
         synchronized: false,
         syncStarted: false,
         serviceReady: false,
@@ -37,7 +38,7 @@ var WalletShellSession = function () {
         configUpdated: false,
         uiStateChanged: false,
         defaultTitle: DEFAULT_TITLE,
-        debug: IS_DEBUG,
+        debug: opts.debug || false,
         fusionStarted: false,
         fusionProgress: false,
         addressBookErr: false
