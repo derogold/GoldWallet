@@ -15,7 +15,8 @@ const config = require('./ws_config');
 const async = require('async');
 const AgGrid = require('ag-grid-community');
 const wsmanager = new WalletShellManager();
-const wsession = new WalletShellSession();
+const sessConfig = { debug: remote.app.debug, walletConfig: remote.app.walletConfig };
+const wsession = new WalletShellSession(sessConfig);
 const settings = new Store({ name: 'Settings' });
 const WalletShellAddressbook = require('./ws_addressbook');
 
@@ -587,8 +588,6 @@ function initSettingVal(values) {
     if (values) {
         // save new settings
         settings.set('service_bin', values.service_bin);
-        settings.set('daemon_host', values.daemon_host);
-        settings.set('daemon_port', values.daemon_port);
         settings.set('node_address', values.node_address);
         settings.set('tray_minimize', values.tray_minimize);
         settings.set('tray_close', values.tray_close);
@@ -600,7 +599,7 @@ function initSettingVal(values) {
     settingsInputExcludeOfflineNodes.checked = settings.get('pubnodes_exclude_offline');
 
     // if custom node, save it
-    let mynode = `${settings.get('daemon_host')}:${settings.get('daemon_port')}`;
+    let mynode = settings.get('node_address');
     let pnodes = settings.get('pubnodes_data');
     if (!settings.has('pubnodes_custom')) settings.set('pubnodes_custom', []);
     let cnodes = settings.get('pubnodes_custom');
@@ -680,8 +679,6 @@ function handleSettings() {
 
         let vals = {
             service_bin: serviceBinValue,
-            daemon_host: settings.get('daemon_host'),
-            daemon_port: settings.get('daemon_port'),
             node_address: settings.get('node_address'),
             tray_minimize: settingsInputMinToTray.checked,
             tray_close: settingsInputCloseToTray.checked,
@@ -1453,10 +1450,13 @@ function handleWalletOpen() {
             return false;
         }
 
+        if (!navigator.onLine && !nodeAddress[0].startsWith('127') && nodeAddress[0] !== 'localhost'  ) {
+            formMessageSet('load', 'error', `Network connectivity problem detected, unable to connect to remote node`);
+            return false;
+        }
+
         let settingVals = {
             service_bin: settings.get('service_bin'),
-            daemon_host: nodeAddress[0],
-            daemon_port: parseInt(nodeAddress[1], 10),
             node_address: nodeAddressValue,
             tray_minimize: settings.get('tray_minimize'),
             tray_close: settings.get('tray_close'),
@@ -1480,7 +1480,6 @@ function handleWalletOpen() {
             return false;
         }
 
-        //function onSuccess(theWallet, scanHeight){
         function onSuccess() {
             walletOpenInputPath.value = settings.get('recentWallet');
             overviewWalletAddress.value = wsession.get('loadedWalletAddress');
@@ -2130,9 +2129,9 @@ function handleSendTransfer() {
         progressBar.classList.remove('hidden');
         wsession.set('fusionProgress', true);
         wsmanager.optimizeWallet().then(() => {
-            console.debug('fusion started?');
+            console.log('fusion started');
         }).catch(() => {
-            console.debug('fusion err?');
+            console.log('fusion err');
         });
         return; // just return, it will notify when its done.
     });
@@ -2468,96 +2467,20 @@ function handleNetworkChange() {
 // event handlers
 function initHandlers() {
     initSectionTemplates();
-    let darkStart = settings.get('darkmode', false);
-    setDarkMode(darkStart);
-
-    // netstatus
-    handleNetworkChange();
-
-    //external link handler
-    wsutil.liveEvent('a.external', 'click', (event) => {
-        event.preventDefault();
-        shell.openExternal(event.target.getAttribute('href'));
-        return false;
-    });
+    setDarkMode(settings.get('darkmode', true));
 
     // main section link handler
     for (var ei = 0; ei < sectionButtons.length; ei++) {
         let target = sectionButtons[ei].dataset.section;
         sectionButtons[ei].addEventListener('click', changeSection.bind(this, target), false);
     }
-
-    // inputs click to copy handlers
-    wsutil.liveEvent('textarea.ctcl, input.ctcl', 'click', (event) => {
-        let el = event.target;
-        let wv = el.value ? el.value.trim() : '';
-        if (!wv.length) return;
-        clipboard.writeText(wv);
-
-        let cplabel = el.dataset.cplabel ? el.dataset.cplabel : '';
-        let cpnotice = cplabel ? `${cplabel} copied to clipboard!` : 'Copied to clipboard';
-        wsutil.showToast(cpnotice);
+    // misc shortcut
+    dmswitch.addEventListener('click', () => {
+        let tmode = thtml.classList.contains('dark') ? '' : 'dark';
+        setDarkMode(tmode);
     });
-    // non-input elements ctc handlers
-    wsutil.liveEvent('.tctcl', 'click', (event) => {
-        let el = event.target;
-        let wv = el.textContent.trim();
-        if (!wv.length) return;
-        clipboard.writeText(wv);
-        let cplabel = el.dataset.cplabel ? el.dataset.cplabel : '';
-        let cpnotice = cplabel ? `${cplabel} copied to clipboard!` : 'Copied to clipboard';
-        wsutil.showToast(cpnotice);
-    });
-
-    //genpaymentid+integAddress
-    overviewPaymentIdGen.addEventListener('click', () => {
-        genPaymentId(false);
-    });
-
-    wsutil.liveEvent('#makePaymentId', 'click', () => {
-        let payId = genPaymentId(true);
-        let iaf = document.getElementById('genOutputIntegratedAddress');
-        document.getElementById('genInputPaymentId').value = payId;
-        iaf.value = '';
-    });
-
-    overviewIntegratedAddressGen.addEventListener('click', showIntegratedAddressForm);
-
-    wsutil.liveEvent('#doGenIntegratedAddr', 'click', () => {
-        formMessageReset();
-        let genInputAddress = document.getElementById('genInputAddress');
-        let genInputPaymentId = document.getElementById('genInputPaymentId');
-        let outputField = document.getElementById('genOutputIntegratedAddress');
-        let addr = genInputAddress.value ? genInputAddress.value.trim() : '';
-        let pid = genInputPaymentId.value ? genInputPaymentId.value.trim() : '';
-        outputField.value = '';
-        outputField.removeAttribute('title');
-        if (!addr.length || !pid.length) {
-            formMessageSet('gia', 'error', 'Address & Payment ID is required');
-            return;
-        }
-        if (!wsutil.validateAddress(addr)) {
-            formMessageSet('gia', 'error', `Invalid ${config.assetName} address`);
-            return;
-        }
-        // only allow standard address
-        if (addr.length > 99) {
-            formMessageSet('gia', 'error', `Only standard ${config.assetName} address are supported`);
-            return;
-        }
-        if (!wsutil.validatePaymentId(pid)) {
-            formMessageSet('gia', 'error', 'Invalid Payment ID');
-            return;
-        }
-
-        wsmanager.genIntegratedAddress(pid, addr).then((res) => {
-            formMessageReset();
-            outputField.value = res.integratedAddress;
-            outputField.setAttribute('title', 'click to copy');
-        }).catch((err) => {
-            formMessageSet('gia', 'error', err.message);
-        });
-    });
+    kswitch.addEventListener('click', showKeyBindings);
+    iswitch.addEventListener('click', showAbout);
 
     function handleBrowseButton(args) {
         if (!args) return;
@@ -2590,30 +2513,10 @@ function initHandlers() {
         }
     }
 
-    // generic browse path btn event
-    for (var i = 0; i < genericBrowseButton.length; i++) {
-        let targetInputId = genericBrowseButton[i].dataset.targetinput;
-        let args = {
-            dialogType: genericBrowseButton[i].dataset.selection,
-            targetName: genericBrowseButton[i].dataset.fileobj ? genericBrowseButton[i].dataset.fileobj : '',
-            targetInput: document.getElementById(targetInputId),
-            targetButton: genericBrowseButton[i].id
-        };
-        genericBrowseButton[i].addEventListener('click', handleBrowseButton.bind(this, args));
-    }
-
-    // generic dialog closer
-    wsutil.liveEvent('.dialog-close-default', 'click', () => {
-        let d = document.querySelector('dialog[open]');
-        if (d) d.close();
-    });
-
-    var enterHandler;
     function handleFormEnter(el) {
-        if (enterHandler) clearTimeout(enterHandler);
-
+        try{ clearTimeout(window.enterHandler); }catch(_e){}
         let key = this.event.key;
-        enterHandler = setTimeout(() => {
+        window.enterHandler = setTimeout(() => {
             if (key === 'Enter') {
                 let section = el.closest('.section');
                 let target = section.querySelector('button:not(.notabindex)');
@@ -2629,86 +2532,166 @@ function initHandlers() {
         }, 400);
     }
 
-    for (var oi = 0; oi < genericEnterableInputs.length; oi++) {
-        let el = genericEnterableInputs[oi];
-        el.addEventListener('keyup', handleFormEnter.bind(this, el));
-    }
-
-
-    wsutil.liveEvent('dialog input:not(.noenter)', 'keyup', (e) => {
-        let key = this.event.key;
-        if (enterHandler) clearTimeout(enterHandler);
-        enterHandler = setTimeout(() => {
-            if (key === 'Enter') {
-                let section = e.target.closest('dialog');
-                let target = section.querySelector('button:not(.notabindex)');
-                if (target) {
-                    let event = new MouseEvent('click', {
-                        view: window,
-                        bubbles: true,
-                        cancelable: true
-                    });
-                    target.dispatchEvent(event);
-                }
-            }
-        });
-    });
-
-    wsutil.liveEvent('.togpass', 'click', (e) => {
-        let tg = e.target.classList.contains('.togpas') ? e.target : e.target.closest('.togpass');
-        if (!tg) return;
-        let targetId = tg.dataset.pf || null;
-        if (!targetId) return;
-        let target = document.getElementById(targetId);
-        target.type = (target.type === "password" ? 'text' : 'password');
-        tg.firstChild.dataset.icon = (target.type === 'password' ? 'eye-slash' : 'eye');
-    });
-
-    // allow paste by mouse
-    const pasteMenu = Menu.buildFromTemplate([
-        { label: 'Paste', role: 'paste' }
-    ]);
-
-    for (var ui = 0; ui < genericEditableInputs.length; ui++) {
-        let el = genericEditableInputs[ui];
-        el.addEventListener('contextmenu', (e) => {
-            e.preventDefault();
-            pasteMenu.popup(remote.getCurrentWindow());
-        }, false);
-    }
-
-    dmswitch.addEventListener('click', () => {
-        let tmode = thtml.classList.contains('dark') ? '' : 'dark';
-        setDarkMode(tmode);
-    });
-
-    kswitch.addEventListener('click', showKeyBindings);
-    iswitch.addEventListener('click', showAbout);
-
     //handleNetworkChange();
-
-    // settings handlers
-    handleSettings();
-    // addressbook handlers
-    handleAddressBook();
     // open wallet
     handleWalletOpen();
-    // close wallet
-    handleWalletClose();
-    // rescan/reset wallet
-    handleWalletRescan();
     // create wallet
     handleWalletCreate();
-    // export keys/seed
-    handleWalletExport();
-    // send transfer
-    handleSendTransfer();
     // import keys
     handleWalletImportKeys();
     // import seed
     handleWalletImportSeed();
-    // transactions
-    handleTransactions();
+    // delay some handlers
+    setTimeout(() => {
+        // settings handlers
+        handleSettings();
+        // addressbook handlers
+        handleAddressBook();
+        // close wallet
+        handleWalletClose();
+        // rescan/reset wallet
+        handleWalletRescan();
+        // export keys/seed
+        handleWalletExport();
+        // send transfer
+        handleSendTransfer();
+        // transactions
+        handleTransactions();
+        // netstatus
+        handleNetworkChange();
+        //external link handler
+        wsutil.liveEvent('a.external', 'click', (event) => {
+            event.preventDefault();
+            shell.openExternal(event.target.getAttribute('href'));
+            return false;
+        });
+        // toggle password visibility
+        wsutil.liveEvent('.togpass', 'click', (e) => {
+            let tg = e.target.classList.contains('.togpas') ? e.target : e.target.closest('.togpass');
+            if (!tg) return;
+            let targetId = tg.dataset.pf || null;
+            if (!targetId) return;
+            let target = document.getElementById(targetId);
+            target.type = (target.type === "password" ? 'text' : 'password');
+            tg.firstChild.dataset.icon = (target.type === 'password' ? 'eye-slash' : 'eye');
+        });
+        // context menu
+        const pasteMenu = Menu.buildFromTemplate([{ label: 'Paste', role: 'paste' }]);
+        for (var ui = 0; ui < genericEditableInputs.length; ui++) {
+            let el = genericEditableInputs[ui];
+            el.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                pasteMenu.popup(remote.getCurrentWindow());
+            }, false);
+        }
+        // generic browse path btn event
+        for (var i = 0; i < genericBrowseButton.length; i++) {
+            let targetInputId = genericBrowseButton[i].dataset.targetinput;
+            let args = {
+                dialogType: genericBrowseButton[i].dataset.selection,
+                targetName: genericBrowseButton[i].dataset.fileobj ? genericBrowseButton[i].dataset.fileobj : '',
+                targetInput: document.getElementById(targetInputId),
+                targetButton: genericBrowseButton[i].id
+            };
+            genericBrowseButton[i].addEventListener('click', handleBrowseButton.bind(this, args));
+        }
+        // generic dialog closer
+        wsutil.liveEvent('.dialog-close-default', 'click', () => {
+            let d = document.querySelector('dialog[open]');
+            if (d) d.close();
+        });
+        // form submit
+        for (var oi = 0; oi < genericEnterableInputs.length; oi++) {
+            let el = genericEnterableInputs[oi];
+            el.addEventListener('keyup', handleFormEnter.bind(this, el));
+        }
+        wsutil.liveEvent('dialog input:not(.noenter)', 'keyup', (e) => {
+            let key = this.event.key;
+            try { clearTimeout(window.enterHandler); } catch (_e) { }
+            window.enterHandler = setTimeout(() => {
+                if (key === 'Enter') {
+                    let section = e.target.closest('dialog');
+                    let target = section.querySelector('button:not(.notabindex)');
+                    if (target) {
+                        let event = new MouseEvent('click', {
+                            view: window,
+                            bubbles: true,
+                            cancelable: true
+                        });
+                        target.dispatchEvent(event);
+                    }
+                }
+            });
+        });
+        //genpaymentid+integAddress
+        overviewPaymentIdGen.addEventListener('click', () => {
+            genPaymentId(false);
+        });
+        wsutil.liveEvent('#makePaymentId', 'click', () => {
+            let payId = genPaymentId(true);
+            let iaf = document.getElementById('genOutputIntegratedAddress');
+            document.getElementById('genInputPaymentId').value = payId;
+            iaf.value = '';
+        });
+        overviewIntegratedAddressGen.addEventListener('click', showIntegratedAddressForm);
+        wsutil.liveEvent('#doGenIntegratedAddr', 'click', () => {
+            formMessageReset();
+            let genInputAddress = document.getElementById('genInputAddress');
+            let genInputPaymentId = document.getElementById('genInputPaymentId');
+            let outputField = document.getElementById('genOutputIntegratedAddress');
+            let addr = genInputAddress.value ? genInputAddress.value.trim() : '';
+            let pid = genInputPaymentId.value ? genInputPaymentId.value.trim() : '';
+            outputField.value = '';
+            outputField.removeAttribute('title');
+            if (!addr.length || !pid.length) {
+                formMessageSet('gia', 'error', 'Address & Payment ID is required');
+                return;
+            }
+            if (!wsutil.validateAddress(addr)) {
+                formMessageSet('gia', 'error', `Invalid ${config.assetName} address`);
+                return;
+            }
+            // only allow standard address
+            if (addr.length > 99) {
+                formMessageSet('gia', 'error', `Only standard ${config.assetName} address are supported`);
+                return;
+            }
+            if (!wsutil.validatePaymentId(pid)) {
+                formMessageSet('gia', 'error', 'Invalid Payment ID');
+                return;
+            }
+
+            wsmanager.genIntegratedAddress(pid, addr).then((res) => {
+                formMessageReset();
+                outputField.value = res.integratedAddress;
+                outputField.setAttribute('title', 'click to copy');
+            }).catch((err) => {
+                formMessageSet('gia', 'error', err.message);
+            });
+        });
+        // inputs click to copy handlers
+        wsutil.liveEvent('textarea.ctcl, input.ctcl', 'click', (event) => {
+            let el = event.target;
+            let wv = el.value ? el.value.trim() : '';
+            if (!wv.length) return;
+            clipboard.writeText(wv);
+
+            let cplabel = el.dataset.cplabel ? el.dataset.cplabel : '';
+            let cpnotice = cplabel ? `${cplabel} copied to clipboard!` : 'Copied to clipboard';
+            wsutil.showToast(cpnotice);
+        });
+        // non-input elements ctc handlers
+        wsutil.liveEvent('.tctcl', 'click', (event) => {
+            let el = event.target;
+            let wv = el.textContent.trim();
+            if (!wv.length) return;
+            clipboard.writeText(wv);
+            let cplabel = el.dataset.cplabel ? el.dataset.cplabel : '';
+            let cpnotice = cplabel ? `${cplabel} copied to clipboard!` : 'Copied to clipboard';
+            wsutil.showToast(cpnotice);
+        });
+        initKeyBindings();
+    }, 1200);
 }
 
 function initKeyBindings() {
@@ -2785,6 +2768,7 @@ function initKeyBindings() {
 
     // back home
     Mousetrap.bind(['ctrl+home', 'command+home'], () => {
+        walletOpened = wsession.get('serviceReady') || false;
         let section = walletOpened ? 'section-overview' : 'section-welcome';
         return changeSection(section);
     });
@@ -2807,24 +2791,25 @@ function initKeyBindings() {
     });
 }
 
-function fetchWait(url, timeout) {
-    let controller = new AbortController();
-    let signal = controller.signal;
-    timeout = timeout || 6800;
-    return Promise.race([
-        fetch(url, { signal }),
-        new Promise((resolve) =>
-            setTimeout(() => {
-                let fakeout = { "address": "", "amount": 0, "status": "KO" };
-                window.FETCHNODESIG = controller;
-                return resolve(fakeout);
-            }, timeout)
-        )
-    ]);
-}
-
 function fetchNodeInfo(force) {
     force = force || false;
+    
+    function fetchWait(url, timeout) {
+        let controller = new AbortController();
+        let signal = controller.signal;
+        timeout = timeout || 6800;
+        return Promise.race([
+            fetch(url, { signal }),
+            new Promise((resolve) =>
+                setTimeout(() => {
+                    let fakeout = { "address": "", "amount": 0, "status": "KO" };
+                    window.FETCHNODESIG = controller;
+                    return resolve(fakeout);
+                }, timeout)
+            )
+        ]);
+    }
+
     // disable node selection during update
     walletOpenInputNode.options.length = 0;
     let opt = document.createElement('option');
@@ -2905,19 +2890,12 @@ function fetchNodeInfo(force) {
 
 // spawn event handlers
 document.addEventListener('DOMContentLoaded', () => {
-    // remove any leftover wallet config
-    try { fs.unlinkSync(wsession.get('walletConfig')); } catch (e) { }
     initHandlers();
+    showInitialPage();
     if (navigator.onLine) {
         fetchNodeInfo();
     } else {
-        console.log('connection borked');
-        initNodeSelection();
-    }
-    showInitialPage();
-    initKeyBindings();
-    if (!remote.app.debug) {
-        document.getElementById('old-path-settings').classList.add('hidden');
+        setTimeout(() => initNodeSelection, 500);
     }
 }, false);
 
