@@ -16,7 +16,7 @@ const wsession = new WalletShellSession(sessConfig);
 
 const SERVICE_LOG_DEBUG = wsession.get('debug');
 const SERVICE_LOG_LEVEL_DEFAULT = 0;
-const SERVICE_LOG_LEVEL_DEBUG = 4;
+const SERVICE_LOG_LEVEL_DEBUG = 5;
 const SERVICE_LOG_LEVEL = (SERVICE_LOG_DEBUG ? SERVICE_LOG_LEVEL_DEBUG : SERVICE_LOG_LEVEL_DEFAULT);
 
 const ERROR_WALLET_EXEC = `Failed to start ${config.walletServiceBinaryFilename}. Set the path to ${config.walletServiceBinaryFilename} properly in the settings tab.`;
@@ -220,6 +220,7 @@ WalletShellManager.prototype._spawnService = function (walletFile, password, onE
 
     // fallback for network resume handler
     let cmdArgs = serviceArgs;
+    let serviceDown = false;
 
     let configFile = wsession.get('walletConfig', null);
     if (configFile) {
@@ -238,7 +239,6 @@ WalletShellManager.prototype._spawnService = function (walletFile, password, onE
     }
 
 
-
     let wsm = this;
     log.debug('Starting service...');
     try {
@@ -251,8 +251,10 @@ WalletShellManager.prototype._spawnService = function (walletFile, password, onE
         return false;
     }
 
+    
     this.serviceProcess.on('close', () => {
         this.terminateService(true);
+        serviceDown = true;
         log.debug(`${config.walletServiceBinaryFilename} closed`);
         wsm._wipeConfig();
     });
@@ -260,9 +262,16 @@ WalletShellManager.prototype._spawnService = function (walletFile, password, onE
     this.serviceProcess.on('error', (err) => {
         this.terminateService(true);
         wsm.syncWorker.stopSyncWorker();
+        serviceDown = true;
         log.error(`${config.walletServiceBinaryFilename} error: ${err.message}`);
         // remove config when failed
         wsm._wipeConfig();
+    });
+    
+    
+    this.serviceProcess.on('exit', (code, signal) => {
+        serviceDown = true;
+        log.debug(`turtle service exit with code: ${code}, signal: ${signal}`);
     });
 
     if (!this.serviceStatus()) {
@@ -274,7 +283,7 @@ WalletShellManager.prototype._spawnService = function (walletFile, password, onE
     }
 
     let TEST_OK = false;
-    let MAX_CHECK = 40;
+    let MAX_CHECK = 32;
     function testConnection(retry) {
         wsm.serviceApi.getAddress().then((address) => {
             log.debug('Got an address, connection ok!');
@@ -308,15 +317,13 @@ WalletShellManager.prototype._spawnService = function (walletFile, password, onE
         }).catch((err) => {
             log.debug('Connection failed or timeout');
             log.debug(err.message);
-            if (retry === 10 && onDelay) onDelay(`Still no response from ${config.walletServiceBinaryFilename}, please wait a few more seconds...`);
-            if (retry >= MAX_CHECK && !TEST_OK) {
+            if (!serviceDown && retry === 10 && onDelay) onDelay(`Still no response from ${config.walletServiceBinaryFilename}, please wait a few more seconds...`);
+            if (serviceDown || retry >= MAX_CHECK && !TEST_OK) {
                 if (wsm.serviceStatus()) {
                     wsm.terminateService();
                 }
                 wsm.serviceActiveArgs = [];
                 onError(ERROR_RPC_TIMEOUT);
-                // remove config when failed
-                wsm._wipeConfig();
                 return false;
             } else {
                 setTimeout(function () {
