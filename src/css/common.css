@@ -1308,6 +1308,7 @@ input.path-input-button{
     visibility: hidden !important;
 }
 
+
 .borokokok{
     position:absolute;
     bottom: 1px;
@@ -1321,7 +1322,6 @@ input.path-input-button{
     color: #fff;
     box-shadow: 1px 2px 2px #afafafd4;
     text-shadow:0px 0px 1px #656565;
-/*     transition: transform 0.4s cubic-bezier(0.42, 0, 0.05, 1.32); */
     transition: transform 0.2s ease-in-out;
     z-index:9999
 }
@@ -1329,6 +1329,8 @@ input.path-input-button{
 .borokokok.off{
     transform: translateX(-1800px);
 }
+
+
 
 
 /** TRX **/
