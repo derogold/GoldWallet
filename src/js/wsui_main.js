@@ -46,6 +46,7 @@ let settingsInputServiceBin;
 let settingsInputMinToTray;
 let settingsInputCloseToTray;
 let settingsInputExcludeOfflineNodes;
+let settingsInputTimeout;
 let settingsButtonSave;
 // overview page
 let overviewWalletAddress;
@@ -141,6 +142,7 @@ function populateElementVars() {
     settingsInputMinToTray = document.getElementById('checkbox-tray-minimize');
     settingsInputCloseToTray = document.getElementById('checkbox-tray-close');
     settingsInputExcludeOfflineNodes = document.getElementById('pubnodes-exclude-offline');
+    settingsInputTimeout = document.getElementById('input-settings-timeout');
     settingsButtonSave = document.getElementById('button-settings-save');
 
     // overview pages
@@ -591,6 +593,7 @@ function initSettingVal(values) {
         settings.set('node_address', values.node_address);
         settings.set('tray_minimize', values.tray_minimize);
         settings.set('tray_close', values.tray_close);
+        settings.set('service_timeout', values.service_timeout);
         settings.set('pubnodes_exclude_offline', values.pubnodes_exclude_offline);
     }
     settingsInputServiceBin.value = settings.get('service_bin');
@@ -666,6 +669,7 @@ function handleSettings() {
     settingsButtonSave.addEventListener('click', function () {
         formMessageReset();
         let serviceBinValue = settingsInputServiceBin.value ? settingsInputServiceBin.value.trim() : '';
+        let timeoutValue = settingsInputTimeout.value ? parseInt(settingsInputTimeout.value,10): 30;
 
         if (!serviceBinValue.length) {
             formMessageSet('settings', 'error', `Settings can't be saved, please enter correct values`);
@@ -677,9 +681,15 @@ function handleSettings() {
             return false;
         }
 
+        if(timeoutValue < 30 || timeoutValue > 120) {
+            formMessageSet('settings', 'error', `Timeout value must be between 0 and 120`);
+            return false;
+        }
+
         let vals = {
             service_bin: serviceBinValue,
             node_address: settings.get('node_address'),
+            service_timeout: timeoutValue,
             tray_minimize: settingsInputMinToTray.checked,
             tray_close: settingsInputCloseToTray.checked,
             pubnodes_exclude_offline: settingsInputExcludeOfflineNodes.checked
@@ -1289,7 +1299,7 @@ function handleAddressBook() {
 
         let currentAddressBook = wsession.get('addressBook');
         let abdata = [];
-        if (null === currentAddressBook) {
+        if (!currentAddressBook) {
             // new session, load from file
             try {
                 addressBook.load()
@@ -1496,6 +1506,7 @@ function handleWalletOpen() {
 
         let settingVals = {
             service_bin: settings.get('service_bin'),
+            service_timeout: settings.get('service_timeout'),
             node_address: nodeAddressValue,
             tray_minimize: settings.get('tray_minimize'),
             tray_close: settings.get('tray_close'),

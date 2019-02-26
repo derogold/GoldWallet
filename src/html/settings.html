@@ -5,17 +5,6 @@
                 <h2 class="title">Settings</h2>
             </div>
             <div class="div-settings-input default-inputs">
-                <div class="input-wrap" id="old-path-settings">
-                    <h4 class="text-spaced input-required">Select path to turtle-service executable file</h4>
-                    <input tabindex="0" data-selection="openFile" data-targetinput="input-settings-path" 
-                        required="required" data-initial="service_bin" class="text-block path-input-button" 
-                        readonly="readonly"  id="input-settings-path" 
-                        placeholder="Required, full path to the turtle-service executable file..."
-                        />
-                    <button data-targetinput="input-settings-path" type="button" class="notabindex button-green path-input-button" id="button-settings-browse"><i class="fas fa-folder-open"></i></button>
-                    <span class="form-help">Only change this if you know what you're doing.</span>
-                </div>
-
                 <div class="input-wrap">
                         <label class="checkbox-container">
                             <h4 type="checkbox" data-initial="tray_minimize" class="text-spaced checkbox-text">Minimize to system tray?</h4>
@@ -38,7 +27,27 @@
                         <span class="checkmark"></span>
                     </label>
                 </div>
+            </div>
+            <div class="div-settings-input default-inputs default-inputs-extras">
+                <h3>Advanced Settings</h3>
+                <p class="form-note">Only change these if it's really necessary or if you know what you're doing.</p>
                 
+                <div class="input-wrap" id="old-path-settings">
+                    
+                    <h4 class="text-spaced input-required">Select path to turtle-service executable file</h4>
+                    <input tabindex="0" data-selection="openFile" data-targetinput="input-settings-path" required="required"
+                        data-initial="service_bin" class="text-block path-input-button" readonly="readonly" id="input-settings-path"
+                        placeholder="Required, full path to the turtle-service executable file..." />
+                    <button data-targetinput="input-settings-path" type="button" class="notabindex button-green path-input-button"
+                        id="button-settings-browse"><i class="fas fa-folder-open"></i></button>
+                </div>
+                <div class="input-wrap">
+                    <h4 class="text-spaced input-optional">Node connection timeout (min. 30, max. 120)</h4>
+                    <input tabindex="0" required="required" data-default="30" data-initial="service_timeout" value="30" type="number"
+                        step="1" min="30" max="120" class="text-block input-short" id="input-settings-timeout" />
+                    <span class="form-help">Amount of times (in second) to wait for initial connection with the node before giving
+                        up.<br>Try increasing this value if you have difficulty connecting to remote nodes</span>
+                </div>
                 <div class="input-wrap">
                     <span class="form-ew form-msg text-spaced-error" id="text-settings-error"></span>
                     <span class="form-ew form-msg text-spaced-success" id="text-settings-success"></span>
