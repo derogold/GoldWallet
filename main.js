@@ -31,6 +31,7 @@ const DEFAULT_SETTINGS = {
     service_host: '127.0.0.1',
     service_port: config.walletServiceRpcPort,
     service_password: 'passwrd',
+    service_timeout: 10,
     node_address: DEFAULT_REMOTE_NODE,
     pubnodes_last_updated: 946697799000,
     pubnodes_data: config.remoteNodeListFallback,

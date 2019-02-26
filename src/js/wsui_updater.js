@@ -203,14 +203,14 @@ function updateSyncProgress(data) {
     // handle failed fusion
     if (true === wsession.get('fusionProgress')) {
         let lockedBalance = wsession.get('walletLockedBalance');
-        if(lockedBalance <= 0 && FUSION_CHECK === 3) {
+        if (lockedBalance <= 0 && FUSION_CHECK === 3) {
             fusionCompleted();
         }
         FUSION_CHECK++;
     }
 }
 
-function fusionCompleted(){
+function fusionCompleted() {
     const fusionProgressBar = document.getElementById('fusionProgress');
     fusionProgressBar.classList.add('hidden');
     FUSION_CHECK = 0;
@@ -378,10 +378,26 @@ function showFeeWarning(fee) {
 }
 
 function updateQr(address) {
+    //let backupReminder = document.getElementById('button-overview-showkeys');
     if (!address) {
         triggerTxRefresh();
+        //backupReminder.classList.remove('connected');
+        try { clearInterval(window.backupReminderTimer); } catch (_e) { }
         return;
     }
+
+    // window.backupReminderTimer = setInterval(() => {
+    //     if (Math.floor(Math.random() * Math.floor(2)) >= 1) {
+    //         backupReminder.classList.add('connected');
+    //         backupReminder.classList.add('reminder');
+    //         setTimeout(() => {
+    //             backupReminder.classList.remove('reminder');
+    //         }, 2000);
+    //         setTimeout(() => {
+    //             backupReminder.classList.remove('connected');
+    //         }, 2200);
+    //     }
+    // }, 50000);
 
     let walletHash = wsutil.fnvhash(address);
     wsession.set('walletHash', walletHash);

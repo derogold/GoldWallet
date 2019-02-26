@@ -11,7 +11,7 @@ const wsutil = require('./ws_utils');
 const config = require('./ws_config');
 const { remote } = require('electron');
 const settings = new Store({ name: 'Settings' });
-const sessConfig = {debug: remote.app.debug, walletConfig: remote.app.walletConfig};
+const sessConfig = { debug: remote.app.debug, walletConfig: remote.app.walletConfig };
 const wsession = new WalletShellSession(sessConfig);
 
 const SERVICE_LOG_DEBUG = wsession.get('debug');
@@ -41,6 +41,7 @@ var WalletShellManager = function () {
     this.servicePassword = settings.get('service_password');
     this.serviceHost = settings.get('service_host');
     this.servicePort = settings.get('service_port');
+    this.serviceTimeout = settings.get('service_timeout');
     this.serviceArgsDefault = ['--rpc-password', settings.get('service_password')];
     this.walletConfigDefault = { 'rpc-password': settings.get('service_password') };
     this.servicePid = null;
@@ -175,7 +176,7 @@ WalletShellManager.prototype.startService = function (walletFile, password, onEr
             log.debug(error.message);
             onError(`ERROR_WALLET_EXEC: ${error.message}`);
         } else {
-            log.debug(stdout);
+            //log.debug(stdout);
             if (stdout && stdout.length && stdout.indexOf(config.addressPrefix) !== -1) {
                 let trimmed = stdout.trim();
                 let walletAddress = trimmed.substring(trimmed.indexOf(config.addressPrefix), trimmed.length);
@@ -186,8 +187,7 @@ WalletShellManager.prototype.startService = function (walletFile, password, onEr
                 onError(ERROR_WALLET_PASSWORD);
             }
         }
-    }
-    );
+    });
 };
 
 WalletShellManager.prototype._argsToIni = function (args) {
@@ -215,7 +215,8 @@ WalletShellManager.prototype._spawnService = function (walletFile, password, onE
         '--daemon-address', this.daemonHost,
         '--daemon-port', this.daemonPort,
         '--log-level', SERVICE_LOG_LEVEL,
-        '--log-file', logFile
+        '--log-file', logFile,
+        '--init-timeout', this.serviceTimeout
     ]);
 
     // fallback for network resume handler
@@ -251,7 +252,7 @@ WalletShellManager.prototype._spawnService = function (walletFile, password, onE
         return false;
     }
 
-    
+
     this.serviceProcess.on('close', () => {
         this.terminateService(true);
         serviceDown = true;
@@ -267,8 +268,8 @@ WalletShellManager.prototype._spawnService = function (walletFile, password, onE
         // remove config when failed
         wsm._wipeConfig();
     });
-    
-    
+
+
     this.serviceProcess.on('exit', (code, signal) => {
         serviceDown = true;
         log.debug(`turtle service exit with code: ${code}, signal: ${signal}`);
@@ -283,7 +284,8 @@ WalletShellManager.prototype._spawnService = function (walletFile, password, onE
     }
 
     let TEST_OK = false;
-    let MAX_CHECK = 32;
+    let RETRY_MAX = (this.serviceTimeout > 60 ? 60 : 32);
+    log.debug(`timeout ${this.serviceTimeout}, max retry: ${RETRY_MAX}`);
     function testConnection(retry) {
         wsm.serviceApi.getAddress().then((address) => {
             log.debug('Got an address, connection ok!');
@@ -318,7 +320,7 @@ WalletShellManager.prototype._spawnService = function (walletFile, password, onE
             log.debug('Connection failed or timeout');
             log.debug(err.message);
             if (!serviceDown && retry === 10 && onDelay) onDelay(`Still no response from ${config.walletServiceBinaryFilename}, please wait a few more seconds...`);
-            if (serviceDown || retry >= MAX_CHECK && !TEST_OK) {
+            if (serviceDown || retry >= RETRY_MAX && !TEST_OK) {
                 if (wsm.serviceStatus()) {
                     wsm.terminateService();
                 }
@@ -713,12 +715,12 @@ WalletShellManager.prototype._fusionSendTx = function (threshold, counter) {
             }).catch((err) => {
                 if (typeof err === 'string') {
                     if (!err.toLocaleLowerCase().includes('index is out of range')) {
-                        console.log(err);
+                        log.debug(err);
                         return reject(new Error(err));
                     }
                 } else if (typeof err === 'object') {
                     if (!err.message.toLowerCase().includes('index is out of range')) {
-                        console.log(err);
+                        log.debug(err);
                         return reject(new Error(err));
                     }
                 }
@@ -785,7 +787,6 @@ WalletShellManager.prototype.optimizeWallet = function () {
         }).catch((err) => {
             // todo handle this differently!
             log.debug('fusion error');
-            console.log(err);
             return reject((err.message));
         });
     });
