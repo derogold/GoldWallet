@@ -31,7 +31,7 @@ const DEFAULT_SETTINGS = {
     service_host: '127.0.0.1',
     service_port: config.walletServiceRpcPort,
     service_password: 'passwrd',
-    service_timeout: 10,
+    service_timeout: 30,
     node_address: DEFAULT_REMOTE_NODE,
     pubnodes_last_updated: 946697799000,
     pubnodes_data: config.remoteNodeListFallback,
@@ -170,9 +170,9 @@ function createWindow() {
 
 
         tray.on('click', () => {
-            if(!win.isFocused() && win.isVisible()){
+            if (!win.isFocused() && win.isVisible()) {
                 win.focus();
-            }else if (settings.get('tray_minimize', false)) {
+            } else if (settings.get('tray_minimize', false)) {
                 if (win.isVisible()) {
                     win.hide();
                 } else {
@@ -295,11 +295,11 @@ function updatePublicNodes() {
     if (config.remoteNodeListUpdateUrl) {
         let last_updated = settings.get('pubnodes_last_updated', 946697799000);
         let now = new Date().getTime();
-        if(Math.abs(now-last_updated) / 36e5 >= 24) {
+        if (Math.abs(now - last_updated) / 36e5 >= 24) {
             //do update
             log.info('Performing daily public-node list update.');
             doNodeListUpdate();
-        }else{
+        } else {
             log.info('Public node list up to date, skipping update');
             storeNodeList(false); // from local cache
         }
@@ -329,14 +329,14 @@ function serviceBinCheck() {
     } else {
         // don't trust user's settings, recheck
         let svcbin = settings.get('service_bin');
-        try{
-            if(!fs.existsSync(svcbin)){
+        try {
+            if (!fs.existsSync(svcbin)) {
                 log.warn(`Service binary can't be found, falling back to default`);
                 settings.set('service_bin', DEFAULT_SERVICE_BIN);
-            }else{
+            } else {
                 log.info('Service binary found');
             }
-        }catch(_e) {
+        } catch (_e) {
             log.warn('Failed to check for service binary path, falling back to default');
             settings.set('service_bin', DEFAULT_SERVICE_BIN);
         }

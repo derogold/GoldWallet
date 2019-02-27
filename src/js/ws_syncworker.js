@@ -1,5 +1,6 @@
 const log = require('electron-log');
 const WalletShellApi = require('./ws_api');
+const syncStatus = require('./ws_constants').syncStatus;
 
 let DEBUG = false;
 log.transports.file.maxSize = 5 * 1024 * 1024;
@@ -9,23 +10,23 @@ log.transports.file.level = 'debug';
 const SYNC_INTERVAL = 4 * 1000;
 const SYNC_FAILED_MAX = 24;
 
-var serviceConfig = null; // { service_host: '127.0.0.1', service_port: '8070', service_password: 'xxx'};
-var workerState = {
+let serviceConfig = null; // { service_host: '127.0.0.1', service_port: '8070', service_password: 'xxx'};
+let workerStatus = {
     CONNECTED: true,
     PAUSED: false,
     TX_CHECK_INITIALIZED: false,
-    FAILED_COUNT: 0
+    FAILED_COUNT: 0,
+    SAVE_TICK: 0
 };
-var syncState = {
+let walletStatus = {
     LAST_BLOCK_COUNT: 1,
     LAST_KNOWN_BLOCK_COUNT: 1,
     TX_LAST_INDEX: 1,
     TX_LAST_COUNT: 0,
     TX_CHECK_SKIPPED_COUNT: 0,
-
 };
-var wsapi = null;
-var taskWorker = null;
+let wsapi = null;
+let taskWorker = null;
 
 function logDebug(msg) {
     if (!DEBUG) return;
@@ -43,46 +44,45 @@ function checkBlockUpdate() {
     if (!serviceConfig || wsapi === null) return;
     logDebug('-> blockUpdater: fetching block update');
     wsapi.getStatus().then((blockStatus) => {
-        let lastConStatus = workerState.CONNECTED;
+        let lastConStatus = workerStatus.CONNECTED;
         let conFailed = parseInt(blockStatus.knownBlockCount, 10) === 1;
         if (conFailed) {
             logDebug('-> blockUpdater: Got bad known block count, mark connection as broken');
             if (lastConStatus !== conFailed) {
-                let fakeStatus = {
-                    blockCount: -200,
-                    knownBlockCount: -200,
-                    displayBlockCount: -200,
-                    displayKnownBlockCount: -200,
-                    syncPercent: -200
-                };
                 process.send({
                     type: 'blockUpdated',
-                    data: fakeStatus
+                    data: {
+                        blockCount: syncStatus.NODE_ERROR,
+                        knownBlockCount: syncStatus.NODE_ERROR,
+                        displayBlockCount: syncStatus.NODE_ERROR,
+                        displayKnownBlockCount: syncStatus.NODE_ERROR,
+                        syncPercent: syncStatus.NODE_ERROR
+                    }
                 });
             }
-            workerState.CONNECTED = false;
+            workerStatus.CONNECTED = false;
             return;
         }
 
         // we have good connection
-        workerState.CONNECTED = true;
-        workerState.FAILED_COUNT = 0;
+        workerStatus.CONNECTED = true;
+        workerStatus.FAILED_COUNT = 0;
         let blockCount = parseInt(blockStatus.blockCount, 10);
         let knownBlockCount = parseInt(blockStatus.knownBlockCount, 10);
 
-        let blockCountUpdated = (blockCount > syncState.LAST_BLOCK_COUNT);
-        let knownBlockCountUpdated = (knownBlockCount > syncState.LAST_KNOWN_BLOCK_COUNT);
-        if (!blockCountUpdated && !knownBlockCountUpdated && syncState.TX_CHECK_SKIPPED_COUNT < 8) {
-            logDebug(`-> blockUpdater: no update, skip block notifier (${syncState.TX_CHECK_SKIPPED_COUNT})`);
-            syncState.TX_CHECK_SKIPPED_COUNT += 1;
+        let blockCountUpdated = (blockCount > walletStatus.LAST_BLOCK_COUNT);
+        let knownBlockCountUpdated = (knownBlockCount > walletStatus.LAST_KNOWN_BLOCK_COUNT);
+        if (!blockCountUpdated && !knownBlockCountUpdated && walletStatus.TX_CHECK_SKIPPED_COUNT < 8) {
+            logDebug(`-> blockUpdater: no update, skip block notifier (${walletStatus.TX_CHECK_SKIPPED_COUNT})`);
+            walletStatus.TX_CHECK_SKIPPED_COUNT += 1;
             return;
         }
 
-        syncState.TX_CHECK_SKIPPED_COUNT = 0;
+        walletStatus.TX_CHECK_SKIPPED_COUNT = 0;
         logDebug('-> blockUpdater: block updated, notify block update');
-        let txcheck = (syncState.LAST_KNOWN_BLOCK_COUNT < knownBlockCount || syncState.LAST_BLOCK_COUNT < knownBlockCount);
-        syncState.LAST_BLOCK_COUNT = blockCount;
-        syncState.LAST_KNOWN_BLOCK_COUNT = knownBlockCount;
+        let txcheck = (walletStatus.LAST_KNOWN_BLOCK_COUNT < knownBlockCount || walletStatus.LAST_BLOCK_COUNT < knownBlockCount);
+        walletStatus.LAST_BLOCK_COUNT = blockCount;
+        walletStatus.LAST_KNOWN_BLOCK_COUNT = knownBlockCount;
 
         // add any extras here, so renderer not doing too much things
         let dispKnownBlockCount = (knownBlockCount - 1);
@@ -103,10 +103,10 @@ function checkBlockUpdate() {
         });
 
         // don't check if we can't get any block
-        if (syncState.LAST_BLOCK_COUNT <= 1) return;
+        if (walletStatus.LAST_BLOCK_COUNT <= 1) return;
 
         // don't check tx if block count not updated
-        if (!txcheck && workerState.TX_CHECK_INITIALIZED) {
+        if (!txcheck && workerStatus.TX_CHECK_INITIALIZED) {
             logDebug('-> blockUpdater: Tx check skipped');
             return;
         }
@@ -114,23 +114,21 @@ function checkBlockUpdate() {
         checkTransactionsUpdate();
 
     }).catch((err) => {
-        workerState.FAILED_COUNT++;
-        logDebug(`-> blockUpdater: FAILED, ${err.message} | failed count: ${workerState.FAILED_COUNT}`);
-        if (workerState.FAILED_COUNT > SYNC_FAILED_MAX) {
+        workerStatus.FAILED_COUNT++;
+        logDebug(`-> blockUpdater: FAILED, ${err.message} | failed count: ${workerStatus.FAILED_COUNT}`);
+        if (workerStatus.FAILED_COUNT > SYNC_FAILED_MAX) {
             logDebug('-> blockUpdater: too many timeout, mark connection as broken');
-
-            let fakeStatus = {
-                blockCount: -200,
-                knownBlockCount: -200,
-                displayBlockCount: -200,
-                displayKnownBlockCount: -200,
-                syncPercent: -200
-            };
             process.send({
                 type: 'blockUpdated',
-                data: fakeStatus
+                data: {
+                    blockCount: syncStatus.NODE_ERROR,
+                    knownBlockCount: syncStatus.NODE_ERROR,
+                    displayBlockCount: syncStatus.NODE_ERROR,
+                    displayKnownBlockCount: syncStatus.NODE_ERROR,
+                    syncPercent: syncStatus.NODE_ERROR
+                }
             });
-            workerState.STATE_CONNECTED = false;
+            workerStatus.STATE_CONNECTED = false;
             return;
         }
         return false;
@@ -146,15 +144,15 @@ function checkTransactionsUpdate() {
             data: balance
         });
 
-        if (syncState.LAST_BLOCK_COUNT > 1) {
+        if (walletStatus.LAST_BLOCK_COUNT > 1) {
             logDebug('-> txUpdater: checking tx update');
-            let currentBLockCount = syncState.LAST_BLOCK_COUNT - 1;
-            let startIndex = (!workerState.TX_CHECK_INITIALIZED ? 1 : syncState.TX_LAST_INDEX);
+            let currentBLockCount = walletStatus.LAST_BLOCK_COUNT - 1;
+            let startIndex = (!workerStatus.TX_CHECK_INITIALIZED ? 1 : walletStatus.TX_LAST_INDEX);
             let searchCount = currentBLockCount;
             let needCountMargin = false;
             let blockMargin = 10;
-            if (workerState.TX_CHECK_INITIALIZED) {
-                searchCount = (currentBLockCount - syncState.TX_LAST_COUNT);
+            if (workerStatus.TX_CHECK_INITIALIZED) {
+                searchCount = (currentBLockCount - walletStatus.TX_LAST_COUNT);
                 needCountMargin = true;
             }
 
@@ -176,9 +174,9 @@ function checkTransactionsUpdate() {
                 logDebug(`-> txUpdater: getTransactions FAILED, ${err.message}`);
                 return false;
             });
-            workerState.TX_CHECK_INITIALIZED = true;
-            syncState.TX_LAST_INDEX = currentBLockCount;
-            syncState.TX_LAST_COUNT = currentBLockCount;
+            workerStatus.TX_CHECK_INITIALIZED = true;
+            walletStatus.TX_LAST_INDEX = currentBLockCount;
+            walletStatus.TX_LAST_COUNT = currentBLockCount;
         }
     }).catch((err) => {
         logDebug(`-> txUpdater: getBalance FAILED, ${err.message}`);
@@ -188,8 +186,13 @@ function checkTransactionsUpdate() {
 
 function saveWallet() {
     if (!serviceConfig) return;
+    if (workerStatus.SAVE_TICK < 5) {
+        workerStatus.SAVE_TICK += 1;
+        return;
+    }
+    workerStatus.SAVE_TICK = 0;
+    logDebug(`-> saveWallet: saving wallet`);
     wsapi.save().then(() => {
-        logDebug(`-> saveWallet: OK`);
         return true;
     }).catch(() => {
         return false;
@@ -198,7 +201,7 @@ function saveWallet() {
 
 function syncWallet() {
     taskWorker = setInterval(() => {
-        if (workerState.PAUSED) return;
+        if (workerStatus.PAUSED) return;
         logDebug(`Wallet sync tasks...`);
         checkBlockUpdate();
     }, SYNC_INTERVAL);
@@ -238,23 +241,23 @@ process.on('message', (msg) => {
             setTimeout(syncWallet, 5000);
             break;
         case 'pause':
-            if (workerState.PAUSED) return;
+            if (workerStatus.PAUSED) return;
             logDebug('Got suspend command');
             process.send({
                 type: 'blockUpdated',
                 data: {
-                    blockCount: -50,
-                    knownBlockCount: -50,
-                    displayBlockCount: -50,
-                    displayKnownBlockCount: -50,
-                    syncPercent: -50
+                    blockCount: syncStatus.NET_OFFLINE,
+                    knownBlockCount: syncStatus.NET_OFFLINE,
+                    displayBlockCount: syncStatus.NET_OFFLINE,
+                    displayKnownBlockCount: syncStatus.NET_OFFLINE,
+                    syncPercent: syncStatus.NET_OFFLINE
                 }
             });
-            workerState.PAUSED = true;
+            workerStatus.PAUSED = true;
             break;
         case 'resume':
             logDebug('Got resume command');
-            syncState.TX_CHECK_SKIPPED_COUNT = 5;
+            walletStatus.TX_CHECK_SKIPPED_COUNT = 5;
             wsapi = null;
             initApi(serviceConfig);
             setTimeout(() => {
@@ -263,23 +266,23 @@ process.on('message', (msg) => {
                 }).catch((err) => {
                     logDebug(`Warming up: getBalance FAILED, ${err.message}`);
                 });
-                workerState.PAUSED = false;
+                workerStatus.PAUSED = false;
             }, 15000);
 
             process.send({
                 type: 'blockUpdated',
                 data: {
-                    blockCount: -10,
-                    knownBlockCount: -10,
-                    displayBlockCount: -10,
-                    displayKnownBlockCount: -10,
-                    syncPercent: -10
+                    blockCount: syncStatus.NET_ONLINE,
+                    knownBlockCount: syncStatus.NET_ONLINE,
+                    displayBlockCount: syncStatus.NET_ONLINE,
+                    displayKnownBlockCount: syncStatus.NET_ONLINE,
+                    syncPercent: syncStatus.NET_ONLINE
                 }
             });
             break;
         case 'stop':
             logDebug('Got stop command, halting all tasks and exit...');
-            syncState.TX_SKIPPED_COUNT = 0;
+            walletStatus.TX_SKIPPED_COUNT = 0;
             serviceConfig = wsapi = null;
             if (taskWorker === undefined || taskWorker === null) {
                 try {

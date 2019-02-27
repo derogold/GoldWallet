@@ -12,6 +12,7 @@ const wsutil = require('./ws_utils');
 const WalletShellSession = require('./ws_session');
 const WalletShellManager = require('./ws_manager');
 const config = require('./ws_config');
+const syncStatus = require('./ws_constants').syncStatus;
 const async = require('async');
 const AgGrid = require('ag-grid-community');
 const wsmanager = new WalletShellManager();
@@ -669,7 +670,7 @@ function handleSettings() {
     settingsButtonSave.addEventListener('click', function () {
         formMessageReset();
         let serviceBinValue = settingsInputServiceBin.value ? settingsInputServiceBin.value.trim() : '';
-        let timeoutValue = settingsInputTimeout.value ? parseInt(settingsInputTimeout.value,10): 30;
+        let timeoutValue = settingsInputTimeout.value ? parseInt(settingsInputTimeout.value, 10) : 30;
 
         if (!serviceBinValue.length) {
             formMessageSet('settings', 'error', `Settings can't be saved, please enter correct values`);
@@ -681,8 +682,8 @@ function handleSettings() {
             return false;
         }
 
-        if(timeoutValue < 30 || timeoutValue > 120) {
-            formMessageSet('settings', 'error', `Timeout value must be between 0 and 120`);
+        if (timeoutValue < 30 || timeoutValue > 120) {
+            formMessageSet('settings', 'error', `Timeout value must be between 30 and 120`);
             return false;
         }
 
@@ -1704,11 +1705,11 @@ function handleWalletClose() {
                 let resetdata = {
                     type: 'blockUpdated',
                     data: {
-                        blockCount: -100,
-                        displayBlockCount: -100,
-                        knownBlockCount: -100,
-                        displayKnownBlockCount: -100,
-                        syncPercent: -100
+                        blockCount: syncStatus.IDLE,
+                        displayBlockCount: syncStatus.IDLE,
+                        knownBlockCount: syncStatus.IDLE,
+                        displayKnownBlockCount: syncStatus.IDLE,
+                        syncPercent: syncStatus.IDLE
                     }
                 };
                 wsmanager.notifyUpdate(resetdata);

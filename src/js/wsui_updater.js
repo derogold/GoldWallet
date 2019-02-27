@@ -3,7 +3,7 @@ const Store = require('electron-store');
 const wsutil = require('./ws_utils');
 const WalletShellSession = require('./ws_session');
 const config = require('./ws_config');
-
+const syncStatus = require('./ws_constants').syncStatus;
 const brwin = remote.getCurrentWindow();
 const settings = new Store({ name: 'Settings' });
 const sessConfig = { debug: remote.app.debug, walletConfig: remote.app.walletConfig };
@@ -13,17 +13,11 @@ const wsession = new WalletShellSession(sessConfig);
 const syncDiv = document.getElementById('navbar-div-sync');
 const syncInfoBar = document.getElementById('navbar-text-sync');
 const connInfoDiv = document.getElementById('conn-info');
-const syncStatus = {
-    NET_ONLINE: -10,
-    NET_OFFLINE: -50,
-    IDLE: -100,
-    NODE_ERROR: -200,
-    RESET: -300
-};
-
 const WFCLEAR_INTERVAL = 5;
+
 let WFCLEAR_TICK = 0;
 let FUSION_CHECK = 0;
+let TX_INITIALIZED = false;
 
 function setWinTitle(title) {
     const defaultTitle = wsession.get('defaultTitle');
@@ -326,7 +320,7 @@ function updateTransactions(result) {
     lastTxDate = `${lastTxDate.getUTCFullYear()}-${lastTxDate.getUTCMonth() + 1}-${lastTxDate.getUTCDate()}`;
 
     // amount to check
-    triggerTxRefresh();
+    setTimeout(triggerTxRefresh, (TX_INITIALIZED ? 100 : 1000));
 
     let rememberedLastHash = settings.get('last_notification', '');
     let notify = true;
@@ -354,7 +348,7 @@ function updateTransactions(result) {
 }
 
 function showFeeWarning(fee) {
-    fee = fee || 0; // fee vale already for mortal
+    fee = fee || 0;
     let nodeFee = parseFloat(fee);
     if (nodeFee <= 0) return;
 
@@ -485,7 +479,6 @@ function updateUiState(msg) {
                 fusionProgressBar.classList.remove('hidden');
                 // do nothing, just wait
             }
-
             break;
         default:
             console.log('invalid command', msg);
