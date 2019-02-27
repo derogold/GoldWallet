@@ -52,7 +52,7 @@ config.addressPrefix = 'TRTL';
 // standard wallet address length, for address validation
 config.addressLength = 99;
 // integrated wallet address length, for address validation. Added length is length of payment ID encoded in base58.
-config.integratedAddressLength = config.addressLength + ((64 * 11) / 8)
+config.integratedAddressLength = config.addressLength + ((64 * 11) / 8);
 
 // minimum fee for sending transaction
 config.minimumFee = 0.1;
