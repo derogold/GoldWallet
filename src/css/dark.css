@@ -255,14 +255,10 @@ border-bottom-right-radius: 4px !important;
     background: #2b2a2a;
 }
 .dark #button-overview-showkeys.reminder:before {
-  content: '';
-  position: absolute;
   border: 4px solid #ff0000cc;
 }
 
-
-
 .dark #button-overview-showkeys.reminder{
-   border-color: #ff0000;
+   border-color: #ca0000ad;
    color:#fff;
 }

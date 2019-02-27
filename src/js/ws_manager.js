@@ -9,6 +9,8 @@ const WalletShellApi = require('./ws_api');
 const uiupdater = require('./wsui_updater');
 const wsutil = require('./ws_utils');
 const config = require('./ws_config');
+const syncStatus = require('./ws_constants').syncStatus;
+
 const { remote } = require('electron');
 const settings = new Store({ name: 'Settings' });
 const sessConfig = { debug: remote.app.debug, walletConfig: remote.app.walletConfig };
@@ -181,7 +183,9 @@ WalletShellManager.prototype.startService = function (walletFile, password, onEr
                 let trimmed = stdout.trim();
                 let walletAddress = trimmed.substring(trimmed.indexOf(config.addressPrefix), trimmed.length);
                 wsession.set('loadedWalletAddress', walletAddress);
-                wsm._spawnService(walletFile, password, onError, onSuccess, onDelay);
+                setTimeout(() => {
+                    wsm._spawnService(walletFile, password, onError, onSuccess, onDelay);
+                }, 500);
             } else {
                 // just stop here
                 onError(ERROR_WALLET_PASSWORD);
@@ -208,6 +212,7 @@ WalletShellManager.prototype._spawnService = function (walletFile, password, onE
         `${file.split(' ').join('').split('.')[0]}.log`
     );
 
+    let timeout = settings.get('service_timeout');
     let serviceArgs = this.serviceArgsDefault.concat([
         '--container-file', walletFile,
         '--container-password', password,
@@ -216,8 +221,9 @@ WalletShellManager.prototype._spawnService = function (walletFile, password, onE
         '--daemon-port', this.daemonPort,
         '--log-level', SERVICE_LOG_LEVEL,
         '--log-file', logFile,
-        '--init-timeout', this.serviceTimeout
+        '--init-timeout', timeout
     ]);
+    
 
     // fallback for network resume handler
     let cmdArgs = serviceArgs;
@@ -235,10 +241,10 @@ WalletShellManager.prototype._spawnService = function (walletFile, password, onE
             configFile = this._writeIniConfig(newConfig);
         }
         serviceArgs = ['--config', configFile];
+        log.debug('using config file');
     } else {
         log.warn('Failed to create config file, fallback to cmd args ');
     }
-
 
     let wsm = this;
     log.debug('Starting service...');
@@ -251,7 +257,6 @@ WalletShellManager.prototype._spawnService = function (walletFile, password, onE
         this._wipeConfig();
         return false;
     }
-
 
     this.serviceProcess.on('close', () => {
         this.terminateService(true);
@@ -284,8 +289,8 @@ WalletShellManager.prototype._spawnService = function (walletFile, password, onE
     }
 
     let TEST_OK = false;
-    let RETRY_MAX = (this.serviceTimeout > 60 ? 60 : 32);
-    log.debug(`timeout ${this.serviceTimeout}, max retry: ${RETRY_MAX}`);
+    let RETRY_MAX = (timeout > 60 ? 60 : 32);
+    log.debug(`timeout: ${timeout}, max retry: ${RETRY_MAX}`);
     function testConnection(retry) {
         wsm.serviceApi.getAddress().then((address) => {
             log.debug('Got an address, connection ok!');
@@ -635,15 +640,14 @@ WalletShellManager.prototype.rescanWallet = function (scanHeight) {
         wsession.set('txLastHash', null);
         wsession.set('txLastTimestamp', null);
         wsession.set('txNew', []);
-        let fakeBlock = -300;
         let resetdata = {
             type: 'blockUpdated',
             data: {
-                blockCount: fakeBlock,
-                displayBlockCount: fakeBlock,
-                knownBlockCount: fakeBlock,
-                displayKnownBlockCount: fakeBlock,
-                syncPercent: fakeBlock
+                blockCount: syncStatus.RESET,
+                displayBlockCount: syncStatus.RESET,
+                knownBlockCount: syncStatus.RESET,
+                displayKnownBlockCount: syncStatus.RESET,
+                syncPercent: syncStatus.RESET
             }
         };
         wsm.notifyUpdate(resetdata);

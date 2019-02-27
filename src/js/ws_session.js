@@ -1,5 +1,3 @@
-//const path = require('path');
-//const remote = require('electron').remote;
 const Store = require('electron-store');
 const settings = new Store({ name: 'Settings' });
 const config = require('./ws_config');
@@ -7,9 +5,6 @@ const config = require('./ws_config');
 const WS_VERSION = settings.get('version', 'unknown');
 const DEFAULT_TITLE = `${config.appName} ${WS_VERSION} - ${config.appDescription}`;
 const SESSION_KEY = 'wlshell';
-
-//const IS_DEBUG = remote.getGlobal('wsession').debug;
-//const WALLET_CFG = path.join(remote.app.getPath('userData'), 'wconfig.txt');
 
 var WalletShellSession = function (opts) {
     if (!(this instanceof WalletShellSession)) return new WalletShellSession(opts);
