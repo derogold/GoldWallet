@@ -223,14 +223,18 @@ let jtfr = {
         "https://github.com/turtlecoin/turtle-wallet-electron",
         "TurtleCoin",
         "TRTL",
-        "turtle-service"
+        "turtle-service",
+        "CFG_MIN_FEE",
+        "CFG_MIN_SEND"
     ],
     tReplace: [
         config.appName,
         config.appGitRepo,
         config.assetName,
         config.assetTicker,
-        config.walletServiceBinaryFilename
+        config.walletServiceBinaryFilename,
+        config.minimumFee,
+        config.mininumSend
     ]
 };
 
@@ -2023,8 +2027,8 @@ function handleSendTransfer() {
 
         let total = 0;
         let amount = sendInputAmount.value ? parseFloat(sendInputAmount.value) : 0;
-        if (amount <= 0) {
-            formMessageSet('send', 'error', 'Sorry, invalid amount');
+        if (amount <= 0 || amount < config.mininumSend) {
+            formMessageSet('send', 'error', `Sorry, minimum amount you can send is ${config.mininumSend}`);
             return;
         }
 

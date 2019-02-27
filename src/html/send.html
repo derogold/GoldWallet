@@ -26,9 +26,9 @@
                     <div class="div-send-amount  inline-block-div half-width">
                         <h4 class="text-spaced input-required">Amount</h4>
                         <input tabindex="0" title="Required, amount of TRTL you want to send..." 
-                            required="required" max="1.00" type="number" step="0.10" 
-                            min="1.00" class="text-block" id="input-send-amount" 
-                            placeholder="1.00"
+                            required="required" type="number" step="CFG_MIN_SEND" 
+                            min="CFG_MIN_SEND" class="text-block" id="input-send-amount" 
+                            placeholder="CFG_MIN_SEND"
                         />
                         <span id="sendFormHelp" class="form-help">Max. amount you can send is 0.00 TRTL</span>
                         <span tabindex="0" id="sendMaxAmount" class="hidden">send all</span>
@@ -36,10 +36,10 @@
                     <div class="div-send-fee inline-block-div half-width half-width-end">
                             <h4 class="text-spaced input-required">Transaction Fee</h4>
                             <input tabindex="0" title="Required, TRTL amount for transaction fee..." required="required" 
-                                data-noclear="1" value="0.10" type="number" step="0.10" min="0.10" 
-                                class="text-block" id="input-send-fee" placeholder="0.10"
+                                data-noclear="1" value="CFG_MIN_FEE" type="number" step="CFG_MIN_FEE" min="CFG_MIN_FEE" 
+                                class="text-block" id="input-send-fee" placeholder="CFG_MIN_FEE"
                             />
-                            <span id="sendFormHelp" class="form-help">Min. fee is 0.10 TRTL</span>
+                            <span id="sendFormHelpMinFee" class="form-help">Min. fee is CFG_MIN_FEE TRTL</span>
                     </div>
                 </div>
                                 
