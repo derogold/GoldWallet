@@ -225,7 +225,8 @@ let jtfr = {
         "TRTL",
         "turtle-service",
         "CFG_MIN_FEE",
-        "CFG_MIN_SEND"
+        "CFG_MIN_SEND",
+        "CFG_ADDR_LENGTH"
     ],
     tReplace: [
         config.appName,
@@ -234,7 +235,8 @@ let jtfr = {
         config.assetTicker,
         config.walletServiceBinaryFilename,
         config.minimumFee,
-        config.mininumSend
+        config.mininumSend,
+        config.addressLength
     ]
 };
 
@@ -949,7 +951,7 @@ function handleAddressBook() {
 
     // disable payment id input for non standard adress
     function setAbPaymentIdState(addr) {
-        if (addr.length > 99) {
+        if (addr.length > CFG_ADDR_LENGTH) {
             addressBookInputPaymentId.value = '';
             addressBookInputPaymentId.setAttribute('disabled', true);
         } else {
