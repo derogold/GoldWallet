@@ -949,7 +949,7 @@ function handleAddressBook() {
 
     // disable payment id input for non standard adress
     function setAbPaymentIdState(addr) {
-        if (addr.length > 99) {
+        if (addr.length > config.addressLength) {
             addressBookInputPaymentId.value = '';
             addressBookInputPaymentId.setAttribute('disabled', true);
         } else {
@@ -1154,7 +1154,7 @@ function handleAddressBook() {
             }
         }
 
-        if (addressValue.length > 99) paymentIdValue.value = '';
+        if (addressValue.length > config.addressLength) paymentIdValue.value = '';
 
         let entryName = nameValue.trim();
         let entryAddr = addressValue.trim();
@@ -1972,9 +1972,9 @@ function handleSendTransfer() {
         if (maxsend) sendInputAmount.value = maxsend;
     });
 
-    sendInputFee.value = 0.1;
+    sendInputFee.value = config.minimumFee;
     function setPaymentIdState(addr) {
-        if (addr.length > 99) {
+        if (addr.length > config.addressLength) {
             sendInputPaymentId.value = '';
             sendInputPaymentId.setAttribute('disabled', true);
         } else {
@@ -2016,7 +2016,7 @@ function handleSendTransfer() {
         }
 
         let paymentId = sendInputPaymentId.value ? sendInputPaymentId.value.trim() : '';
-        if (recipientAddress.length > 99) {
+        if (recipientAddress.length > config.addressLength) {
             paymentId = '';
         } else if (paymentId.length) {
             if (!wsutil.validatePaymentId(paymentId)) {
@@ -2707,7 +2707,7 @@ function initHandlers() {
                 return;
             }
             // only allow standard address
-            if (addr.length > 99) {
+            if (addr.length > config.addressLength) {
                 formMessageSet('gia', 'error', `Only standard ${config.assetName} address are supported`);
                 return;
             }
