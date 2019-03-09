@@ -1972,7 +1972,7 @@ function handleSendTransfer() {
         if (maxsend) sendInputAmount.value = maxsend;
     });
 
-    sendInputFee.value = config.addressLength;
+    sendInputFee.value = config.minimumFee;
     function setPaymentIdState(addr) {
         if (addr.length > config.addressLength) {
             sendInputPaymentId.value = '';
