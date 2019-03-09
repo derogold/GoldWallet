@@ -1156,7 +1156,7 @@ function handleAddressBook() {
             }
         }
 
-        if (addressValue.length > 99) paymentIdValue.value = '';
+        if (addressValue.length > CFG_ADDR_LENGTH) paymentIdValue.value = '';
 
         let entryName = nameValue.trim();
         let entryAddr = addressValue.trim();
@@ -1976,7 +1976,7 @@ function handleSendTransfer() {
 
     sendInputFee.value = CFG_MIN_SEND;
     function setPaymentIdState(addr) {
-        if (addr.length > 99) {
+        if (addr.length > CFG_ADDR_LENGTH) {
             sendInputPaymentId.value = '';
             sendInputPaymentId.setAttribute('disabled', true);
         } else {
@@ -2018,7 +2018,7 @@ function handleSendTransfer() {
         }
 
         let paymentId = sendInputPaymentId.value ? sendInputPaymentId.value.trim() : '';
-        if (recipientAddress.length > 99) {
+        if (recipientAddress.length > CFG_ADDR_LENGTH) {
             paymentId = '';
         } else if (paymentId.length) {
             if (!wsutil.validatePaymentId(paymentId)) {
@@ -2709,7 +2709,7 @@ function initHandlers() {
                 return;
             }
             // only allow standard address
-            if (addr.length > 99) {
+            if (addr.length > CFG_ADDR_LENGTH) {
                 formMessageSet('gia', 'error', `Only standard ${config.assetName} address are supported`);
                 return;
             }
