@@ -4,7 +4,7 @@
 
 ### Features:
 
-This wallet contains the basic functions required to mvanage your TurtleCoin assets:
+This wallet contains the basic functions required to manage your TurtleCoin assets:
 
 * Wallet creation:
   * Create new wallet.
