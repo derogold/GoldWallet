@@ -58,6 +58,7 @@ You need to have `Node.js` and `npm` installed, go to https://nodejs.org and fin
 
 Once you have Node+npm installed:
 ```
+# assuming you're building it on GNU/Linux
 # first, download turtle-service binary for each platform
 # from TurtleCoin official repo
 # https://github.com/turtlecoin/turtlecoin/releases
@@ -81,7 +82,7 @@ $ mkdir -p ./bin/lin
 $ cp /path/to/linux-version-of/turtle-service ./bin/lin/
 $ npm run dist-lin
 
-# build Windows package
+# build Windows package (you need to have wine 2.0+ installed)
 $ mkdir -p ./bin/win
 $ cp /path/to/win-version-of/turtle-service.exe ./bin/win/
 $ npm run dist-win
