@@ -249,13 +249,13 @@ function createWindow() {
 
 function storeNodeList(pnodes) {
     pnodes = pnodes || settings.get('pubnodes_data');
+
     let validNodes = [];
-    if (pnodes.hasOwnProperty('nodes')) {
-        pnodes.nodes.forEach(addr => {
-            let item = `${addr.url}:${addr.port}`;
-            validNodes.push(item);
-        });
-    }
+    pnodes.forEach(node => {
+        let item = `${node.url}:${node.port}`;
+        validNodes.push(item);
+    });
+    
     if (validNodes.length) settings.set('pubnodes_data', validNodes);
 }
 
@@ -278,7 +278,7 @@ function doNodeListUpdate() {
                     log.debug('Public node list has been updated');
                 } catch (e) {
                     log.debug(`Failed to update public node list: ${e.message}`);
-                    storeNodeList();
+                    storeNodeList(false);
                 }
             });
         }).on('error', (e) => {
