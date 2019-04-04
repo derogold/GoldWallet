@@ -272,6 +272,9 @@ function doNodeListUpdate() {
             res.on('end', () => {
                 try {
                     var pnodes = JSON.parse(result);
+                    if(pnodes.hasOwnProperty('node')) {
+                        pnodes = pnodes.node;
+                    }
                     storeNodeList(pnodes);
                     settings.set('pubnodes_last_updated', new Date().getTime());
                     settings.delete('pubnodes_tested');
