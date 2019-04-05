@@ -33,8 +33,15 @@ config.blockExplorerUrl = 'https://explorer.turtlecoin.lol/transaction.html?hash
 // default remote node to connect to, set this to a known reliable node for 'just works' user experience
 config.remoteNodeDefaultHost = 'turtlenode.co';
 
+
 // remote node list update url, set to null if you don't have one
+// for TRTL:
+// raw list: https://raw.githubusercontent.com/turtlecoin/turtlecoin-nodes-json/master/turtlecoin-nodes.json
+// filtered: https://trtl.nodes.pub/api/getNodes
 config.remoteNodeListUpdateUrl = 'https://trtl.nodes.pub/api/getNodes';
+
+// set to false if using raw/unfiltered node list
+config.remoteNodeListFiltered = true;
 
 // fallback remote node list, in case fetching update failed, fill this with known to works remote nodes
 config.remoteNodeListFallback = [

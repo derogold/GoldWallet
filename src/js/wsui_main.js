@@ -120,7 +120,6 @@ let thtml;
 let dmswitch;
 let kswitch;
 let iswitch;
-let pubnodes_fallbacks = [];
 
 function populateElementVars() {
     // misc
@@ -497,9 +496,19 @@ function initNodeSelection(nodeAddr) {
         offlines = testedNodes.filter((v) => v.label.indexOf(timeoutStr) >= 0);
     }
 
+    let pubnodes_fallbacks = config.remoteNodeListFallback;
     // shuffle nodes
     if (onlines.length) {
         let rndMethod = wsutil.arrShuffle([0, 1]);
+        if (pubnodes_fallbacks.length && config.remoteNodeListFiltered)  {
+            let fallbackMerge = [];
+            pubnodes_fallbacks.forEach(n => {
+                if(!onlines.find(x => x.host === n)) {
+                    fallbackMerge.push({ host: n, label: `${n}|FREE` });
+                }
+            });
+            onlines = onlines.concat(fallbackMerge);
+        }
         onlines = wsutil.arrShuffle(onlines, rndMethod);
     } else {
         if (pubnodes_fallbacks.length) {
@@ -2846,6 +2855,32 @@ function initKeyBindings() {
     });
 }
 
+function fetchFromRaw() {
+    if(!settings.has('pubnodes_raw')){
+        setTimeout(() => initNodeSelection, 100);
+        return;
+    }
+    
+    let nodeStr = atob(settings.get('pubnodes_raw', ""));
+    if(!nodeStr.length) return;
+    console.debug(nodeStr);
+    
+    let tested_nodes = [];
+    let nodes = JSON.parse(nodeStr);
+
+    for(const n of nodes) {
+        let feeLabel = parseInt(n.fee, 10) > 0 ? `Fee: ${wsutil.amountForMortal(n.fee)} ${config.assetTicker}` : "FREE";
+        tested_nodes.push({
+            host: `${n.url}:${n.port}`,
+            label: `${n.url}|${feeLabel}`
+        });
+    }
+    
+    settings.set('pubnodes_tested', tested_nodes);
+    initNodeSelection();
+    
+}
+
 function fetchNodeInfo(force) {
     force = force || false;
 
@@ -2947,10 +2982,14 @@ function fetchNodeInfo(force) {
 document.addEventListener('DOMContentLoaded', () => {
     initHandlers();
     showInitialPage();
-    if (navigator.onLine) {
-        fetchNodeInfo();
+    if (!config.remoteNodeListFiltered) {
+        if (navigator.onLine) {
+            fetchNodeInfo();
+        } else {
+            setTimeout(() => initNodeSelection, 500);
+        }
     } else {
-        setTimeout(() => initNodeSelection, 500);
+        fetchFromRaw();
     }
 }, false);
 

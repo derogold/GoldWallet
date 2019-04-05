@@ -248,15 +248,16 @@ function createWindow() {
 }
 
 function storeNodeList(pnodes) {
-    pnodes = pnodes || settings.get('pubnodes_data');
+    if(!pnodes) return;
+
+    if(!pnodes.length) return;
 
     let validNodes = [];
     pnodes.forEach(node => {
         let item = `${node.url}:${node.port}`;
         validNodes.push(item);
     });
-    
-    if (validNodes.length) settings.set('pubnodes_data', validNodes);
+    settings.set('pubnodes_data', validNodes);
 }
 
 function doNodeListUpdate() {
@@ -272,10 +273,11 @@ function doNodeListUpdate() {
             res.on('end', () => {
                 try {
                     var pnodes = JSON.parse(result);
-                    if(pnodes.hasOwnProperty('node')) {
-                        pnodes = pnodes.node;
+                    if(pnodes.hasOwnProperty('nodes')) {
+                        pnodes = pnodes.nodes;
                     }
                     storeNodeList(pnodes);
+                    if(result.length) settings.set('pubnodes_raw', Buffer.from(result).toString('base64'));
                     settings.set('pubnodes_last_updated', new Date().getTime());
                     settings.delete('pubnodes_tested');
                     log.debug('Public node list has been updated');
