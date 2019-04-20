@@ -164,6 +164,7 @@ WalletShellManager.prototype.startService = function (walletFile, password, onEr
     let serviceArgs = this.serviceArgsDefault.concat([
         '-w', walletFile,
         '-p', password,
+        '--bind-port', config.walletServiceRpcPort,
         '--log-level', 0,
         '--log-file', path.join(remote.app.getPath('temp'), 'ts.log'), // macOS failed without this
         '--address'
@@ -216,6 +217,7 @@ WalletShellManager.prototype._spawnService = function (walletFile, password, onE
     let serviceArgs = this.serviceArgsDefault.concat([
         '--container-file', walletFile,
         '--container-password', password,
+        '--bind-port', config.walletServiceRpcPort,
         '--enable-cors', '*',
         '--daemon-address', this.daemonHost,
         '--daemon-port', this.daemonPort,
