@@ -1482,6 +1482,7 @@ function handleWalletOpen() {
             wsutil.showToast('Network connectivity problem detected, node list update can not be performed');
             return;
         }
+
         if (!confirm("Refreshing node list may take a while to complete, are you sure?")) return;
         fetchNodeInfo(true);
     });
@@ -2989,6 +2990,7 @@ document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => initNodeSelection, 500);
         }
     } else {
+        walletOpenRefreshNodes.classList.add('hidden');
         fetchFromRaw();
     }
 }, false);
