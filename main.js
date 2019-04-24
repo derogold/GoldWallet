@@ -254,6 +254,9 @@ function storeNodeList(pnodes) {
 
     let validNodes = [];
     pnodes.forEach(node => {
+        if (!config.remoteNodeCacheSupported && true === node.cache) {
+            return;
+        }
         let item = `${node.url}:${node.port}`;
         validNodes.push(item);
     });
