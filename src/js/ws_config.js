@@ -50,6 +50,7 @@ config.remoteNodeListFallback = [
   'turtle.mine.nu:11898',
 ];
 config.remoteNodeCacheSupported = false;
+config.remoteNodeSslSupported = false;
 
 // your currency name
 config.assetName = 'TurtleCoin';
