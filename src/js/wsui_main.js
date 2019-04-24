@@ -2561,6 +2561,10 @@ function initHandlers() {
         };
 
         if (dialogType === 'saveFile') {
+            dialogOpts.defaultPath = path.join(
+                recentDir,
+                `new_wallet_${(new Date()).getTime()}.${config.walletFileDefaultExt}`
+            );
             dialogOpts.title = `Select directory to store your ${targetName}, and give it a filename.`;
             dialogOpts.buttonLabel = 'OK';
 
