@@ -49,6 +49,7 @@ config.remoteNodeListFallback = [
   'nodes.hashvault.pro:11898',
   'turtle.mine.nu:11898',
 ];
+config.remoteNodeCacheSupported = false;
 
 // your currency name
 config.assetName = 'TurtleCoin';
