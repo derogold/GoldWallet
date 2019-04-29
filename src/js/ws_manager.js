@@ -1,6 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const net = require('net');
 const childProcess = require('child_process');
 const log = require('electron-log');
 const Store = require('electron-store');
@@ -20,6 +21,7 @@ const SERVICE_LOG_DEBUG = wsession.get('debug');
 const SERVICE_LOG_LEVEL_DEFAULT = 0;
 const SERVICE_LOG_LEVEL_DEBUG = 5;
 const SERVICE_LOG_LEVEL = (SERVICE_LOG_DEBUG ? SERVICE_LOG_LEVEL_DEBUG : SERVICE_LOG_LEVEL_DEFAULT);
+const SERVICE_MIN_LISTEN_PORT = 10101;
 
 const ERROR_WALLET_EXEC = `Failed to start ${config.walletServiceBinaryFilename}. Set the path to ${config.walletServiceBinaryFilename} properly in the settings tab.`;
 const ERROR_WALLET_PASSWORD = 'Failed to load your wallet, please check your password';
@@ -54,16 +56,32 @@ var WalletShellManager = function () {
     this.fusionTxHash = [];
 };
 
+WalletShellManager.prototype.getUnusedPort = function() {
+    let port = SERVICE_MIN_LISTEN_PORT;
+    const server = net.createServer();
+    return new Promise((resolve, reject) => server
+        .on('error', error => error.code === 'EADDRINUSE' ? server.listen(++port) : reject(error))
+        .on('listening', () => server.close(() => resolve(port)))
+        .listen(port));
+};
+
 WalletShellManager.prototype.init = function () {
     this._getSettings();
     if (this.serviceApi !== null) return;
 
-    let cfg = {
-        service_host: this.serviceHost,
-        service_port: this.servicePort,
-        service_password: this.servicePassword
-    };
-    this.serviceApi = new WalletShellApi(cfg);
+    this.getUnusedPort().then(port => {
+        console.log(`${port} is available`);
+        this.servicePort = port;
+        let cfg = {
+            service_host: this.serviceHost,
+            service_port: this.servicePort,
+            service_password: this.servicePassword
+        };
+        this.serviceApi = new WalletShellApi(cfg);
+    }).catch((err) => {
+        log.error("Unable to find a port to listen to, please check your firewall settings");
+        log.error(err.message);
+    });
 };
 
 WalletShellManager.prototype._getSettings = function () {
@@ -164,7 +182,7 @@ WalletShellManager.prototype.startService = function (walletFile, password, onEr
     let serviceArgs = this.serviceArgsDefault.concat([
         '-w', walletFile,
         '-p', password,
-        '--bind-port', config.walletServiceRpcPort,
+        '--bind-port', this.servicePort,
         '--log-level', 0,
         '--log-file', path.join(remote.app.getPath('temp'), 'ts.log'), // macOS failed without this
         '--address'
@@ -217,7 +235,7 @@ WalletShellManager.prototype._spawnService = function (walletFile, password, onE
     let serviceArgs = this.serviceArgsDefault.concat([
         '--container-file', walletFile,
         '--container-password', password,
-        '--bind-port', config.walletServiceRpcPort,
+        '--bind-port', this.servicePort,
         '--enable-cors', '*',
         '--daemon-address', this.daemonHost,
         '--daemon-port', this.daemonPort,

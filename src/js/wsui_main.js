@@ -2020,11 +2020,6 @@ function handleSendTransfer() {
             return;
         }
 
-        if (recipientAddress === wsession.get('loadedWalletAddress')) {
-            formMessageSet('send', 'error', "Sorry, can't send to your own address");
-            return;
-        }
-
         let paymentId = sendInputPaymentId.value ? sendInputPaymentId.value.trim() : '';
         if (recipientAddress.length > config.addressLength) {
             paymentId = '';
