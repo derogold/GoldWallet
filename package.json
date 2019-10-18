@@ -2,7 +2,7 @@
   "name": "GoldWalletShell",
   "productName": "GoldWallet",
   "description": "DeroGold GUI Wallet",
-  "version": "v0.3.7",
+  "version": "0.3.8",
   "homepage": "https://github.com/ExtraHash/dego-wallet-electron",
   "repository": "https://github.com/ExtraHash/dego-wallet-electron",
   "main": "main.js",
