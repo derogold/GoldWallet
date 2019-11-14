@@ -19,8 +19,8 @@
   "license": "ISC",
   "devDependencies": {
     "devtron": "^1.4.0",
-    "electron": "^4.1.4",
-    "electron-builder": "^20.40.2",
+    "electron": "^4.2.12",
+    "electron-builder": "^22.1.0",
     "jshint": "^2.10.2"
   },
   "dependencies": {
