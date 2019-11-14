@@ -58,9 +58,9 @@ config.assetTicker = 'DEGO';
 // your currency address prefix, for address validation
 config.addressPrefix = 'dg';
 // standard wallet address length, for address validation
-config.addressLength = 99;
+config.addressLength = 97;
 // integrated wallet address length, for address validation. Added length is length of payment ID encoded in base58.
-config.integratedAddressLength = 187;
+config.integratedAddressLength = 185;
 
 // minimum fee for sending transaction
 config.minimumFee = 10000;
