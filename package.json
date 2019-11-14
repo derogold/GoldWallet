@@ -21,20 +21,20 @@
     "devtron": "^1.4.0",
     "electron": "^4.2.12",
     "electron-builder": "^22.1.0",
-    "jshint": "^2.10.2"
+    "jshint": "^2.10.3"
   },
   "dependencies": {
     "@trodi/electron-splashscreen": "^0.3.4",
     "ag-grid-community": "^19.1.4",
-    "async": "^2.6.2",
-    "csv-writer": "^1.2.0",
-    "electron-log": "^2.2.17",
-    "electron-store": "^2.0.0",
+    "async": "^3.1.0",
+    "csv-writer": "^1.5.0",
+    "electron-log": "^3.0.9",
+    "electron-store": "^5.1.0",
     "fnv-plus": "^1.2.12",
-    "node-crypto-gcm": "^1.0.3",
+    "node-crypto-gcm": "^1.0.5",
     "qr-image": "^3.2.0",
     "request": "^2.88.0",
-    "request-promise-native": "^1.0.7"
+    "request-promise-native": "^1.0.8"
   },
   "build": {
     "appId": "derogold.goldwallet",
