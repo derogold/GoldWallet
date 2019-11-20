@@ -311,7 +311,7 @@ function showIntegratedAddressForm() {
             <textarea id="genInputAddress" class="default-textarea" placeholder="Required, put any valid ${config.assetTicker} address..">${ownAddress}</textarea>
         </div>
         <div class="input-wrap">
-            <label>Payment Id (<a id="makePaymentId" class="wallet-tool inline-tool" title="generate random payment id...">generate</a>)</label>
+            <label>Payment Id (<a id="makePaymentId" class="wallet-tool inline-tool" title="create random payment id...">create</a>)</label>
             <input id="genInputPaymentId" type="text" required="required" class="text-block" placeholder="Required, enter a valid payment ID, or click generate to get random ID" />
         </div>
         <div class="input-wrap">
