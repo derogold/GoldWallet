@@ -1965,12 +1965,12 @@ function handleWalletExport() {
                 }
                 try {
                     fs.writeFileSync(filename, textContent);
-                    formMessageSet('secret', 'success', 'Your keys have been exported, please keep the file secret!');
+                    formMessageSet('secret', 'success', 'Your keys have been exported. Please keep the file secret!');
                 } catch (err) {
-                    formMessageSet('secret', 'error', "Failed to save your keys, please check that you have write permission to the file");
+                    formMessageSet('secret', 'error', "Failed to save your keys. Please check that you have write permission to the file.");
                 }
             }).catch(() => {
-                formMessageSet('secret', 'error', "Failed to get keys, please try again in a few seconds");
+                formMessageSet('secret', 'error', "Failed to get keys. Please try again in a few seconds.");
             });
         }
     });
