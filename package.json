@@ -2,7 +2,7 @@
   "name": "goldwallet",
   "productName": "GoldWallet",
   "description": "DeroGold GoldWallet",
-  "version": "v0.4.0",
+  "version": "v0.4.1",
   "homepage": "https://github.com/derogold/GoldWallet",
   "repository": "https://github.com/derogold/GoldWallet.git",
   "main": "main.js",
